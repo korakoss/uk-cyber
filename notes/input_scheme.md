@@ -28,3 +28,5 @@ This breaks down to several `typex` buckets per education level, but no size met
 
 ### Quantitative data structure (for businesses and charities)
 There are several banded cost columns: columns per incident type, some aggregates, and also breakdowns of cost by cost type (defense, direct cost, outage).
+
+
