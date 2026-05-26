@@ -1,13 +1,6 @@
 import pandas as pd
 
-all_data = pd.read_csv("data/proc/data.csv")
-
-business_data = all_data[all_data["typex"] == 1].copy()
-charity_data  = all_data[all_data["typex"] == 2].copy()
-
-
-
-cost_columns = [
+COST_COLNAMES = [
     'ranscost_bands',      
     'hackcost_bands',      
     'tkvrcost_bands',      
@@ -27,11 +20,15 @@ cost_columns = [
     'damage_bands'         
 ]
 
-# Total: 15 cost-related columns
+def get_business_data(sfile: str = "data/proc/data.csv"):
+    all_data = pd.read_csv(sfile)
+    business_data = all_data[all_data["typex"] == 1]
+    business_data = business_data[["sizeb", "weight", "freq"] + COST_COLNAMES]
+    return business_data
 
-business_data = business_data[["sizeb", "weight", "freq"] + cost_columns]
-charity_data = charity_data[["income2", "weight", "freq"] + cost_columns]
 
-
-print(business_data)
-print(charity_data)
+def get_charity_data(sfile: str = "data/proc/data.csv"):
+    all_data = pd.read_csv(sfile)
+    charity_data = all_data[all_data["typex"] == 1]
+    charity_data = charity_data[["income2", "weight", "freq"] + COST_COLNAMES]
+    return charity_data
