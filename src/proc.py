@@ -29,6 +29,6 @@ def get_business_data(sfile: str = "data/proc/data.csv"):
 
 def get_charity_data(sfile: str = "data/proc/data.csv"):
     all_data = pd.read_csv(sfile)
-    charity_data = all_data[all_data["typex"] == 1]
+    charity_data = all_data[all_data["typex"] == 2]
     charity_data = charity_data[["income2", "weight", "freq"] + COST_COLNAMES]
     return charity_data
