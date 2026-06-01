@@ -1,6 +1,7 @@
 import pandas as pd
 
 COST_COLNAMES = [
+    'Cybercrime_all',
     'ranscost_bands',      
     'hackcost_bands',      
     'tkvrcost_bands',      
