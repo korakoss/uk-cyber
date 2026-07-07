@@ -62,20 +62,23 @@ bands = sorted(DAMAGE_BAND_LABELS.keys())
 # Core function: rank-2 test for a given subset
 # ---------------------------------------------------------------------------
 
-def run_mixture_test(subset, label, min_per_freq=10):
+def run_mixture_test(subset, label, group_col='freq', group_labels=None, min_per_freq=10):
     """
-    For a given subset of firms (a type/size basket), build the freq × band
-    matrix P of conditional cost distributions, run SVD, report rank structure,
-    and attempt to extract F_T and F_M.
+    For a given subset of firms (a type/size basket), build the group x band
+    matrix P of conditional cost distributions (grouping by `group_col`, e.g.
+    freq band or phisheng_bands engagement level), run SVD, report rank
+    structure, and attempt to extract F_T and F_M.
     """
-    freq_groups = sorted(subset['freq'].unique())
+    if group_labels is None:
+        group_labels = FREQ_LABELS
+    groups = sorted(subset[group_col].unique())
 
-    # Build matrix P: rows = freq groups, cols = damage bands
+    # Build matrix P: rows = groups, cols = damage bands
     rows = []
     row_labels = []
     ns = []
-    for fg in freq_groups:
-        sub = subset[subset['freq'] == fg]
+    for g in groups:
+        sub = subset[subset[group_col] == g]
         if len(sub) < min_per_freq:
             continue
         counts = np.array([(sub['damage_bands'] == b).sum() for b in bands], dtype=float)
@@ -83,7 +86,7 @@ def run_mixture_test(subset, label, min_per_freq=10):
             continue
         probs = counts / counts.sum()
         rows.append(probs)
-        row_labels.append(FREQ_LABELS.get(int(fg), str(fg)))
+        row_labels.append(group_labels.get(int(g), str(g)))
         ns.append(len(sub))
 
     if len(rows) < 3:
@@ -99,7 +102,7 @@ def run_mixture_test(subset, label, min_per_freq=10):
 
     # Show the raw P matrix
     print(f"\n  P matrix (row=freq group, col=damage band, values=proportions):")
-    header = f"  {'Freq group':<20} {'n':>5}  " + "  ".join(f"{DAMAGE_BAND_LABELS[b][:8]:>8}" for b in bands)
+    header = f"  {'Group':<20} {'n':>5}  " + "  ".join(f"{DAMAGE_BAND_LABELS[b][:8]:>8}" for b in bands)
     print(header)
     for i, (lbl, n) in enumerate(zip(row_labels, ns)):
         row_str = f"  {lbl:<20} {n:>5}  " + "  ".join(f"{P[i,j]:>8.3f}" for j in range(n_cols))
@@ -206,7 +209,7 @@ def run_mixture_test(subset, label, min_per_freq=10):
     # Under rank-2: p_f ≈ F_M + π_f*(F_T - F_M)
     # π_f = dot(p_f - F_M, F_T - F_M) / dot(F_T - F_M, F_T - F_M)
     denom = np.dot(F_T_ext - F_M_ext, F_T_ext - F_M_ext)
-    print(f"  {'Freq group':<20} {'n':>5} {'π_f (targeted)':>16}")
+    print(f"  {'Group':<20} {'n':>5} {'π_f (targeted)':>16}")
     for i, (lbl, n) in enumerate(zip(row_labels, ns)):
         if denom > 1e-10:
             pi = np.dot(P[i] - F_M_ext, F_T_ext - F_M_ext) / denom
@@ -245,5 +248,38 @@ for sz in sorted(attacked['sizeb'].dropna().unique()):
     sz_label = SIZE_LABELS.get(int(sz), str(sz))
     phishing_sz = attacked[(attacked['disrupta'] == 6) & (attacked['sizeb'] == sz)].copy()
     run_mixture_test(phishing_sz, f"Phishing — {sz_label}", min_per_freq=8)
+
+# ---------------------------------------------------------------------------
+# Run: phishing grouped by phisheng_bands (engagement level) instead of freq
+#
+# Motivation (src/estimation/phishing_count_validation.py): the freq-based
+# F_M component (58.5% no-cost, mean band 2.0) matches almost exactly onto
+# firms with phisheng_bands=='None' (57.1% no-cost, mean band 2.02) — a real,
+# independent variable, not a freq artefact. Rerunning the rank-2 test with
+# engagement level as the grouping variable checks whether engagement produces
+# an even cleaner separation than freq did.
+# ---------------------------------------------------------------------------
+
+PHISHENG_LABELS = {
+    1: 'None', 2: '1', 3: '2-3', 4: '4-5', 5: '6-10',
+    6: '11-20', 7: '21-50', 8: '51-100', 9: '100+',
+}
+INVALID_COUNT = {-9, -1, 997, 999, -9.0, -1.0, 997.0, 999.0}
+
+print("\n\n" + "=" * 70)
+print("GROUPED BY ENGAGEMENT (phisheng_bands) INSTEAD OF FREQ")
+print("Phishing (disrupta=6), all sizes pooled")
+print("=" * 70)
+
+phishing_eng = attacked[
+    (attacked['disrupta'] == 6) &
+    attacked['phisheng_bands'].notna() &
+    ~attacked['phisheng_bands'].isin(INVALID_COUNT)
+].copy()
+
+run_mixture_test(
+    phishing_eng, "Phishing — grouped by phisheng_bands (engagement level)",
+    group_col='phisheng_bands', group_labels=PHISHENG_LABELS, min_per_freq=8
+)
 
 print("\nDone.")

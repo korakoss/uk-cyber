@@ -1,5 +1,22 @@
 # Project Notes
 
+## Handoff (as of 2026-07-07)
+
+**What the last session did:** Two threads. (1) Step 3 exploratory pass — examined P(freq|size), found Large firms have a genuinely different frequency profile than Micro/Small/Medium. (2) A deep validation pass on the phishing mixture model (F_T/F_M), using real per-attack count variables (`phishcon_bands`, `phisheng_bands`) discovered mid-session and now loaded via `proc.py`.
+
+**Results, most to least important:**
+1. **The phishing mixture model survived independent validation.** Regrouping the SVD rank-2 test by real engagement counts instead of freq band reproduces almost the same targeted (F_T) component and gives clean, monotonic mixing weights — strong evidence the targeted/mass-market structure is real, not an SVD artifact. Not yet wired into `mixture_bridge.py` (still uses freq-based weights).
+2. **The freq=6 bridge anomaly is resolved from "is it real" to "what does it actually mean."** It's confirmed real (survives raw-data, weight, and outlier checks; replicates across 3 analyses) — but real engagement data shows it doesn't match the "targeted attack" mechanism the bridge formula assumes (engagement isn't elevated in that subgroup). This is the single highest-leverage open item: it still determines whether the overall phishing bridge is ~1.02 or something else, and it's not clear the existing ~7x type-T formula is the right tool for it. See `src/estimation/freq6_anomaly.py`.
+3. **Step 3 pooling decision is still open**: Micro/Small/Medium share one freq distribution (statistically indistinguishable); Large is distinct (p=0.014). Not yet decided how to structure this for sampling.
+
+**Recommended next step:** the freq=6 subgroup (item 2) may not be resolvable with more analysis of this same n=47 — consider treating it pragmatically (a bounded sensitivity range around the bridge multiplier) rather than continuing to chase it, and switch to a more tractable item: the Step 3 pooling decision, or starting the ONS business-count fetch (Step 1), both of which are pure forward progress toward the Squiggle simulation. If instead the priority is deepening the phishing bridge work, the natural next move is promoting the engagement-based mixing weights into `mixture_bridge.py`'s actual multiplier calculation.
+
+**Full list of open decisions:** see "Open Decisions (quick reference)" below. **Full technical detail:** see the dated subsections under Mixture Model Test and Freq Distribution by Size.
+
+**Orientation:** all scripts run via `source .venv/bin/activate && python3 <path>` from project root; data via `proc.get_business_data()`. Read this whole file before diving in — it's the authoritative record, not a summary of it.
+
+---
+
 ## Goal
 
 Produce a synthetic estimate of **total annual cybercrime costs across all UK businesses**. Charities are not the primary target but the charity dataset may be used as supporting evidence for modeling assumptions shared with the business side.
@@ -28,6 +45,22 @@ Fraction of businesses attacked: 40% (Micro) → 51% (Small) → 66% (Medium) �
 **6. Data quality note.**
 damage_bands contains a non-integer SPSS special code (999.62004) that must be filtered with `>= 100`, not exact value matching. Fixed in proc.py. Also: freq encodes periodicity bands (once/monthly/weekly/daily), not literal attack counts — analyses treating freq values as counts are invalid.
 
+**7. Phishing's mixture model survives an independent validation attempt, using real (not inferred) attack data.**
+Phishing is both the dominant attack type (~57% of incidents) and the *only* type with high-coverage per-attack count data: `phishcon_bands` (# targeted/personalised attacks, 76% coverage) and `phisheng_bands` (# attacks someone engaged with, 83% coverage) — other types have equivalent count variables but only 6-20% coverage, too sparse to use. Regrouping the SVD rank-2 test by real engagement counts (instead of freq band, which was the only grouping used originally) reproduces essentially the same F_T (targeted) component and gives a clean, monotonic mixing-weight curve (0% → 20% → 65% targeted as engagement rises) — freq-based mixing weights were noisy and non-monotonic. This is real evidence the 2-component structure isn't an SVD artifact. It does *not* resolve the single biggest open question driving bridge uncertainty — the freq=6 ("several times a day") targeted anomaly (n=47, see Open Questions #2) — which still swings the overall phishing bridge multiplier between ~1.02 and ~1.7. See the "Real per-attack count data" subsection under Mixture Model Test for full detail.
+
+---
+
+## Open Decisions (quick reference)
+
+Consolidated list of things "on the table" — genuine open choices, not yet settled. Each links to fuller detail elsewhere in this file.
+
+1. **Freq=6 targeted anomaly (n=47)** — investigated and confirmed real (not noise/artefact), but the mixture model's targeted-attack mechanism doesn't match it (engagement isn't elevated there). Still highest-leverage open question: what's the correct bridge multiplier for this subgroup, given the ~7x type-T formula may not actually apply? See Open Questions #2, `freq6_anomaly.py`.
+2. **Step 3 pooling decision** — pool Micro/Small/Medium into one empirical freq distribution (they're statistically indistinguishable, p=0.014 only Large differs) vs. keep 4 separate strata and accept 2 thin cells. See Freq Distribution by Size section.
+3. **Promote engagement-based grouping (`phisheng_bands`) into the bridge calculation** — `mixture_bridge.py` still uses freq-based π_f; the engagement-based mixing weights are cleaner (monotonic) but not yet integrated. See Mixture Model Test → "Real per-attack count data".
+4. **Scope of the mixture model** — validated for phishing only (57% of incidents); untested for ransomware/DoS/hacking/malware, and no equivalent high-coverage count variable exists to validate against for those types. See Open Questions #3.
+5. **ONS business counts by size** — external data fetch, not started; blocks Step 6 (simulation) entirely.
+6. **Minor/optional:** weighted variant of the mixture model (currently unweighted only); per-size-band mixture rerun using engagement instead of freq.
+
 ---
 
 ## Estimation Pipeline — Current Status
@@ -38,7 +71,7 @@ damage_bands contains a non-integer SPSS special code (999.62004) that must be f
 |------|------|--------|
 | 1 | N(size): UK business count per size band | Not started. Source: ONS UK Business Population Estimates |
 | 2 | P(attacked\|size): prevalence | **Done.** Micro 40%, Small 51%, Medium 66%, Large 69%. Use empirical values directly. |
-| 3 | P(freq\|size, attacked): freq distribution by size | **Not done.** Used freq as conditioning variable throughout but never examined how its distribution shifts by size band. Needed to sample freq in the simulation. Open: parametric ordinal model vs. four empirical distributions. |
+| 3 | P(freq\|size, attacked): freq distribution by size | **Exploratory pass done.** Large has a distinct freq distribution (p=0.014 vs. rest pooled); Micro/Small/Medium indistinguishable from each other. Open: whether to pool M/S/M into one empirical distribution, and how to handle 2 thin cells. |
 | 4 | P(damage_bands\|freq, size): cost distribution | **Analysis done.** Lognormal fits well within cells; per-cell (mu, sigma). Handles within-band interpolation and top-band tail. |
 | 5 | Bridge: damage_bands → total annual cost | **Done for phishing.** Bridge ≈ 1.02 for type M (~95% of firms); close to 1 for type T at low freq. Conservative lower bound (total = max) quantitatively supported. |
 | 6 | Squiggle simulation and aggregation | Not started. Blocked on Steps 1 and 3. |
@@ -225,6 +258,36 @@ Key observation: F_T and F_M are clearly separated for Micro (F_T has 0% no-cost
 - Investigate "several/day" anomaly further if it matters for downstream modeling
 - Decide whether to adopt mixture model as the bridge framework or continue exploring alternatives
 
+### Real per-attack count data: validating F_T/F_M against ground truth (src/estimation/phishing_count_validation.py, mixture_model.py)
+
+Discovered that the survey has real per-attack count-band variables for phishing specifically (not literal totals, but high-coverage subsets): `phishcon_bands` ("number of specifically targeted [personalised] phishing attacks," 76% coverage) and `phisheng_bands` ("number of times someone engaged with a phishing attack," 83% coverage). Now loaded via `proc.py` (`PHISH_COUNT_COLNAMES`). No equivalent count variables exist with usable coverage for other attack types (hacking/DoS/ransomware/malware counts exist but only 6-20% coverage).
+
+**Does "targeted" (personalised) predict cost?** Weakly. Spearman corr(phishcon_bands, damage_bands) = 0.29. `phishcon_bands` measures whether an attack *looked* targeted, which turns out to be common (49-69% of phishing firms report ≥1 targeted attack across all freq bands) and only loosely tied to cost outcome. This directly contradicts the SVD-inferred π_f (which was 0% for 3 of 6 freq bands) — the two "targeted" constructs are not the same thing and phishcon_bands should not be used as a literal ground-truth label for SVD type membership.
+
+**Does engagement predict cost?** Yes, much better. Spearman corr(phisheng_bands, damage_bands) = 0.37. Firms with **zero** engagement: mean damage band 2.02, 57.1% no-cost — matches the SVD's F_M (mean 2.0, 58.5% no-cost) almost exactly, despite `phisheng_bands` never being used in the SVD fit. This is real, independent validation that F_M ("mass-market/commodity phishing, cheap or free") is a genuine feature of the data, not an SVD artifact.
+
+**Rerunning the rank-2 test grouped by `phisheng_bands` instead of `freq`** (only 3 of 9 engagement levels had n≥8: None n=465, "1" n=62, "2-3" n=19 — higher levels too sparse):
+- 2 components explain 99.0% of variance (identical to the freq-based pooled result) — rank-2 holds again with a completely different grouping variable.
+- Extracted F_T: mean band 4.19, 0% no-cost — nearly identical to the freq-based F_T (4.0, 0%). **Two independent groupings converge on the same targeted component.**
+- Extracted F_M: mean band 2.55, 42.2% no-cost — same direction as freq-based F_M (2.0, 58.5%) but not an exact match; likely reflects the thinner data (3 groups vs 6).
+- **π_f is monotonic in engagement level: 0% → 19.6% → 65.2%** — a clean dose-response relationship, unlike the freq-based π_f which was noisy and non-monotonic (12.9% → 5.7% → 0% → 0% → 0% → 22.3% with an unexplained freq=6 spike).
+
+**Implication:** engagement level looks like a mechanistically better (and now partially validated) organizing variable for the targeted/mass mixture than freq band. This strengthens confidence that F_T/F_M is real structure, and gives a lead for a monotonic mixing-weight model that the freq-based version couldn't offer. Not yet integrated into the bridge multiplier calculation (`mixture_bridge.py` still uses freq-based π_f) — that's the natural next step if this direction is pursued further. Also not yet extended to per-size-band breakdowns using engagement instead of freq.
+
+### Freq=6 anomaly investigated (src/estimation/freq6_anomaly.py)
+
+Direct test of whether the freq=6 targeted anomaly (Open Questions #2) is real or an SVD/small-n artefact, using raw data rather than the mixture reconstruction.
+
+**The anomaly is visible in the raw data, not just the SVD extraction.** Unweighted mean damage_band by freq group: once-only 2.09 → >once<monthly 2.02 → ~monthly 1.76 → ~weekly 1.56 → ~daily 1.93 → **several/day 2.53**. The last group breaks the otherwise-declining trend and has the highest mean of any freq group, plus the only meaningful high-cost tail (6.4% at band≥8, vs. 0-1.2% elsewhere, n=47). This is now the third independent observation of the same pattern — also seen in `attack_type_breakdown.py`'s original phishing-only analysis (1.71→1.38 then recovery) and in the SVD-derived π_f.
+
+**Not a weight or outlier artefact.** The 3 high-cost observations (bands 8, 8, 10) driving the tail have unremarkable survey weights (0.05-0.53, below the group's own max of 2.49) — real, low-weight rows, not a few over-weighted observations distorting the picture. Size composition of the freq=6 group (Micro 21, Small 12, Medium 8, Large 6) roughly matches the overall attacked-firm mix; 2 of the 3 outliers happen to be Large firms, but that's a weak signal at n=3.
+
+**But real engagement data complicates the "targeted" interpretation.** If freq=6's elevated cost were the same phenomenon as once-only's targeted attacks, engagement should be elevated there too — it isn't. P(≥1 real engagement) by freq group: 30.7% (once-only) → 13.3% → 15.1% → 10.3% → 21.4% (daily) → **20.0%** (several/day) — lower than once-only, not higher. Within freq=6 itself, engagement still predicts cost strongly (mean band 3.67 for the 9 engaged firms vs. 2.25 for the 36 non-engaged) — consistent with the general finding — but the group as a whole isn't unusually engagement-heavy.
+
+**Read:** the freq=6 cost anomaly is real — it survives raw-data, weight, and outlier checks, and replicates across three independent analyses — but the mixture model's assumed *mechanism* (that this is the same spear-phishing/targeted phenomenon seen at once-only, just at high implied k) is only partly supported. Engagement, otherwise the best real proxy for "targeted," isn't elevated at freq=6. More likely explanation: freq=6 firms are under chronic/sustained attack (consistent with the Step 3 finding that Large firms skew toward frequent attack), and a subset experience genuinely high-cost incidents through a different mechanism than one-off spear-phishing — not necessarily via more successful or more personalised individual attempts. At n=47 (9 engaged, 3 in the cost tail) this can't be pinned down further with this dataset.
+
+**Implication for the bridge:** this reframes rather than resolves the open question. It's not "is freq=6 real or noise" (it's real) — it's "does the type-T bridge formula (which assumes freq=6 firms are extreme-k targeted attacks, giving up to a ~7x multiplier) correctly describe what's actually happening in this subgroup." Given the engagement mismatch, applying that formula here is on shakier ground than previously assumed; the true bridge correction for this subgroup is unresolved, not simply "noise, use 1.0" or "real, use 7x."
+
 ---
 
 ## Prevalence Analysis (src/estimation/prevalence.py)
@@ -320,6 +383,24 @@ The conservative lower bound is quantitatively validated for type M (95% of firm
 
 ---
 
+## Freq Distribution by Size (Step 3) (src/estimation/freq_distribution.py)
+
+Exploratory pass at P(freq | size, attacked) — the piece of Step 3 that was previously unexamined.
+
+**Cell counts (size x freq, attacked firms):** mostly healthy (n=16-113). Two thin cells: Small|~daily (n=9), Large|~daily (n=6) — unsafe to resample directly in the joint-empirical-sampling plan.
+
+**Row proportions:** Micro, Small, Medium look similar to each other across all 6 freq bands (once-only ~20%, mean freq band 2.68-2.85). **Large is distinct**: fewer once-only incidents (12% vs ~20%), heavier tail toward frequent/chronic attack (daily+several/day ~20% vs ~9-13% elsewhere), mean freq band 3.03.
+
+**Chi-square tests:**
+- Full 4x6 table: chi2=24.9, dof=15, p=0.051 — borderline, diluted by pooling 3 similar rows with 1 different one.
+- Large vs. (Micro+Small+Medium pooled), 2x6: chi2=14.3, dof=5, **p=0.014 — significant.** Confirms Large genuinely has a different freq distribution; Micro/Small/Medium are statistically indistinguishable from each other.
+
+**Implication:** points toward a 2-group structure for Step 3 — Micro/Small/Medium sharing (or close to sharing) one freq distribution, Large modeled separately — rather than 4 fully independent empirical distributions or one smooth parametric curve across all four bands. Also explains why sparsity concentrates in Large: its already-small sample splits across a genuinely heavier-tailed shape.
+
+**Not yet decided:** whether to pool Micro/Small/Medium into one empirical freq distribution (increasing effective n for resampling) vs. keep them separate but acknowledge they're statistically similar; how to handle the two thin cells (Small|~daily n=9, Large|~daily n=6) — smoothing vs. accepting the noise.
+
+---
+
 ## Open Questions
 
 These are unresolved issues that a future session should be aware of before diving in.
@@ -329,8 +410,8 @@ Throughout the analyses, `freq` has been used in two distinct roles that are eas
 - *Conditioning variable for cost:* P(damage_bands | freq, size) — done, lognormal fits well.
 - *Distribution to be modelled:* P(freq | size, attacked) — NOT done. This is what the Squiggle simulation needs to sample from: first draw a freq band, then draw a cost. These are separate questions. The parametric vs. empirical decision for freq refers to this second role only.
 
-**2. Freq=6 type-T anomaly**
-The mixture model assigns 34.6% of "targeted" (type T) mass to the several/day frequency group (n=47 phishing firms). If real, this group has a bridge multiplier of ~7×. If noise (probable given small n), the overall bridge is ~1.02. Not confirmed either way; the cell is too small to test cleanly.
+**2. Freq=6 type-T anomaly — investigated, reframed not resolved**
+The mixture model assigns 34.6% of "targeted" (type T) mass to the several/day frequency group (n=47 phishing firms). `src/estimation/freq6_anomaly.py` confirms the elevated cost is **real** (visible in raw unweighted data, not a weight or outlier artefact, replicated across 3 independent analyses) but shows real engagement rates at freq=6 (20.0%) are *not* elevated relative to once-only (30.7%) — undermining the assumption that this is the same targeted/spear-phishing mechanism the bridge formula was built around. So the question is no longer "is it noise" (it isn't) but "does the ~7x type-T bridge multiplier correctly apply to whatever this subgroup actually is" — unresolved, and probably needs a different bridge treatment for this subgroup specifically rather than a real/noise binary.
 
 **3. Mixture model scope**
 The 2-component (targeted/mass-market) structure is validated for phishing (dominant type) and degenerate for impersonation. Other attack types (ransomware, malware, DoS, hacking) have not been tested. May matter if non-phishing firms dominate the cost tail.
@@ -354,7 +435,7 @@ All scripts run from the project root: `source .venv/bin/activate && python3 <pa
 
 | File | Topic | Key outputs |
 |------|-------|-------------|
-| `proc.py` | Data loading | `get_business_data()`, `get_charity_data()`, `SPECIAL_CODE_THRESHOLD=100` |
+| `proc.py` | Data loading | `get_business_data()`, `get_charity_data()`, `SPECIAL_CODE_THRESHOLD=100`, `PHISH_COUNT_COLNAMES` (phishcon_bands, phisheng_bands) |
 | `src/estimation/consistency_checks.py` | i.i.d. bridge test | Monotonicity test (violated everywhere); discovery of 999.62004 special code |
 | `src/estimation/bridge_calibration.py` | crimecost vs damage_bands | Avenue closed — different cost concepts, non-representative subsample |
 | `src/estimation/attack_type_breakdown.py` | Cost by attack type and freq | Monotonicity failure persists within every type; disrupta analysis; full distribution by freq group |
@@ -363,6 +444,9 @@ All scripts run from the project root: `source .venv/bin/activate && python3 <pa
 | `src/estimation/mixture_bridge.py` | Analytical bridge via mixture | Corrected bridge formula (G=F^(1/k)); bridge≈1.02 for type M; Poisson fit for k\|type (failed) |
 | `src/estimation/prevalence.py` | Prevalence by size | Empirical proportions; logistic-in-log-size fit (RMSE 2.2%) |
 | `src/estimation/cost_distribution.py` | Lognormal fit to cost bands | Per-cell (mu, sigma); chi-sq GOF; P(cost>£500k) per cell |
+| `src/estimation/freq_distribution.py` | Freq distribution by size (Step 3) | (size x freq) cross-tab; Large differs from Micro/Small/Medium (p=0.014) |
+| `src/estimation/phishing_count_validation.py` | Validate F_T/F_M against real phishing counts | phishcon_bands (targeted) weak cost predictor (ρ=0.29); phisheng_bands (engaged) strong (ρ=0.37) and matches SVD F_M almost exactly |
+| `src/estimation/freq6_anomaly.py` | Investigate freq=6 targeted anomaly | Anomaly is real (not weight/outlier artefact) but engagement not elevated there — type-T bridge mechanism questionable for this subgroup |
 
 ---
 
