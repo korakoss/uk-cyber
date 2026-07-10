@@ -1,0 +1,338 @@
+year,category_raw,category,count
+2015,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,67375
+2015,419/Overpayment,Overpayment/419,30855
+2015,Identity Theft,Identity Theft,21949
+2015,Auction,Auction (2015 only),21510
+2015,Other,Other,19963
+2015,Personal Data Breach,Personal Data Breach,19632
+2015,Employment,Employment,18758
+2015,Extortion,Extortion,17804
+2015,Credit Card Fraud,Credit Card/Check Fraud,17172
+2015,Phishing/Vishing/Smishing/Pharming,Phishing,16594
+2015,Advanced Fee,Advanced Fee,16445
+2015,Harassment/Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",14812
+2015,Confidence Fraud/Romance,Confidence Fraud/Romance,12509
+2015,No Lead Value,No Lead Value,12187
+2015,Government Impersonation,Government Impersonation,11832
+2015,Real Estate/Rental,Real Estate/Rental,11562
+2015,Business Email Compromise,BEC/EAC,7837
+2015,Misrepresentation,Misrepresentation,5458
+2015,Lottery/Sweepstakes,Lottery/Sweepstakes/Inheritance,5324
+2015,Malware/Scareware,Malware/Scareware/Virus,3294
+2015,Corporate Data Breach,Corporate Data Breach,2499
+2015,Ransomware,Ransomware,2453
+2015,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,1931
+2015,Investment,Investment,1806
+2015,Crimes Against Children,Crimes Against Children,1348
+2015,Civil Matter,Civil Matter,1148
+2015,Re-shipping,Re-shipping,1073
+2015,Denial of Service,Denial of Service/TDoS,1020
+2015,Virus,Malware/Scareware/Virus,971
+2015,Health Care Related,Health Care Related,465
+2015,Charity,Charity,411
+2015,Terrorism,"Terrorism (standalone, pre-2021)",361
+2015,Hacktivist,Hacktivist,211
+2015,Gambling,Gambling,131
+2015,Criminal Forums,Criminal Forums (2015 only),62
+2016,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,81029
+2016,Personal Data Breach,Personal Data Breach,27573
+2016,419/Overpayment,Overpayment/419,25716
+2016,Phishing/Vishing/Smishing/Pharming,Phishing,19465
+2016,Employment,Employment,17387
+2016,Extortion,Extortion,17146
+2016,Identity Theft,Identity Theft,16878
+2016,Harassment/Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",16385
+2016,Credit Card Fraud,Credit Card/Check Fraud,15895
+2016,Advanced Fee,Advanced Fee,15075
+2016,Confidence Fraud/Romance,Confidence Fraud/Romance,14546
+2016,No Lead Value,No Lead Value,13794
+2016,Other,Other,12619
+2016,Real Estate/Rental,Real Estate/Rental,12574
+2016,Government Impersonation,Government Impersonation,12344
+2016,BEC/EAC,BEC/EAC,12005
+2016,Tech Support,Tech Support,10850
+2016,Misrepresentation,Misrepresentation,5436
+2016,Lottery/Sweepstakes,Lottery/Sweepstakes/Inheritance,4231
+2016,Corporate Data Breach,Corporate Data Breach,3403
+2016,Malware/Scareware,Malware/Scareware/Virus,2783
+2016,Ransomware,Ransomware,2673
+2016,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,2572
+2016,Investment,Investment,2197
+2016,Virus,Malware/Scareware/Virus,1498
+2016,Crimes Against Children,Crimes Against Children,1230
+2016,Civil Matter,Civil Matter,1070
+2016,Denial of Service,Denial of Service/TDoS,979
+2016,Re-shipping,Re-shipping,893
+2016,Charity,Charity,437
+2016,Health Care Related,Health Care Related,369
+2016,Terrorism,"Terrorism (standalone, pre-2021)",295
+2016,Gambling,Gambling,137
+2016,Hacktivist,Hacktivist,113
+2017,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,84079
+2017,Personal Data Breach,Personal Data Breach,30904
+2017,Phishing/Vishing/Smishing/Pharming,Phishing,25344
+2017,Overpayment,Overpayment/419,23135
+2017,No Lead Value,No Lead Value,20241
+2017,Identity Theft,Identity Theft,17636
+2017,Advanced Fee,Advanced Fee,16368
+2017,Harassment/Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",16194
+2017,Employment,Employment,15784
+2017,BEC/EAC,BEC/EAC,15690
+2017,Confidence Fraud/Romance,Confidence Fraud/Romance,15372
+2017,Credit Card Fraud,Credit Card/Check Fraud,15220
+2017,Extortion,Extortion,14938
+2017,Other,Other,14023
+2017,Tech Support,Tech Support,10949
+2017,Real Estate/Rental,Real Estate/Rental,9645
+2017,Government Impersonation,Government Impersonation,9149
+2017,Misrepresentation,Misrepresentation,5437
+2017,Corporate Data Breach,Corporate Data Breach,3785
+2017,Investment,Investment,3089
+2017,Malware/Scareware/Virus,Malware/Scareware/Virus,3089
+2017,Lottery/Sweepstakes,Lottery/Sweepstakes/Inheritance,3012
+2017,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,2644
+2017,Ransomware,Ransomware,1783
+2017,Crimes Against Children,Crimes Against Children,1300
+2017,Denial of Service/TDoS,Denial of Service/TDoS,1201
+2017,Civil Matter,Civil Matter,1057
+2017,Re-shipping,Re-shipping,1025
+2017,Charity,Charity,436
+2017,Health Care Related,Health Care Related,406
+2017,Gambling,Gambling,203
+2017,Terrorism,"Terrorism (standalone, pre-2021)",177
+2017,Hacktivist,Hacktivist,158
+2018,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,65116
+2018,Extortion,Extortion,51146
+2018,Personal Data Breach,Personal Data Breach,50642
+2018,No Lead Value,No Lead Value,36936
+2018,Phishing/Vishing/Smishing/Pharming,Phishing,26379
+2018,BEC/EAC,BEC/EAC,20373
+2018,Confidence Fraud/Romance,Confidence Fraud/Romance,18493
+2018,Harassment/Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",18415
+2018,Advanced Fee,Advanced Fee,16362
+2018,Identity Theft,Identity Theft,16128
+2018,Spoofing,"Spoofing (standalone, 2016-2022)",15569
+2018,Overpayment,Overpayment/419,15512
+2018,Credit Card Fraud,Credit Card/Check Fraud,15210
+2018,Employment,Employment,14979
+2018,Tech Support,Tech Support,14408
+2018,Real Estate/Rental,Real Estate/Rental,11300
+2018,Government Impersonation,Government Impersonation,10978
+2018,Other,Other,10826
+2018,Lottery/Sweepstakes,Lottery/Sweepstakes/Inheritance,7146
+2018,Misrepresentation,Misrepresentation,5959
+2018,Investment,Investment,3693
+2018,Malware/Scareware/Virus,Malware/Scareware/Virus,2811
+2018,Corporate Data Breach,Corporate Data Breach,2480
+2018,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,2249
+2018,Denial of Service/TDoS,Denial of Service/TDoS,1799
+2018,Ransomware,Ransomware,1493
+2018,Crimes Against Children,Crimes Against Children,1394
+2018,Re-shipping,Re-shipping,907
+2018,Civil Matter,Civil Matter,768
+2018,Charity,Charity,493
+2018,Health Care Related,Health Care Related,337
+2018,Gambling,Gambling,181
+2018,Terrorism,"Terrorism (standalone, pre-2021)",120
+2018,Hacktivist,Hacktivist,77
+2019,Phishing/Vishing/Smishing/Pharming,Phishing,114702
+2019,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,61832
+2019,Extortion,Extortion,43101
+2019,Personal Data Breach,Personal Data Breach,38218
+2019,Spoofing,"Spoofing (standalone, 2016-2022)",25789
+2019,BEC/EAC,BEC/EAC,23775
+2019,Confidence Fraud/Romance,Confidence Fraud/Romance,19473
+2019,Identity Theft,Identity Theft,16053
+2019,Harassment/Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",15502
+2019,Overpayment,Overpayment/419,15395
+2019,Advanced Fee,Advanced Fee,14607
+2019,Employment,Employment,14493
+2019,Credit Card Fraud,Credit Card/Check Fraud,14378
+2019,Government Impersonation,Government Impersonation,13873
+2019,Tech Support,Tech Support,13633
+2019,Real Estate/Rental,Real Estate/Rental,11677
+2019,Other,Other,10842
+2019,Lottery/Sweepstakes/Inheritance,Lottery/Sweepstakes/Inheritance,7767
+2019,Misrepresentation,Misrepresentation,5975
+2019,Investment,Investment,3999
+2019,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,3892
+2019,Malware/Scareware/Virus,Malware/Scareware/Virus,2373
+2019,Ransomware,Ransomware,2047
+2019,Corporate Data Breach,Corporate Data Breach,1795
+2019,Denial of Service/TDoS,Denial of Service/TDoS,1353
+2019,Crimes Against Children,Crimes Against Children,1312
+2019,Re-shipping,Re-shipping,929
+2019,Civil Matter,Civil Matter,908
+2019,Health Care Related,Health Care Related,657
+2019,Charity,Charity,407
+2019,Gambling,Gambling,262
+2019,Terrorism,"Terrorism (standalone, pre-2021)",61
+2019,Hacktivist,Hacktivist,39
+2020,Phishing/Vishing/Smishing/Pharming,Phishing,241342
+2020,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,108869
+2020,Extortion,Extortion,76741
+2020,Personal Data Breach,Personal Data Breach,45330
+2020,Identity Theft,Identity Theft,43330
+2020,Spoofing,"Spoofing (standalone, 2016-2022)",28218
+2020,Misrepresentation,Misrepresentation,24276
+2020,Confidence Fraud/Romance,Confidence Fraud/Romance,23751
+2020,Harassment/Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",20604
+2020,BEC/EAC,BEC/EAC,19369
+2020,Credit Card Fraud,Credit Card/Check Fraud,17614
+2020,Employment,Employment,16879
+2020,Tech Support,Tech Support,15421
+2020,Real Estate/Rental,Real Estate/Rental,13638
+2020,Advanced Fee,Advanced Fee,13020
+2020,Government Impersonation,Government Impersonation,12827
+2020,Overpayment,Overpayment/419,10988
+2020,Other,Other,10372
+2020,Investment,Investment,8788
+2020,Lottery/Sweepstakes/Inheritance,Lottery/Sweepstakes/Inheritance,8501
+2020,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,4213
+2020,Crimes Against Children,Crimes Against Children,3202
+2020,Corporate Data Breach,Corporate Data Breach,2794
+2020,Ransomware,Ransomware,2474
+2020,Denial of Service/TDoS,Denial of Service/TDoS,2018
+2020,Malware/Scareware/Virus,Malware/Scareware/Virus,1423
+2020,Health Care Related,Health Care Related,1383
+2020,Civil Matter,Civil Matter,968
+2020,Re-shipping,Re-shipping,883
+2020,Charity,Charity,659
+2020,Gambling,Gambling,391
+2020,Terrorism,"Terrorism (standalone, pre-2021)",65
+2020,Hacktivist,Hacktivist,52
+2021,Phishing/Vishing/Smishing/Pharming,Phishing,323972
+2021,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,82478
+2021,Personal Data Breach,Personal Data Breach,51829
+2021,Identity Theft,Identity Theft,51629
+2021,Extortion,Extortion,39360
+2021,Confidence Fraud/Romance,Confidence Fraud/Romance,24299
+2021,Tech Support,Tech Support,23903
+2021,Investment,Investment,20561
+2021,BEC/EAC,BEC/EAC,19954
+2021,Spoofing,"Spoofing (standalone, 2016-2022)",18522
+2021,Credit Card Fraud,Credit Card/Check Fraud,16750
+2021,Employment,Employment,15253
+2021,Other,Other,12346
+2021,Terrorism/Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",12346
+2021,Real Estate/Rental,Real Estate/Rental,11578
+2021,Government Impersonation,Government Impersonation,11335
+2021,Advanced Fee,Advanced Fee,11034
+2021,Overpayment,Overpayment/419,6108
+2021,Lottery/Sweepstakes/Inheritance,Lottery/Sweepstakes/Inheritance,5991
+2021,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,4270
+2021,Ransomware,Ransomware,3729
+2021,Crimes Against Children,Crimes Against Children,2167
+2021,Corporate Data Breach,Corporate Data Breach,1287
+2021,Civil Matter,Civil Matter,1118
+2021,Denial of Service/TDoS,Denial of Service/TDoS,1104
+2021,Computer Intrusion,Computer Intrusion (2021 only),979
+2021,Malware/Scareware/Virus,Malware/Scareware/Virus,810
+2021,Health Care Related,Health Care Related,578
+2021,Re-shipping,Re-shipping,516
+2021,Gambling,Gambling,395
+2022,Phishing,Phishing,300497
+2022,Personal Data Breach,Personal Data Breach,58859
+2022,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,51679
+2022,Extortion,Extortion,39416
+2022,Tech Support,Tech Support,32538
+2022,Investment,Investment,30529
+2022,Identity Theft,Identity Theft,27922
+2022,Credit Card/Check Fraud,Credit Card/Check Fraud,22985
+2022,BEC,BEC/EAC,21832
+2022,Spoofing,"Spoofing (standalone, 2016-2022)",20649
+2022,Confidence/Romance,Confidence Fraud/Romance,19021
+2022,Employment,Employment,14946
+2022,Harassment/Stalking,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",11779
+2022,Real Estate,Real Estate/Rental,11727
+2022,Government Impersonation,Government Impersonation,11554
+2022,Advanced Fee,Advanced Fee,11264
+2022,Other,Other,9966
+2022,Overpayment,Overpayment/419,6183
+2022,Lottery/Sweepstakes/Inheritance,Lottery/Sweepstakes/Inheritance,5650
+2022,Data Breach,"Data Breach (merged category, 2022+)",2795
+2022,Crimes Against Children,Crimes Against Children,2587
+2022,Ransomware,Ransomware,2385
+2022,Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",2224
+2022,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,2183
+2022,SIM Swap,SIM Swap,2026
+2022,Malware,Malware/Scareware/Virus,762
+2022,Botnet,Botnet,568
+2023,Phishing/Spoofing,Phishing/Spoofing (merged 2023+),298878
+2023,Personal Data Breach,Personal Data Breach,55851
+2023,Non-payment/Non-Delivery,Non-Payment/Non-Delivery,50523
+2023,Extortion,Extortion,48223
+2023,Investment,Investment,39570
+2023,Tech Support,Tech Support,37560
+2023,BEC,BEC/EAC,21489
+2023,Identity Theft,Identity Theft,19778
+2023,Confidence/Romance,Confidence Fraud/Romance,17823
+2023,Employment,Employment,15443
+2023,Government Impersonation,Government Impersonation,14190
+2023,Credit Card/Check Fraud,Credit Card/Check Fraud,13718
+2023,Harassment/Stalking,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",9587
+2023,Real Estate,Real Estate/Rental,9521
+2023,Other,Other,8808
+2023,Advanced Fee,Advanced Fee,8045
+2023,Lottery/Sweepstakes/Inheritance,Lottery/Sweepstakes/Inheritance,4168
+2023,Overpayment,Overpayment/419,4144
+2023,Data Breach,"Data Breach (merged category, 2022+)",3727
+2023,Ransomware,Ransomware,2825
+2023,Crimes Against Children,Crimes Against Children,2361
+2023,Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",1697
+2023,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,1498
+2023,SIM Swap,SIM Swap,1075
+2023,Malware,Malware/Scareware/Virus,659
+2023,Botnet,Botnet,540
+2024,Phishing/Spoofing,Phishing/Spoofing (merged 2023+),193407
+2024,Extortion,Extortion,86415
+2024,Personal Data Breach,Personal Data Breach,64882
+2024,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,49572
+2024,Investment,Investment,47919
+2024,Tech Support,Tech Support,36002
+2024,Business Email Compromise,BEC/EAC,21442
+2024,Identity Theft,Identity Theft,21403
+2024,Employment,Employment,20044
+2024,Confidence/Romance,Confidence Fraud/Romance,17910
+2024,Government Impersonation,Government Impersonation,17367
+2024,Credit Card/Check Fraud,Credit Card/Check Fraud,12876
+2024,Other,Other,12318
+2024,Harassment/Stalking,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",11672
+2024,Real Estate,Real Estate/Rental,9359
+2024,Advanced Fee,Advanced Fee,7097
+2024,Crimes Against Children,Crimes Against Children,4472
+2024,Lottery/Sweepstakes/Inheritance,Lottery/Sweepstakes/Inheritance,3690
+2024,Data Breach,"Data Breach (merged category, 2022+)",3204
+2024,Ransomware,Ransomware,3156
+2024,Overpayment,Overpayment/419,2705
+2024,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,1583
+2024,Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",1360
+2024,SIM Swap,SIM Swap,982
+2024,Botnet,Botnet,587
+2024,Malware,Malware/Scareware/Virus,441
+2025,Phishing/Spoofing,Phishing/Spoofing (merged 2023+),191561
+2025,Extortion,Extortion,89129
+2025,Investment,Investment,72984
+2025,Personal Data Breach,Personal Data Breach,67456
+2025,Non-Payment/Non-Delivery,Non-Payment/Non-Delivery,56478
+2025,Tech/Customer Support,Tech Support,47794
+2025,Government Impersonation,Government Impersonation,32424
+2025,Identity Theft,Identity Theft,31675
+2025,Business Email Compromise,BEC/EAC,24768
+2025,Employment,Employment,24688
+2025,Confidence/Romance,Confidence Fraud/Romance,23159
+2025,Harassment/Stalking,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",21557
+2025,Other,Other,20031
+2025,Credit Card/Check Fraud,Credit Card/Check Fraud,18774
+2025,Real Estate,Real Estate/Rental,12368
+2025,Advanced Fee,Advanced Fee,7762
+2025,Lottery/Sweepstakes/Inheritance,Lottery/Sweepstakes/Inheritance,5623
+2025,Threats of Violence,"Harassment/Threats of Violence (merged w/ Terrorism, 2021+)",4826
+2025,Data Breach,"Data Breach (merged category, 2022+)",3963
+2025,Ransomware,Ransomware,3611
+2025,IPR/Copyright and Counterfeit,IPR/Copyright and Counterfeit,2386
+2025,Overpayment,Overpayment/419,2194
+2025,SIM Swap,SIM Swap,971
+2025,Malware,Malware/Scareware/Virus,893
+2025,Botnet,Botnet,715
+2025,Charity,Charity,662

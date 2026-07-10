@@ -233,3 +233,57 @@ print(f"\nFor comparison — damage_bands value_counts for Small (sizeb=2) ALL f
 small_all = attacked[attacked['sizeb'] == 2]
 print(pd.crosstab(small_all['damage_bands'], small_all['freq_group'],
                   rownames=['damage_bands'], colnames=['freq_group'], margins=True))
+
+# ---------------------------------------------------------------------------
+# Decomposition: is the "mean damage_band declines with freq" trend driven
+# entirely by the rising "no cost" (band=1) fraction, or does severity ALSO
+# decline conditional on nonzero cost? The earlier Analysis 2 in
+# attack_type_breakdown.py computed mean_db and P(damage>=b) unconditionally
+# (denominator = all firms in the freq group, including no-cost ones) - this
+# does not distinguish "no-cost share rising" from "conditional-on-nonzero
+# severity falling". Check both components separately, pooled across sizes
+# and per major attack type.
+# ---------------------------------------------------------------------------
+
+print()
+print("=" * 80)
+print("DECOMPOSITION: no-cost share vs. conditional-on-nonzero severity, by freq")
+print("Unconditional mean can fall purely because more firms report 'no cost',")
+print("even if the cost distribution among firms WITH a cost is unchanged.")
+print("=" * 80)
+
+
+def decompose_by_freq(subset, label):
+    print(f"\n--- {label} (n={len(subset)}) ---")
+    print(f"  {'freq_group':<12} {'n':>5} {'no_cost_%':>10} "
+          f"{'uncond_mean':>13} {'cond_mean(>1)':>14} {'n_nonzero':>10}")
+    for fg in sorted(subset['freq_group'].unique()):
+        sub = subset[subset['freq_group'] == fg]
+        n = len(sub)
+        if n < 5:
+            continue
+        no_cost_pct = 100 * (sub['damage_bands'] == 1).mean()
+        uncond_mean = sub['damage_bands'].mean()
+        nonzero = sub[sub['damage_bands'] > 1]
+        cond_mean = nonzero['damage_bands'].mean() if len(nonzero) >= 5 else float('nan')
+        print(f"  {FREQ_LABELS.get(fg, str(fg)):<12} {n:>5} {no_cost_pct:>9.1f}% "
+              f"{uncond_mean:>13.3f} {cond_mean:>14.3f} {len(nonzero):>10}")
+
+
+decompose_by_freq(attacked, "ALL attacked firms, pooled across size and type")
+
+# Per major attack type (disrupta = most disruptive type), pooled across sizes
+DISRUPTA_LABELS_LOCAL = {
+    1: 'Ransomware', 2: 'Other malware', 3: 'Denial of service',
+    4: 'Hacking', 5: 'Impersonation', 6: 'Phishing',
+}
+if 'disrupta' in attacked.columns:
+    for d, name in DISRUPTA_LABELS_LOCAL.items():
+        sub_type = attacked[attacked['disrupta'] == d]
+        if len(sub_type) < 20:
+            print(f"\n--- {name} (disrupta={d}): n={len(sub_type)}, too small — skipping ---")
+            continue
+        decompose_by_freq(sub_type, f"{name} (disrupta={d})")
+
+print()
+print("Done.")

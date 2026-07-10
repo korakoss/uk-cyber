@@ -282,4 +282,61 @@ run_mixture_test(
     group_col='phisheng_bands', group_labels=PHISHENG_LABELS, min_per_freq=8
 )
 
+# ---------------------------------------------------------------------------
+# Run: other attack types, pooled across all sizes
+#
+# Scope extension (Open Questions #3 / NOTES.md): the rank-2 test has so far
+# only been run for phishing (CONSISTENT) and impersonation (rank-2 holds but
+# degenerate, F_T ~ F_M). Repeat the same freq-grouped test for the remaining
+# attack types with enough volume to plausibly support it: ransomware,
+# other malware, denial of service, hacking. Unlike phishing, none of these
+# have a high-coverage real per-attack count variable to validate against
+# (coverage 6-20%, too sparse) — so this only tests the rank-2 structural
+# hypothesis itself, with no independent ground-truth check available.
+# ---------------------------------------------------------------------------
+
+print("\n\n" + "=" * 70)
+print("SCOPE EXTENSION: other attack types, pooled across all sizes")
+print("No real per-attack count data available for these types (unlike")
+print("phishing) — rank-2 result here is not independently validated.")
+print("=" * 70)
+
+for d, name in [(1, 'Ransomware'), (2, 'Other malware'), (3, 'Denial of service'), (4, 'Hacking'),
+                (11, 'Website/social takeover')]:
+    subset = attacked[attacked['disrupta'] == d].copy()
+    print(f"\n  [{name} (disrupta={d})]: n={len(subset)} total attacked firms with this as most-disruptive type")
+    print(f"    freq band counts: {subset['freq'].value_counts().sort_index().to_dict()}")
+    run_mixture_test(subset, f"{name} (disrupta={d}), all sizes pooled", min_per_freq=8)
+
+# ---------------------------------------------------------------------------
+# Coarser retry: bucket the 6 freq bands into 3 (once / occasional / frequent)
+# to see if the rank test can run at all for the small-n types.
+#
+# Caveat: the rank<=2 test needs >=3 groups to be non-trivial — any 2
+# distributions trivially lie on a line (rank<=2 automatically), so a 2-bucket
+# split wouldn't test anything. 3 buckets is the minimum that's still a real
+# test, but it's a much weaker test than the original 6-group phishing version
+# (max possible rank drops from 6 to 3, so "explained by 2 components" is a
+# less stringent bar to clear).
+# ---------------------------------------------------------------------------
+
+FREQ3_MAP = {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}
+FREQ3_LABELS = {1: 'Once only', 2: 'Occasional (2-11x/yr)', 3: 'Frequent (weekly+)'}
+
+print("\n\n" + "=" * 70)
+print("COARSER RETRY: 3-bucket freq (once / occasional / frequent)")
+print("Weaker test (max rank drops from 6 to 3) but usable at lower n.")
+print("=" * 70)
+
+for d, name in [(1, 'Ransomware'), (2, 'Other malware'), (3, 'Denial of service'), (4, 'Hacking'),
+                (11, 'Website/social takeover')]:
+    subset = attacked[attacked['disrupta'] == d].copy()
+    subset['freq3'] = subset['freq'].astype(int).map(FREQ3_MAP)
+    print(f"\n  [{name} (disrupta={d})]: n={len(subset)}")
+    print(f"    3-bucket counts: {subset['freq3'].value_counts().sort_index().to_dict()}")
+    run_mixture_test(
+        subset, f"{name} (disrupta={d}) — 3-bucket freq",
+        group_col='freq3', group_labels=FREQ3_LABELS, min_per_freq=5
+    )
+
 print("\nDone.")

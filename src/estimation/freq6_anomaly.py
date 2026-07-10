@@ -99,4 +99,73 @@ for engaged, label in [(False, 'no engagement'), (True, '>=1 engagement')]:
     print(f"    {label:<18} n={len(g):>3}  mean band={g['damage_bands'].mean():.2f}"
           f"  %no-cost={(g['damage_bands']==1).mean():.1%}")
 
+# ---------------------------------------------------------------------------
+# 4. Follow-up: is "targeted" (phishcon_bands) elevated at freq=6 even though
+#    engagement (phisheng_bands) isn't? These are different constructs
+#    (targeted = attack *looked* personalised; engaged = someone acted on it).
+# ---------------------------------------------------------------------------
+
+print("\n" + "=" * 78)
+print("4. Real TARGETED rate (phishcon_bands) by freq group")
+print("=" * 78)
+
+for f in [1, 2, 3, 4, 5, 6]:
+    g = phishing[(phishing['freq'] == f) & phishing['phishcon_bands'].isin(COUNT_LABELS.keys())]
+    pct_targeted = (g['phishcon_bands'] != 1).mean()
+    print(f"  {FREQ_LABELS[f]:<16} n={len(g):>4}  P(>=1 targeted)={pct_targeted:.1%}")
+
+print("\n  Cost outcome by targeted status, WITHIN freq=6 only:")
+f6c = f6[f6['phishcon_bands'].isin(COUNT_LABELS.keys())]
+for targeted, label in [(False, 'no targeted attack'), (True, '>=1 targeted attack')]:
+    mask = (f6c['phishcon_bands'] != 1) if targeted else (f6c['phishcon_bands'] == 1)
+    g = f6c[mask]
+    if len(g) == 0:
+        continue
+    print(f"    {label:<22} n={len(g):>3}  mean band={g['damage_bands'].mean():.2f}"
+          f"  %no-cost={(g['damage_bands']==1).mean():.1%}")
+
+# ---------------------------------------------------------------------------
+# 5. Multi-vector hypothesis: are freq=6 phishing firms actually under
+#    chronic, multi-type attack (ransomware/hacking/DoS alongside phishing),
+#    which would explain elevated cost through a mechanism that a
+#    phishing-specific engagement/targeting variable can't capture?
+# ---------------------------------------------------------------------------
+
+print("\n" + "=" * 78)
+print("5. Attack-type breadth by freq group (phishing firms, disrupta=6)")
+print("=" * 78)
+
+TYPE_NAMES = {
+    'type1': 'Ransomware', 'type2': 'Other malware', 'type3': 'Denial of service',
+    'type4': 'Hacking (bank accounts)', 'type5': 'Impersonation', 'type6': 'Phishing',
+    'type7': 'Unauth. access (staff)', 'type8': 'Unauth. access (outsiders)',
+    'type9': 'Other', 'type13': 'Unauth. access (students)',
+    'type15': 'Video conf. eavesdropping', 'type16': 'Website/social media takeover',
+}
+type_cols = [c for c in TYPE_NAMES if c in phishing.columns]
+types_bin = phishing[type_cols].apply(lambda s: (s == 1).astype(int))
+phishing = phishing.assign(n_types=types_bin.sum(axis=1))
+
+print(f"{'freq':<16}{'n':>5}{'mean # types':>14}{'% >1 type':>12}")
+for f in [1, 2, 3, 4, 5, 6]:
+    g = phishing[phishing['freq'] == f]
+    print(f"{FREQ_LABELS[f]:<16}{len(g):>5}{g['n_types'].mean():>14.2f}{(g['n_types']>1).mean():>12.1%}")
+
+print("\n  Which other attack types co-occur within freq=6 (n=47), vs. once-only (n=?):")
+f6_types = phishing[phishing['freq'] == 6]
+f1_types = phishing[phishing['freq'] == 1]
+for tc, name in TYPE_NAMES.items():
+    if tc == 'type6' or tc not in phishing.columns:
+        continue
+    p6 = (f6_types[tc] == 1).mean()
+    p1 = (f1_types[tc] == 1).mean()
+    print(f"    {name:<32} freq=6: {p6:>6.1%}   once-only: {p1:>6.1%}")
+
+print("\n  Other attack types' cost variables, for the 3 high-cost (band>=8) freq=6 outliers:")
+OTHER_COST_COLS = {'type1': 'ranscost_bands', 'type2': 'viruscost_bands',
+                    'type3': 'doscost_bands', 'type4': 'hackcost_bands',
+                    'type16': 'tkvrcost_bands'}
+hi_cols = ['sizeb', 'damage_bands'] + type_cols + [c for c in OTHER_COST_COLS.values() if c in hi.columns]
+print(hi[hi_cols].to_string(index=False))
+
 print("\nDone.")

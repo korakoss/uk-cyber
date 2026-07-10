@@ -1,0 +1,2095 @@
+Project Partners
+
+
+Project Partners
+
+
+
+As a threat-based and intelligence-driven national security organization, the
+
+
+                                                                                                                                                 FBI
+mission of the Federal Bureau of Investigation (FBI) is to protect and defend
+the United States against terrorist and foreign intelligence threats, to uphold and
+enforce the criminal laws of the United States and to provide leadership and
+criminal justice services to federal, state, municipal and international agencies
+and partners.
+
+
+
+
+The mission of the National White Collar Crime Center (NW3C) is to provide
+training, investigative support and research to agencies and entities involved
+in the prevention, investigation and prosecution of economic and high-tech
+crime. While NW3C has no investigative authority itself, its job is to help law
+enforcement agencies better understand and utilize tools to combat economic
+and high-tech crime. NW3C has other sections within its organization, including
+Training (in Computer Crime, Financial Crime and Intelligence Analysis),
+Research, and Investigative Support Services. NW3C is funded by an annual
+congressional appropriation through the Bureau of Justice Assistance (BJA).
+
+
+
+
+                                                                                Bureau of Justice Assistance
+                                                                                 U.S. Department of Justice
+
+
+    This project was supported by Grant No. 2011-BE-BX-K002 awarded by the Bureau of Justice Assistance. The Bureau of Justice Assistance is a component of the
+    Office of Justice Programs, which also includes the Bureau of Justice Statistics, the National Institute of Justice, the Office of Juvenile Justice and Delinquency
+    Prevention, the Office for Victims of Crime, and the Office of Sex Offender Sentencing, Monitoring, Apprehending, Registering, and Tracking. Points of view or
+    opinions in this document are those of the author and do not necessarily represent the official position or policies of the U.S. Department of Justice. The National
+    White Collar Crime Center (NW3C) is the copyright owner of this document. This information may not be used or reproduced in any form without express
+    written permission of NW3C. For questions or additional information, please contact Kathryn Rinker at 1-800-221-4424 or kmalbonrinker@nw3c.org. NW3CTM
+    and IC3® are trademarks of NW3C, Inc. and may not be used without written permission.
+    © 2013. NW3C, Inc. d/b/a the National White Collar Crime Center. All rights reserved.
+
+
+2   |   Internet Crime Complaint Center
+                                                                                                                                          Table of Contents
+
+
+
+Table of Contents
+
+
+      Executive Summary ................................................................................................................................4
+      Step-By-Step Guide to the IC3 .............................................................................................................. 5
+      2012 Complainant Demographics .......................................................................................................7
+      2012 Frequently Reported Internet Crimes ........................................................................................8
+      Case Highlights .......................................................................................................................................17
+      Protecting the Public .............................................................................................................................19
+      Conclusion ...............................................................................................................................................19
+      Appendix I: 2012 Scam Alerts and Public Service Announcements ............................................... 20
+      Appendix II: Online Crime Prevention Tips ..........................................................................................21
+      Appendix III: Complainant Statistics ................................................................................................... 23
+      Appendix IV: State by State Statistics .................................................................................................27
+
+
+
+
+                        Mission: To serve as a vehicle to receive, develop and refer criminal complaints
+                        regarding the rapidly expanding arena of cybercrime. The Internet Crime Complaint
+                        Center (IC3) gives the victims of cybercrime a convenient and easy-to-use reporting
+                        mechanism that alerts authorities to suspected criminal or civil violations. For
+                        law enforcement and regulatory agencies at the federal, state, local, tribal and
+                        international levels, IC3 provides a central referral mechanism for complaints
+                        involving Internet-related crimes.
+
+
+
+                                                                                                                          2012 Internet Crime Report                 |   3
+Executive Summary
+
+
+
+
+1		 Executive Summary
+                                              2012 Internet Crime Report
+
+
+     Now in its 13th year of operation, the Internet Crime Complaint Center (IC3®) has firmly established its role as a valuable
+     resource for both victims of Internet crime and the law enforcement agencies investigating and prosecuting these crimes. For
+     the victims, the IC3 provides a convenient and easy-to-use reporting mechanism that alerts authorities to suspected criminal
+     violations. For law enforcement agencies, the IC3 serves as a conduit to receive Internet-related complaints, to conduct research
+     related to them and to develop analytical reports based on them for state, local, federal, tribal or international law enforcement
+     and/or regulatory agencies. These agencies then develop investigations based on the forwarded information, as appropriate.
+
+     In 2012, the IC3 received 289,874 consumer complaints with an adjusted dollar loss of $525,441,1101, which is an 8.3-percent
+     increase in reported losses since 2011. In recognition of this increase, the IC3 expanded its efforts to inform the general public
+     about online scams by publishing several public service announcements and providing additional tips for Internet consumers.
+
+     The IC3’s success has attracted international interest. Canada, the United Kingdom and Germany use the IC3 as a model for
+     similar cybercrime centers. In furtherance of its continuing support of foreign law enforcement, the IC3 prepared dozens of
+     country-specific statistical reports and disseminated hundreds of complaint referrals to FBI Legat offices throughout the world.
+     In 2013, the IC3 will continue to pursue its mission to serve both the online public and law enforcement and regulatory agencies
+     throughout the entire global community.
+
+                                                                     Complaint Totals By Year
+
+
+
+
+     1
+      Method of evaluating loss amounts: The FBI IC3 staff reviewed for validity all complaints that reported a loss of more than $100,000. Analysts also converted losses reported
+     in foreign currencies to dollars. The final amounts of all reported losses above $100,000 for which the complaint information did not support the loss amount were excluded
+     from the statistics.
+
+
+4     |    Internet Crime Complaint Center
+                                                                                            Step-By Step Guide to IC3
+
+
+Step-By-Step Guide to IC3
+History of IC3
+The Internet Fraud Complaint Center — a partnership between      The IC3 analysts use automated matching systems to identify
+the FBI and NW3C (funded by BJA) — was established May           links and commonalities between numerous complaints and
+8, 2000, to address the ever-increasing incidence of online      combine the respective complaints into referral groups for
+fraud. Just three years later, in response to the exponential    law enforcement. Of the 289,874 complaints received in
+increase in cybercrime of all types, the Center changed its      2012, 39.64 percent (114,908) reported financial loss.
+name to the Internet Crime Complaint Center (IC3).
+                                                                                        The IC3 offers remote access
+Today, the IC3 accepts more                                                             capability, making data available to
+
+
+                                            289,874
+complaints in a single month                                                            law enforcement anywhere. This Web-
+than it received in its first six                                                       based access provides users the ability
+months. With more than two                                                              to aggregate victims and losses to
+                                              Complaints reported to IC3                substantiate criminal activity within
+million complaints received
+since its inception, the IC3                                                            the agency’s area of jurisdiction and
+serves as the nation’s portal for                                                       to enhance the development of cases.
+reporting Internet crime and suspicious activity.
+                                                                Although the IC3 may not immediately build all complaints
+How it Works                                                    into referrals, all complaints are helpful in identifying
+                                                                trends and building statistical reports. These trends are
+Victims file complaints with the IC3, which go into the         posted on the IC3’s website (www.ic3.gov) as public service
+extensive IC3 database. The IC3 analysts review and             announcements in a continuing effort to educate the general
+analyze individual complaint data, identifying and grouping     public on constantly evolving cyber scams and crime.
+complaints with similar information. These complaints
+are collated and referred to state, local, federal, tribal and  The IC3 encourages victims of Internet crime to report all
+international law enforcement. Analysts also collect relevant   incidents to the IC3 – whether or not an actual dollar loss is
+case information from both open- and closed-sources.            involved – due to the broad dissemination and varied uses of
+                                                                the data gathered from the complaints.
+
+
+
+
+                                                  Overall Statistics
+                           Total complaints received: 289,874
+                           Complaints reporting loss: 114,908
+                           Total Loss: $525,441,110.00
+                           Median dollar loss for those reporting a loss: $600.00
+                           Average dollar loss overall: $1,813.00
+                           Average dollar loss for those reporting loss: $4,573.00
+
+
+
+
+                                                                                            2012 Internet Crime Report    |   5
+Lifecycle of a Complaint
+
+
+    Lifecycle of a Complaint
+    All complaints filed with the IC3 follow a specific algorithm.   a case, Internet crime analysts compile information from both
+    The first step in this process includes someone filing a         open- and closed-source information databases and confer with
+    complaint to www.ic3.gov. The complaint information is           state, local, tribal, federal and international law enforcement
+    either pulled by law enforcement who access the database or      personnel. The chart below highlights how the process works.
+    analyzed and grouped with similar cases. While developing
+
+
+
+
+                                    The Lifecycle of a Complaint at IC3
+
+                                                                                         Cases for Law Enforcement
+                                                                                           •    Criminal Prosecution
+                                                                                           •    Restitution
+
+
+
+
+                                                                                               Public Service Announcements
+  ComplaintisisFiled
+Complaint       Filed                                                                            •    Media Distribution
+                                                                                                 •    Corporate Distribution
+                                                                                                 •    Website Posting
+
+
+
+
+                                                                                               Intelligence Reports
+                                                                                                •    Corporate Analysts
+                                                                                                •    Fusion Centers
+                                                                                                •    Crime Analysts
+
+
+
+
+6     |   Internet Crime Complaint Center
+                                                                                Complainant Demographics
+
+
+2012 Complainant Demographics
+
+These numbers reflect a trend in recent years in which   There was little change between 2011 and 2012 in the age
+the number of male and female complainants is            groups that filed complaints.
+equalizing.
+
+        Gender       Count       Percentage                             Age         Count     Percentage
+        Male         149,601          51.61%                        Under 20         9,378         3.24%
+        Female       140,273         48.39%                         20-39          112,797           39%
+                                                                    40-59          125,432           43%
+                                                                    60 & Over       42,267           14%
+
+
+                                           Top 10 States by Count:
+                                  Victim Complainants (Numbered by Rank)
+
+
+
+
+                   Top 5 Countries by Count: Victim Complainants (Numbered by Rank)
+
+
+
+
+                                                                                 2012 Internet Crime Report   |   7
+     2012 Frequently Reported Internet Crimes
+
+
+            2012 Frequently Reported Internet Crimes
+
+            Auto Fraud
+            In fraudulent vehicle sales, criminals attempt to sell vehicles                         to wire full or partial payment to a third-party agent via a
+            they do not own. An attractive deal is created by advertising                           wire transfer service, and to fax the payment receipt to the
+            vehicles for sale on various online platforms at prices below                           seller as proof of payment. The criminal pockets the money
+            market value. Often the fraudsters claim they must sell                                 but does not deliver a vehicle.
+            the vehicles quickly because they are relocating for work,
+                                                                                                    In a new twist, the criminals have attempted to pose as
+            being deployed by the military, or have a tragic family
+                                                                                                    dealers instead of individuals selling a single car. This
+            circumstance and are in need of money. Because of the
+                                                                                                    allows them to advertise multiple vehicles for sale at one
+            exigent circumstances, criminals refuse to meet in person
+                                                                                                    time on certain platforms, potentially exposing more
+            or allow inspection of the vehicles prior to the sale. To make
+                                                                                                    victims to the scam.
+            the deal appear legitimate, the criminal instructs the victim
+
+                                                                     Auto Fraud Demographics
+
+
+
+
+                                   Female                                                  Male                                               Total
+
+                    Age Range   Complaints         Loss                  Age Range    Complaints          Loss               Age Range    Complaints          Loss
+
+                    Under 20           299       $510,247.53             Under 20            349        $773,384.68          Under 20           648      $1,283,632.21
+                    20 - 29          1,580     $3,133,594.56             20 - 29           1,958      $5,022,406.66          20 - 29           3,538     $8,156,001.22
+                    30 - 39          1,406     $3,393,465.57             30 - 39            2,177    $11,960,457.40          30 - 39           3,583    $15,353,922.97
+                    40 - 49          1,453     $3,959,961.81             40 - 49            2,467     $9,891,248.53          40 - 49           3,920    $13,851,210.34
+                    50 - 59          1,123     $3,451,918.73             50 - 59            2,372    $11,951,607.16          50 - 59           3,495    $15,403,525.89
+                    60 & Over          421     $1,735,360.22             60 & Over         1,554      $8,788,682.12          60 & Over         1,975    $10,524,042.34
+                    Total            6,282    $16,184,548.42             Total             10,877     $48,387,786.55         Total           17,159     $64,572,334.97
+
+
+
+
+             60 & Over
+
+             50 - 59
+
+             40 - 49
+
+Age Range    30 - 39
+
+
+             20 - 29
+
+             Under 20
+
+                            0                       500                            1,000                         1,500                     2,000                         2,500
+
+                                                                                      Complaint Count                                                  Male          Female
+             Note: The percentages shown represent the number of total complaints by age group received for each frequently reported Internet fraud category.
+
+
+     8         |   Internet Crime Complaint Center
+                                                               2012 Frequently Reported Internet Crimes
+
+
+
+
+FBI Impersonation E-mail Scam
+The names of various government agencies and high-          Complaints that directly spoof the name of FBI Director Robert
+ranking government officials have been used in spam         Mueller continue to make up a large part of the government
+attacks in an attempt to defraud consumers. Government      impersonation e-mail scams. Those complaints include elements
+agencies do not send unsolicited e-mails. Complaints        of Nigerian scam letters (also known as 419 scams) incorporating
+related to spam e-mails purportedly sent from the FBI       get-rich inheritance scenarios, bogus lottery winning
+continued to be reported with high frequency to the IC3.    notifications and occasional extortion threats. A vast majority
+In 2012, the IC3 received about 47 complaints per day of    of the Mueller spoof complaints are simply reports of probable
+this type. With an average adjusted loss of approximately   fraud with no monetary losses incurred by the filer. Nevertheless,
+$141 per complaint, victims reported losing more than       the spoofs continue to pose a viable threat to national security by
+$6,604 to this scam every day.                              undermining public trust that directly impacts law enforcement’s
+                                                            ability to do its job.
+
+
+
+                             FBI Impersonation E-mail Scam Demographics
+
+
+
+                                                      Totals
+                                                Complaint Total
+                                                   14,141
+                                                   Total Loss
+                                Male             $4,672,985.06               Female
+                             Complaint Total                    Complaint Total
+                                8,230                              5,911
+                             Total Loss                               Total Loss
+                           $2,375,327.84                            $2,297,657.22
+
+
+
+
+                                                                                         2012 Internet Crime Report       |   9
+2012 Frequently Reported Internet Crimes
+
+
+
+ Intimidation/Extortion Scams
+ Intimidation and extortion scams have evolved over the            In a slight twist to the scam, the fraudster advised not only
+ years to include some of the following scams.                     were there warrants for the victims for non-payment, but
+                                                                   there were also warrants for hacking into a specific business
+ Telephone Calls
+                                                                   with the intent of obtaining customer information.
+ In a twist to the pop-up scareware scheme, victims began
+                                                                   Process Server
+ receiving telephone calls from individuals allegedly claiming
+ to be from legitimate well-known software companies.              The fraudsters added a somewhat different approach to
+ The victims of these calls were advised malware had been          their intimidation tactics when a person purporting to be
+ detected on their computers and posed an impending threat.        a process server for the court appeared at a victim’s place of
+ The fraudsters tried to instill a feeling of urgency so victims   employment and at the home of another victim allegedly to
+ would take immediate action and log on to their computers.        serve papers for a court date. The process server requested
+ Once the victims logged in, the fraudsters directed them          a debit card number for payment to be made in order to
+ to the utility area of the computers, where they appeared         avoid the court process.
+ to demonstrate how the computers were infected. The
+ fraudsters offered to rid the computers of the malware for        The Grandparent Scam
+ fees ranging from $49 to $450. When the victims agreed            A telephone scam targeting grandparents, and appropriately
+ to pay the fees, they were directed to a website where they       named “The Grandparent Scam,” has continued to resurface
+ entered a code or downloaded a software program that              over the years. The scam involves fraudsters calling elderly
+ allowed the fraudsters remote access to their computers.          individuals claiming to be a grandson or granddaughter or
+ Payday Loan                                                       other young relative in a legal or financial crisis. The crises
+                                                                   generally involve claims of being arrested or in a car accident
+ The payday loan scam involves victims receiving                   in another country. The callers create a sense of urgency and
+ harassing telephone calls from individuals claiming they          make a desperate plea for money, begging the grandparents
+ are delinquent in payments. The callers purport to be             not to tell the parents while often crying to help prevent the
+ representatives of federal government agencies, various law       potential victims from discovering the scam.
+ firms and other legitimate sounding agencies. The callers
+ have accurate information associated with the victims,            The callers also impersonated third parties, such as an
+ including Social Security number, date of birth, address,         attorney or an official, like a U.S. Embassy representative.
+ employer information, bank account numbers, and names             Once the potential victims appear to believe the caller,
+ and telephone numbers of relatives and friends. The callers       they are provided instructions to wire money to a specified
+ claim to be collectors for debt-collecting companies.             individual, often referred to as a bail bondsman, in order for
+                                                                   their grandchild to be released by foreign law enforcement.
+ The fraudsters are relentless in the number of calls made to      Investigations have determined potential victims were
+ the victims’ homes, cell phones and places of employment.         identified via mass-produced lead lists that target specific
+ The callers will not provide any details of the alleged payday    demographics.
+ loans and become abusive when questioned. The fraudsters
+ threaten the victims with legal actions, arrests, and in some     Complaints reported the callers were from Canada, the
+ cases, physical violence if they refuse to pay. Often, the        United States, Mexico, Haiti, Guatemala, Peru and the
+ callers resort to harassment of the victims’ relatives, friends   Dominican Republic. To further obfuscate themselves,
+ and employers.                                                    the callers used telephone numbers generated by free
+                                                                   apps, so the bogus telephone number appears on the
+ The fraudsters asked some victims to fax a statement              recipient’s caller ID.
+ agreeing to pay a specified amount via a prepaid money
+ card. It also stated the victim would never dispute the debt.
+
+
+
+
+10 |   Internet Crime Complaint Center
+                                                                                                  2012 Frequently Reported Internet Crimes
+
+
+
+
+                                                  Intimidation/Extortion Scams Demographics
+
+
+
+
+                                 Female                                                 Male                                                Total
+
+                  Age Range   Complaints         Loss                  Age Range   Complaints        Loss                  Age Range    Complaints        Loss
+
+                  Under 20            52        $31,813.03            Under 20             35         $6,389.53            Under 20            87        $38,202.56
+                  20 - 29            994       $380,155.16            20 - 29             557      $472,870.60             20 - 29          1,551       $853,025.76
+                  30 - 39          1,366       $960,378.34            30 - 39             787      $885,411.18             30 - 39          2,153     $1,845,789.52
+                  40 - 49          1,167     $1,782,876.94            40 - 49             671      $924,169.55             40 - 49          1,838     $2,707,046.49
+                  50 - 59            939     $1,342,004.81            50 - 59             647      $805,667.03             50 - 59          1,586     $2,147,671.84
+                  60 & Over          616     $1,934,196.72            60 & Over          493     $1,098,494.25             60 & Over        1,109     $3,032,690.97
+                  Total            5,134     $6,431,425.00            Total             3,190     $4,193,002.14            Total            8,324     $10,624,427.14
+
+
+
+
+            60 & Over
+
+            50 - 59
+
+            40 - 49
+
+Age Range   30 - 39
+
+
+            20 - 29
+
+            Under 20
+
+                          0                        300                            600                        900                          1,200                        1,500
+
+                                                                                    Complaint Count                                                  Male        Female
+            Note: The percentages shown represent the number of total complaints by age group received for each frequently reported Internet fraud category.
+
+
+
+
+                                                                                                                                   2012 Internet Crime Report | 11
+2012 Frequently Reported Internet Crimes
+
+
+ Hit Man Scam
+ The IC3 began receiving reports about the hit man/extortion            unless a ransom was paid within 48 hours. Personal
+ e-mail scheme seven years ago, and over time the content of            identifying information such as name, address and
+ the hit man e-mails has changed, but the intent remains the            telephone numbers were included to sway the recipient
+ same – to defraud people through disturbing e-mails.                   into believing the sender knew his or her locations.
+
+ The scam originated as a person sending an e-mail                  2009
+ portraying himself as a hit man hired to kill the victim. The
+                                                                    • The scammer started to use the names of international
+ e-mail instructed the recipient to pay an amount of money
+                                                                       terrorist groups such as Al Qaeda and the Ishmael Ghost
+ to ensure the hit man did not carry out the death contract.
+                                                                                                          Islamic Group. The hit
+ Although the e-mails
+                                                                                                          man claimed to be an
+ were unnerving for the                        Hit Man Scam Demographics                                  “Islamic hired killer”
+ recipients, the IC3 did
+                                                                                                          and a “suicide aid.” The
+ not receive reports of
+                                                                                                          recipient was advised to
+ loss of life or money.
+                                                              Totals                                      send money within 72
+ More       recently    the                                                                               hours or pay with his
+ scammers started to                                      Complaint Total                                 or her life.
+ utilize social media                                          1,354                                      • Hotels and other
+ to gather personal
+                                                             Total Loss                                   businesses       started
+ information about the
+                                                                                                          receiving e-mails that
+ recipient. Popular social                  Male          $1,884,002.11           Female                  claimed they were on a
+ networking sites provide
+                                                                                                          list of bombing targets.
+ a wealth of information
+ for scammers. Limiting                  Complaint Total               Complaint Total
+                                                                                                          2011/2012
+ the amount of personal                         725                             629
+ information published                                                                                    • The e-mails claimed
+                                          Total Loss                          Total Loss
+ online is a good                                                                                         that a team had been
+                                        $674,140.79                       $1,209,861.32                   hired to assassinate
+ practice for consumers
+ seeking to minimize the                                                                                  the recipients or their
+ chance that they will be                                                                                 families unless they
+ exploited by scammers.                                                                                   converted to Islam or
+                                                                       paid a fine of $8,000 within five business days. The threat
+ Below are highlights of how the hit man scam has evolved              also claimed the sender was part of a “jihad operation
+ over the years.                                                       to cleanse the United States and Europe of all religions
+                                                                       different from Islam, especially the Christians and Jews.”
+ 2007
+                                                                    • E-mails claiming to be sent by “Agent Bauer” of the
+ • The e-mails claimed they were sent by the FBI in London,
+                                                                       International Intelligence Bureau offer the recipient a
+      advising the FBI recently arrested an individual for the
+                                                                       chance to purchase a security alarm. Potential victims
+      murders of several citizens in the United States and the
+                                                                       are told that when the device is activated, representatives
+      United Kingdom. The e-mails claimed the recipient’s
+                                                                       of the International Intelligence Bureau will come to his
+      information was discovered on the arrested subject,
+                                                                       or her rescue.
+      identifying him or her as the next murder victim.
+                                                                    • Other reported e-mails claim that the potential victim
+ 2008
+                                                                       will be killed and the death will be staged to appear
+ • The recipient was advised to call a specified number for            accidental.
+      additional information and instructions. This new twist
+      claimed the recipient, or a loved one, would be kidnapped
+
+
+12 |   Internet Crime Complaint Center
+                                                                   2012 Frequently Reported Internet Crimes
+
+
+Scareware/Ransomware
+Extorting money from consumers by intimidating them with         Citadel Malware
+false claims pretending to be the federal government watching
+                                                             The Citadel malware is another attempt to extort money
+their Internet use and other intimidation tactics have evolved
+                                                             from Internet users through intimidation. The malware
+over the years to include some of the below highlighted scams.
+                                                             delivers ransomware named Reveton. Once the ransomware
+Pop-up Scareware Scheme                                      is installed, the user’s computer freezes and a warning of
+                                                             a violation of U.S. federal law displays on the screen. To
+In mid-2008, the IC3 identified a trend in which victims     intimidate the user further, the message declares the user’s
+reported they received pop-up messages alerting them that    IP address was identified as visiting child pornography and
+their computers were infected with numerous viruses. The     other illegal content. The user is instructed to pay a fine to
+pop-ups, known as                                                                                  the U.S. Department of
+scareware or fake                    Scareware/Ransomware Demographics                             Justice using prepaid
+or rogue anti-virus                                                                                money card services
+software, cannot easily                                                                            in order to unlock
+be closed by clicking                                                                              the computer. In
+“close” or the “X”                                     Totals                                      addition to installing
+button. The scareware                                                                              the        ransomware,
+baited users into                                 Complaint Total                                  the Citadel malware
+purchasing software                                     1,969                                      continued to operate
+that would allegedly                                                                               on the compromised
+remove viruses from                                   Total Loss
+                                                                                                   computer and could
+their computers. If the                Male         $134,899.85             Female                 be used to commit
+users clicked on the                                                                               online banking and
+pop-ups to purchase                                                                                credit card fraud.
+the software, forms                  Complaint Total             Complaint Total
+to collect payment                       1,325                            644                      IC3 Ransomware
+information appeared
+and the users were
+                                     Total Loss                         Total Loss                 The latest version of
+charged     for     the             $115,027.08                        $19,872.77                  ransomware reported
+bogus products. The                                                                                via complaints uses the
+scareware      showed                                                                              name of the Internet
+a list of reputable                                                                                Crime         Complaint
+software         icons;                                                                            Center   in  an attempt
+however, links to the websites were not operational. In      to extort money from Internet users. As in the Citadel
+some instances, whether the users clicked on the pop-ups     malware example, the victims’ computers are hijacked,
+or not, the scareware installed malicious code onto the      and a screen displays a warning of federal law violations.
+computers. The aggressive tactics of the scareware have      The victims are instructed to pay a fine to unlock their
+caused significant losses to users.                          computers using prepaid money card services. If they do
+                                                             not comply in a specified time frame, they are told they
+                                                             could face prosecution.
+
+
+
+
+                                                                                         2012 Internet Crime Report | 13
+2012 Frequently Reported Internet Crimes
+
+
+ Real Estate Fraud
+ Rental Scams
+ Criminals search websites that list homes for sale and take       the company becomes evasive — calls go unanswered,
+ information from legitimate ads and post it with their            numbers are disconnected and websites are inaccessible. In
+ own e-mail addresses on Craigslist® (without Craigslist’s         some cases, timeshare owners who have been defrauded by
+ consent or knowledge) under the housing rentals category.         a timeshare sales scheme have been subsequently contacted
+ To sweeten the pot, the houses are almost always listed with      by an unscrupulous timeshare fraud recovery company
+ below-market rental rates. An interested party will contact       as well. The representative from the recovery company
+ the “homeowner” via e-mail, and usually explain that he or        promises assistance in recovering money lost in the sales
+ she had to leave the United States quickly because of some        scam. Some recovery companies require an up-front fee for
+ missionary or contract work in Africa. Victims are usually        services rendered while others promise no fees will be paid
+ instructed to send money overseas—enough to cover the first       unless a refund is obtained for the timeshare owner. The IC3
+ and last month’s rent—via a wire transfer service (scammers       has identified some instances in which people involved with
+ often believe money cannot be traced once it gets picked          the recovery company also have a connection to the resale
+ up on the other end). Renters might also be asked to fill         company, raising the possibility that timeshare owners are
+ out credit applications asking for personal information like      being scammed twice by the same people.
+ credit history, Social Security numbers and work history. The
+                                                                   Loan Modification Scams
+ scammers then use this information to commit identity theft.
+                                                                   A loan modification scam often starts when a bogus loan
+ Timeshare Marketing Scams
+                                                                   company contacts a distraught homeowner and offers a
+ Timeshare owners across the country are being scammed             loan modification plan via phone call, e-mail or mailing. A
+ out of millions of dollars by unscrupulous companies that         homeowner may reach out to these companies after seeing
+ promise to sell or rent the properties. In the typical scam,      an ad online or in the newspaper. The loan modification
+ timeshare owners receive unexpected or uninvited telephone        typically includes a lower interest rate, an extension in the
+ calls or e-mails from criminals posing as sales representatives   length of the loan term, a change in the type of loan or any
+ for a timeshare resale company. The representative                combination of the three.
+ promises a quick sale, often within 60 to 90 days. The sales
+                                                                   As a part of this scam, the company instructs the homeowner
+ representatives frequently use high-pressure sales tactics
+                                                                   to cease all communication with lenders and stop making
+ to add a sense of urgency to the deal. Some victims have
+                                                                   mortgage payments until the loan modification process
+ reported that sales representatives pressured them by
+                                                                   is complete. The homeowner is required to send money
+ claiming there was a buyer waiting in the wings, either
+                                                                   to cover “processing fees” and “closing costs” in order
+ on the other line or even present in the office. Timeshare
+                                                                   for the new loan to be processed and approved. After the
+ owners who agree to sell are told that they must pay an up-
+                                                                   homeowner sends the money, the loan company ceases
+ front fee to cover anything from listing and advertising fees
+                                                                   communication, leaving the homeowner behind on actual
+ to closing costs. Many victims have provided credit cards to
+                                                                   mortgage payments and unable to recover funds sent to the
+ pay the fees ranging from a few hundred to a few thousand
+                                                                   bogus company.
+ dollars. Once the fee is paid, timeshare owners report that
+
+
+
+
+14 |   Internet Crime Complaint Center
+                                                                                                  2012 Frequently Reported Internet Crimes
+
+
+
+
+                                                              Real Estate Fraud Demographics
+
+
+
+
+                                 Female                                                   Male                                              Total
+
+                  Age Range   Complaints         Loss                  Age Range    Complaints       Loss                  Age Range    Complaints        Loss
+
+                  Under 20           161        $70,150.83            Under 20              53      $34,200.88             Under 20           214       $104,306.71
+                  20 - 29          2,412       $950,220.95            20 - 29             1,174    $729,555.84             20 - 29          3,586     $1,679,776.79
+                  30 - 39          2,180     $1,187,769.35            30 - 39             1,350    $792,440.36             30 - 39          3,530     $1,980,209.71
+                  40 - 49          1,826     $1,737,254.07            40 - 49             1,156   $1,797,935.49            40 - 49          2,982     $3,535,189.56
+                  50 - 59          1,557     $1,772,178.33            50 - 59             1,010   $2,366,252.65            50 - 59          2,567     $4,138,430.98
+                  60 & Over          793     $1,757,110.39            60 & Over            760    $2,223,710.68            60 & Over        1,553     $3,980,821.07
+                  Total            8,929      $7,474,683.92           Total               5,503   $7,944,095.90            Total           14,432    $15,418,734.82
+
+
+
+
+            60 & Over
+
+
+            50 - 59
+
+
+            40 - 49
+
+
+
+Age Range
+            30 - 39
+
+
+            20 - 29
+
+
+            Under 20
+
+                          0                        500                            1,000                      1,500                        2,000                       2,500
+
+                                                                                    Complaint Count                                                  Male        Female
+            Note: The percentages shown represent the number of total complaints by age group received for each frequently reported Internet fraud category.
+
+
+
+
+                                                                                                                                   2012 Internet Crime Report | 15
+2012 Frequently Reported Internet Crimes
+
+
+      Romance Scams
+      Perpetrators use the promise of love and romance to entice and                             gain the trust of their victims, they request money, ask victims to
+      manipulate online victims. A perpetrator scouts the Internet for                           receive packages and reship them overseas or seek other favors.
+      victims, often finding them in chat rooms, on dating sites and
+      even within social media networks. These individuals seduce                                These cyber criminals capitalize on the vulnerabilities of their vic-
+      victims with small gifts, poetry, claims of common interest or                             tims. This crime not only affects the victims financially, there are
+      the promise of constant companionship. Once the scammers                                   emotional and mental implications as well. The IC3 received 4,467
+                                                                                                 complaints and the victims’ losses totalled more than $55 million.
+
+
+
+                                                              Romance Scams Demographics
+
+
+
+
+                                 Female                                                 Male                                                 Total
+
+                  Age Range   Complaints         Loss                  Age Range    Complaints           Loss               Age Range    Complaints       Loss
+
+                  Under 20            32        $12,292.00            Under 20             21             $1,333.36         Under 20            53       $13,625.36
+                  20 - 29            215       $476,792.95            20 - 29             310           $567,525.84         20 - 29            525     $1,044,318.79
+                  30 - 39            579     $2,763,944.98            30 - 39             385       $1,994,145.94           30 - 39            964     $4,758,090.92
+                  40 - 49            414     $9,459,478.06            40 - 49             469       $1,879,853.81           40 - 49            883    $11,339,331.87
+                  50 - 59            650    $17,723,552.99            50 - 59             502       $3,052,669.05           50 - 59          1,152    $20,776,222.04
+                  60 & Over          659    $16,398,092.67            60 & Over           240       $1,661,919.43           60 & Over          899    $18,060,012.10
+                  Total            2,549     $46,834,153.65           Total             1,927        $9,157,447.43          Total            4,476    $55,991,601.08
+
+
+
+
+            60 & Over
+
+
+            50 - 59
+
+
+            40 - 49
+
+
+
+Age Range
+            30 - 39
+
+
+            20 - 29
+
+
+            Under 20
+
+                          0            100                200                 300                 400                 500              600             700             800
+
+                                                                                    Complaint Count                                                   Male       Female
+            Note: The percentages shown represent the number of total complaints by age group received for each frequently reported Internet fraud category.
+
+
+
+
+ 16 |           Internet Crime Complaint Center
+                                                                                                            Case Highlights
+
+
+Case Highlights
+Intellectual Property Rights, Trademark Infringement               Ayodele Abrahamm Saliu was indicted in January 2012.
+                                                                   Interpol members, acting on a U.S. extradition order,
+The IC3 referred 56 complaints about fake designer
+                                                                   arrested him on May 29, 2012, when he tried to leave South
+merchandise and non-delivery of purchased items to the
+                                                                   Africa. He was being sought in the United States to stand
+FBI’s St. Louis Field Office with a dollar loss of $145,333.
+                                                                   trial in 11 cases including charges of wire fraud, bank fraud,
+According to the complainants, Jeannine Buford hosted
+                                                                   computer intrusion and identity theft. Saliu’s schemes
+online auctions for authentic designer fashion apparel
+                                                                   resulted in victim losses in excess of $500,000.
+including purses, luggage and boots. Victims paid for items
+using credit cards, wire transfers to bank accounts, cashier      Wire Fraud
+and certified checks and online payment services. Some
+victims received damaged, non-authentic merchandise,              An individual using the name Jesse Gasior and other aliases
+while     others     received                                                                    contacted individuals who
+nothing. When the victims                                                                        had ads on Craigslist® seeking
+contacted Buford regarding                                                                       tickets to various events.
+their orders, she refused to
+                                 “IC3   complaints     are   one   of   the   basic    tools     Gasior claimed to have the
+refund their money.              routinely  reviewed   in my  investigative   assignment         tickets and asked the victims
+                                 to develop/confirm fraudulent activity using the to wire payments to Pittsburgh
+On September 20, 2012,           U.S. mail. As a result, three recent IC3 complaints addresses. The victims never
+Jeannine      Buford      was
+                                 required assistance from the IC3 analyst who received the tickets and filed
+sentenced to the maximum
+                                 prepared spreadsheets that led to two civil complaints with the IC3. The
+sentence of 57 months in
+federal prison and ordered to    administrative actions from our agency judicial IC3 referred 44 complaints to
+                                                                                                 the FBI’s Pittsburgh Division
+pay $225,500 in restitution      officer and the remaining complaint remains
+                                                                                                 for investigation.
+for her involvement in           under investigation.”
+the sale of counterfeit                       U.S. Postal Inspection Service IC3 User On April 24, 2012, Gasior was
+purses. In addition, she was                                                                     arrested. He was indicted on
+required to forfeit a 2011                                                                       four counts of wire fraud on
+Camaro, a 2012 Porsche, a                                                                        May 22, 2012. On October 15,
+large amount of electronic                                                                       2012, Gasior pleaded guilty to
+equipment, and the contents of her bank accounts.                 four counts  of wire fraud and had  his bond revoked, resulting
+                                                                  in his incarceration pending his sentencing hearing. Each
+Nigerian Scam                                                     count has a maximum sentence of 20 years in prison, a fine
+                                                                  of up to $250,000, or both.
+The IC3 provided complaints to the NASA Office of the
+Inspector General Computer Crimes Division in 2007                Timeshare Scam
+regarding a subject who was involved in “419” Nigerian
+schemes, phishing, bank fraud and credit card fraud. The          In July 2012, an IC3 analyst compiled a case against a
+IC3 conducted searches of names and e-mail addresses              company allegedly involved in a timeshare scam. The
+associated with the subject, Ayodele Saliu, and found             company contacted timeshare sellers claiming they had
+21 complaints with reported losses in excess of $10,000.          buyers. They sent sales agreements with the purchase
+Additional searches conducted for NASA included over              price and other information and advised owners they were
+130 e-mail addresses, 14 URLs, and 15 telephone numbers.          required to pay a processing fee that would be refunded at
+The IC3 identified an additional 88 related complaints with       the end of the sale. Complainants sent the money and never
+reported losses in excess of $68,000, which increased the         heard from the company again. The company website is no
+dollar loss already identified. One IC3 complaint produced        longer active and some of the phone numbers have been
+a lead in which the victim was interviewed, and the               disconnected. The IC3 received 19 complaints with a dollar
+information was used in the indictment against Saliu.             loss of $1,046,891.
+
+
+
+                                                                                              2012 Internet Crime Report | 17
+Case Highlights
+
+
+
+
+ Non-Delivery of Payment                                                                          Trans Am or Ford Mustang;
+                                                                                                  however, complainants either
+ In August 2012, an IC3                                                                           did not receive automobiles
+ analyst received a request         “The IC3 continues to be an invaluable resource               or received vehicles with
+ from an investigator in            for the University of Toledo Police Department.               numerous defects. The case
+ Nevada asking for assistance       Our number of Internet fraud crimes, including                was compiled and sent to the
+ on a case involving a non-
+                                    ‘Nigerian scams,’ phishing schemes, and                       North Carolina Department
+ delivery of payment scam.                                                                        of Justice, which is collecting
+ This scam began with
+                                    ‘employment’ opportunities, increase each year.
+                                    As an agency with local resources, we rely on our             bank      information      and
+ individuals         advertising                                                                  securing records from eBay
+ jewelry for sale on Craigslist®.   partnership with the IC3 to provide our victims
+                                                                                                  for possible prosecution.
+ The alleged suspect would          a voice in the process of investigating these
+ purchase advertised items          incidents. The IC3’s crime analysts are extremely Deceptive Trade
+ and claim payments for them        professional and can provide a great deal of
+ had been sent via PayPal®.                                                                        In December 2011, an
+                                    investigative knowledge regarding cyber crime. ”               analyst from the IC3 noticed
+ The suspect would then send
+ the sellers fraudulent e-mails
+                                                            Detective   Douglas    D. Hoffman      several complaints were filed
+ confirming the sales. Often,
+                                                  University  of Toledo  Police   Department       against Bruno’s Powersports.
+ the sellers discovered the                                                                        Nathan Pruss was advertising
+ confirmation e-mails were                                                                         ATVs for sale on eBay®.
+ fraudulent after they had                                                                         The advertised descriptions
+ shipped the items, leaving them with no items or payments.         listed the vehicles in excellent condition. However, when
+                                                                    the buyer received the ATV, it was in need of repair and
+ The IC3 analyst forwarded 16 complaints to the investigator        didn’t come close to matching the description. The analyst
+ along with several reports on suspects believed to be              compiled a case that had six complaints with $13,987 in
+ involved. One suspect was interviewed in October 2012,             reported losses and sent it to the Arkansas Office of the
+ and it was determined that he was an intermediary for              Attorney General and the Arkansas State Police. In August
+ a Nigerian scam. He said the jewelry was shipped to his            2012, the Attorney General’s Office informed the IC3 that
+ residence. He then pawned it and wired the money overseas.         civil action had been taken and the company had been fined
+ He was paid a small sum for his assistance. On December 4,         $10,000 for deceptive trade.
+ 2012, the suspect was arrested and charged with six counts
+ of felony theft and six counts of burglary. Additional charges     Romance Fraud
+ are pending. Several more complaints were filed against this       In December 2012, an IC3 analyst assisted a detective
+ suspect since the case was referred in August. The case now        in Utah with an ongoing investigation involving a secret
+ has a total of 59 complaints with $85,674 in reported losses.      shopper and romance scam. Victims were wiring money
+ Classic Car Fraud                                                 to a resident in Utah. The reported suspect was receiving
+                                                                   money and forwarding it to an individual in Africa. The
+ Five complaints with a total dollar loss of $57,535 were          detective was looking for additional victims who may have
+ filed against a North Carolina-based company. Ads on              sent money to the reported suspect. On December 15, 2012,
+ eBay® and/or the company website led complainants to              the IC3 analyst forwarded six complaints to the detective.
+ believe they were buying either a restored 1979 Pontiac
+
+
+
+
+18 |   Internet Crime Complaint Center
+                                                                                Protecting the Public/Conclusion
+
+
+Protecting the Public                                          Conclusion
+The IC3 understands the importance of informing the public     This report details the IC3’s efforts to prevent and reduce the
+about the dangers of cybercrime. The IC3’s public service      prevalence and impact of the crimes highlighted. Throughout
+announcements (PSAs) and scam alerts are posted online         2012, the IC3 continued to support law enforcement officers
+and distributed to law enforcement and various media           in their investigations of Internet-related crimes.
+outlets. The PSAs keep consumers informed on the latest
+cyber trends and keep industry partners up-to-date about       In 2012, the IC3 processed 289,874 complaints, representing
+Internet fraud. The scam alerts are based upon information     more than a half-billion dollars in losses. In accordance with
+from law enforcement and complaints submitted to the IC3.      its mission, the IC3 referred complaints to state, local, federal,
+These reports detail recent cybercrime trends and new twists   tribal and international law enforcement agencies. The IC3’s
+to previously existing cyber scams.                            support led to numerous investigations that resulted in
+The IC3 maintains the website www.lookstoogoodtobetrue.        arrests, seizures, convictions and restitution, among other
+com, which is an educational site developed by a joint         actions. The IC3 also produced monthly trend analysis
+federal law enforcement and industry task force. This site     reports, 23 public service announcements, scam alerts, and
+gives consumers an opportunity to submit and review            other publications to alert law enforcement and the general
+testimonials. Testimonials include stories in which            public about the pervasiveness of online crime.
+consumers were defrauded by a scam, or they did not fall
+victim to a scam, and how they avoided becoming a victim.      The IC3 continually reviews its services and analytical tools to
+                                                               incorporate the latest advances in technology and ensure law
+The PSAs, scam alerts and forms are all found on the IC3’s     enforcement needs are met.
+website, www.ic3.gov.
+
+
+
+
+       IC3 staff attend conferences and meetings across the country to educate law enforcement and the
+       public about services provided.
+
+
+
+
+                                                                                           2012 Internet Crime Report | 19
+Appendix I
+
+
+ Appendix I
+ 2012 Scam Alerts and Public Service Announcements*
+
+ Scam Alerts                                                     •   Spam Referencing U.S. Military Members and Gaddafi
+                                                                 •   Pox Party Online Advertisements
+ November Scam Alert (www.ic3.gov/media/2012/121126.aspx)
+ • Top Nine Fraud Attacks Impacting eCommerce                    Public Service Announcements
+ • Fraud Targeting Direct Sales Companies
+                                                                 Citadel Malware Continues to Deliver Reveton Ransomware in
+ October Scam Alert (www.ic3.gov/media/2012/121023.aspx)         Attempts to Extort Money
+ • Dating Extortion Scam                                         www.ic3.gov/media/2012/121130.aspx
+ • Payday Loan Scams
+ • New TDSS/TDL4 malware Infects 46 of Fortune 500               Fraud Alert – Cyber Criminals Targeting Financial Institution
+ • Top Words Cyber Criminals Use in Fake E-mails                 Employee Credentials to Conduct Wire Transfer Fraud
+                                                                 www.ic3.gov/media/2012/FraudAlertFinancialInstitutionEmployee
+ September Scam Alert (www.ic3.gov/media/2012/120919.aspx)       CredentialsTargeted.pdf
+ • Triangle Credit Card Fraud
+ • New Twist to the Work-at-Home Scheme                          Fraud Alert Involving E-mail Intrusions to Facilitate Wire
+ • New Twist to the Hit Man Scam                                 Transfers Overseas
+                                                                 www.ic3.gov/media/2012/E-mailFraudWireTransferAlert.pdf
+ August Scam Alert (www.ic3.gov/media/2012/120808.aspx)
+ • Fake Political Survey                                         Holiday Shopping Tips
+ • Online Phonebook                                              www.ic3.gov/media/2012/121120.aspx
+ • Free Credit Service Website
+                                                                 Joint FBI and DHS Public Service Announcement: Best Practices
+ • Citadel Malware Delivers Reveton Ransomware In Attempts To
+                                                                 for Recovery From the Malicious Erasure of Files
+    Extort Money
+                                                                 www.ic3.gov/media/2012/120120.aspx
+ • Spoofed Microsoft Update Includes Malware
+ • SYSRET 64-bit Operating System Privilege Escalation
+                                                                 Justice Department Officials Raise Awareness of Disaster Fraud
+    Vulnerability on Intel CPU Hardware
+                                                                 Hotline
+ • Malicious PowerPoint File Contains Exploit, Drops Backdoor
+                                                                 www.ic3.gov/media/2012/121101.aspx
+ May Scam Alert (http://www.ic3.gov/media/2012/120523.aspx)
+                                                                 Lawyers’ Identities Being Used for Fake Websites and Solicitations
+ • Exposing Bad Clients in the Escort Community
+                                                                 www.ic3.gov/media/2012/120914.aspx
+ • US Airways Phishing E-mail Containing Malware
+                                                                 Malware Installed on Travelers’ Laptops through Software
+ April Scam Alert (www.ic3.gov/media/2012/120420.aspx)
+                                                                 Updates on Hotel Internet Connections
+ • Investment Scam
+                                                                 www.ic3.gov/media/2012/120508.aspx
+ • Blackhole Exploit Kit 1.2.3 Released
+ • Termination of Your Certified Public Accountant (CPA)         New Variation on Telephone Collection Scam Related to
+     License Spam Campaign Containing Malware                    Delinquent Payday Loans
+ • Want to Get Paid to Drive Your Own Car?                       www.ic3.gov/media/2012/120221.aspx
+ • Online Property Rental Scenarios
+                                                                 Smartphone Users Should Be Aware of Malware Targeting
+ March Scam Alert (www.ic3.gov/media/2012/120327.aspx)           Mobile Devices and Safety Measures to Help Avoid Compromise
+ • Fraudulent Utility Bill E-mail                                www.ic3.gov/media/2012/121012.aspx
+ • Businesses Targeted with E-mail Purportedly from the Better
+                                                                 Timeshare Marketing Scams
+    Business Bureau (BBB)
+                                                                 www.ic3.gov/media/2012/120125.aspx
+ • Moving Company Scams
+ • Browser Bot Infection                                         U.S. Law Firms Continue to be the Target of a Counterfeit
+ • HTML Attachments Used to Spread Malware                       Check Scheme
+                                                                 www.ic3.gov/media/2012/120312.aspx
+ February Scam Alert (www.ic3.gov/media/2012/120217.aspx)
+ • Mystery Shopper Scam to Evaluate Wire Transfer Services
+                                                                 * Note: No Scam Alerts were issued in January, June, July and
+                                                                 December.
+
+20 |   Internet Crime Complaint Center
+                                                                                                             Appendix II
+
+
+Appendix II
+Online Crime Prevention Tips
+
+Auction Fraud                                                    •   Beware when money is required up front for
+                                                                     instructions or products.
+•   Before you bid, contact the seller with any questions
+    you have. Review the seller’s feedback.                      •   Be suspicious when the job posting claims “no
+                                                                     experience necessary.”
+•   Be cautious when dealing with individuals outside of
+    your own country.                                            •   Do not give your Social Security number when first
+                                                                     interacting with your prospective employer.
+•   Ensure you understand refund, return, and warranty
+    policies.                                                    •   Be wary when replying to unsolicited e-mails for
+                                                                     work-at-home employment.
+•   Determine the shipping charges before you buy.
+                                                                 Identity Theft
+•   Be wary if the seller only accepts wire transfers or cash.
+                                                                 •   Ensure websites are secure before submitting a
+•   Consider insuring your item.
+                                                                     credit card number.
+Credit Card Fraud
+                                                                 •   Never throw away credit card or bank statements in
+•   If purchasing merchandise, ensure it is from a                   usable form.
+    reputable source. Do research to ensure legitimacy
+                                                                 •   Be aware of missed bills, which could indicate the
+    of the individual or company.
+                                                                     account has been taken over.
+•   Beware of providing credit card information through
+                                                                 •   Be cautious of scams requiring personal
+    unsolicited e-mails.
+                                                                     information.
+•   Promptly reconcile credit card statements to avoid
+                                                                 •   Never give a credit card number over the phone
+    unauthorized charges.
+                                                                     unless you make the call.
+Debt Elimination
+                                                                 •   Monitor credit statements monthly for any
+•   Know who you are doing business with – do your                   fraudulent activity. Review a copy of your credit
+    research. Contact the state Attorney General’s Office            report at least once a year.
+    or the State Corporation Commission to see if there
+                                                                 •   Report unauthorized transactions to bank or credit
+    are any registered complaints.
+                                                                     card companies as soon as possible.
+•   Be cautious when dealing with individuals outside
+                                                                 Investment Fraud, Ponzi and Pyramid Schemes
+    of your own country.
+                                                                 •   If the opportunity appears too good to be true, it
+•   Ensure that you understand all terms and
+                                                                     probably is.
+    conditions of any agreement.
+                                                                 •   Beware of promises to make fast profits.
+•   Be wary of businesses that operate from P.O. boxes
+    or mail drops.                                               •   Be wary of investments that offer high returns at
+                                                                     little or no risk.
+Employment/Business Opportunities
+                                                                 •   Be cautious when you are required to bring in
+•   Be wary of inflated claims of product effectiveness.
+                                                                     subsequent investors.
+•   Be cautious of exaggerated claims of possible
+                                                                 •   Do not invest in anything unless you understand
+    earnings or profits.
+                                                                     the deal.
+
+                                                                                          2012 Internet Crime Report | 21
+Appendix II
+
+
+
+
+ •   Independently verify the terms of any investment          •   Be wary if the ship-to address is yours but the name
+     that you intend to make. Beware of references given           on the package is not.
+     by the promoter.
+                                                               •   Do not accept packages you did not order.
+ •   Do not assume a company is legitimate based on
+     the appearance of the website.                            •   If you receive packages you did not order, either
+                                                                   refuse delivery or contact the company that sent
+ •   Be cautious when responding to investment offers              the package.
+     received through unsolicited e-mail.
+                                                               Romance Scams
+ Lotteries
+                                                               •   Be cautious of individuals who claim it was destiny
+ •   Be wary if you do not remember entering a lottery             or fate and you are meant to be together, or claim
+     or contest.                                                   God brought you to him/her. They often claim to
+                                                                   love you within 24-48 hours.
+ •   Be cautious if you receive a telephone call stating
+     you are the winner of a lottery.                          •   These individuals want your address to send you
+                                                                   flowers, candy and teddy bears, often purchased with
+ •   Beware of lotteries that charge a fee before                  stolen credit cards.
+     delivering your prize.
+                                                               •   They ask for your phone number, but when they call,
+ •   Be wary of demands to send additional money to be             you can barely understand them.
+     eligible for future winnings.
+                                                               •   Be wary if an individual tells you they are so in love
+ •   Know that it is a violation of federal law to play a          with you that they cannot live without you but they
+     foreign lottery via mail or phone.                            need you to send them some money so they can come
+ Phishing/Spoofing                                                 to see you. To them, love equals financial assistance.
+                                                                   If you do not send them money or help them out
+ •   Be suspicious of any unsolicited e-mail requesting            with what they ask, you do not love them.
+     personal information.
+                                                               •   They typically claim to be from the United States (or
+ •   Avoid filling out forms in e-mail messages that ask for       your local region) but they are overseas, or going
+     personal information. This could be a phishing scam.          overseas, mainly to Nigeria, sometimes the United
+                                                                   Kingdom, for business or family matters.
+ •   Always compare the link in the e-mail to the link
+     that you are actually directed to visit.                  Spam
+ •   Log on to the entity’s official website instead of        •   Do not open spam. Delete it.
+     “linking” to it from an unsolicited e-mail.
+                                                               •   Never respond to spam because this will confirm to
+ •   Contact the actual business that supposedly sent the          the sender that it is a valid e-mail address.
+     e-mail to verify if the e-mail is genuine.
+                                                               •   Have a primary and secondary e-mail address
+ Reshipping                                                        — one for people you know and one for all other
+                                                                   purposes.
+ •   Be cautious if you are asked to ship packages to an
+     “overseas home office.”                                   •   Avoid giving out your e-mail address unless you
+                                                                   know how it will be used.
+ •   Be suspicious if an individual states that his country
+     will not allow direct business shipments from the         •   Never purchase anything advertised through
+     United States.                                                unsolicited e-mail.
+
+
+
+22 |   Internet Crime Complaint Center
+                                                                                                                                   Appendix III
+
+
+Appendix III
+Complainant Statistics
+
+
+               Complainant Statistics by State*
+
+
+                  Rank               State             Percent         Rank                 State                Percent
+                     1        California                13.40%           27        Louisiana                          1.15%
+                     2        Florida                    7.97%           28        Connecticut                        1.08%
+                     3        Texas                      7.22%           29        Kentucky                           1.08%
+                     4        New York                   5.70%           30        Oklahoma                           0.95%
+                     5        New Jersey                 3.81%           31        Kansas                             0.84%
+                     6        Pennsylvania               3.69%           32        Arkansas                           0.80%
+                     7        Illinois                   3.50%           33        Utah                               0.78%
+                     8        Virginia                   3.29%           34        Iowa                               0.75%
+                     9        Ohio                       3.05%           35        Alaska                             0.65%
+                    10        Washington                 2.71%           36        New Mexico                         0.64%
+                    11        North Carolina             2.64%           37        Mississippi                        0.61%
+                    12        Georgia                    2.60%           38        West Virginia                      0.53%
+                    13        Maryland                   2.59%           39        Idaho                              0.49%
+                    14        Michigan                   2.58%           40        Hawaii                             0.47%
+                    15        Arizona                    2.52%           41        Nebraska                           0.46%
+                    16        Colorado                   2.34%           42        New Hampshire                      0.44%
+                    17        Tennessee                  1.99%           43        Maine                              0.40%
+                    18        Indiana                    1.86%           44        Montana                            0.33%
+                    19        Massachusetts              1.84%           45        District of Columbia               0.30%
+                    20        Missouri                   1.69%           46        Rhode Island                       0.30%
+                    21        Alabama                    1.54%           47        Delaware                           0.30%
+                    22        Wisconsin                  1.51%           48        Vermont                            0.19%
+                    23        Nevada                     1.50%           49        Wyoming                            0.19%
+                    24        Oregon                     1.44%           50        North Dakota                       0.18%
+                    25        South Carolina             1.40%           51        South Dakota                       0.16%
+                    26        Minnesota                  1.31%
+               *Note: This is the total number of complaints from each state and the District of Columbia. This total includes
+               complaints that list dollar loss amounts and complaints that do not list dollar loss amounts. Also, 7.55% (7,652)
+               of the complainants did not provide location information. Figures were rounded to the nearest hundredth percent
+               and do not total 100%.
+
+
+
+
+                                                                                                             2012 Internet Crime Report | 23
+Appendix III
+
+
+
+
+       Complainant Loss by Victim State*
+
+
+   Rank                State                    Loss              Percent         Rank                State                       Loss                 Percent
+        1        California              $68,160,064.06            16.48%          27        Minnesota                        $4,715,270.96                  1.14%
+        2        Florida                 $34,419,348.21             8.32%          28        Connecticut                      $4,106,121.92                  0.99%
+        3        Texas                   $30,445,492.21             7.36%          29        Louisiana                        $3,941,008.84                  0.95%
+        4        New York                $28,108,596.87             6.80%          30        Oklahoma                         $3,797,584.67                  0.92%
+        5        Illinois                 $14,316,107.72            3.46%          31        Arkansas                         $3,564,473.92                  0.86%
+        6        Pennsylvania            $14,301,577.27             3.46%          32        Kansas                           $3,370,320.31                  0.81%
+        7        Georgia                 $12,150,521.46             2.94%          33        Iowa                             $3,288,725.60                  0.80%
+        8        Virginia                $12,111,408.23             2.93%          34        Utah                             $3,006,580.27                  0.73%
+        9        New Jersey              $11,933,510.08             2.88%          35        West Virginia                    $2,668,497.89                  0.65%
+       10        Washington              $11,515,862.19             2.78%          36        New Mexico                       $2,366,605.97                  0.57%
+       11        Arizona                 $11,484,211.86             2.78%          37        Hawaii                           $2,301,640.06                  0.56%
+       12        North Carolina          $10,215,268.07             2.47%          38        Idaho                            $2,096,452.47                  0.51%
+       13        Ohio                      $9,876,913.03            2.39%          39        Delaware                         $1,849,420.89                  0.45%
+       14        Maryland                  $9,763,989.79            2.36%          40        Alaska                           $1,665,603.33                  0.40%
+       15        Michigan                  $8,783,165.18            2.12%          41        Mississippi                      $1,576,410.57                  0.38%
+       16        Colorado                  $8,358,573.07            2.02%          42        North Dakota                     $1,500,790.71                  0.36%
+       17        Tennessee                $7,327,960.99             1.77%          43        Nebraska                         $1,400,493.44                  0.34%
+       18        Massachusetts            $7,134,399.29             1.72%          44        Maine                            $1,213,899.63                  0.29%
+       19        Missouri                  $7,108,501.55            1.72%          45        Rhode Island                     $1,173,071.60                  0.28%
+       20        Indiana                   $7,031,361.01            1.70%          46        New Hampshire                    $1,098,554.35                  0.27%
+       21        Nevada                   $6,840,663.99             1.65%          47        Montana                          $1,080,190.98                  0.26%
+       22        Wisconsin                 $6,247,486.18            1.51%          48        District of Columbia               $765,478.50                  0.19%
+       23        Oregon                    $6,166,365.10            1.49%          49        Wyoming                            $613,214.95                  0.15%
+       24        South Carolina            $5,713,903.04            1.38%          50        South Dakota                       $592,790.31                  0.14%
+       25        Alabama                  $5,093,048.54             1.23%          51        Vermont                            $563,267.87                  0.14%
+       26        Kentucky                  $4,739,164.07            1.15%
+       *Note: This is the total number of complaints from each state and the District of Columbia. Of the complaints, 27,340 ($22,940,921) did not provide
+       location information. Percentages were rounded to the nearest hundredth and do not add to precisely 100 percent.
+
+
+
+
+24 |     Internet Crime Complaint Center
+                                                                                                                           Appendix III
+
+
+
+
+Complainant Statistics by Country*
+
+
+    Rank                State              Percent         Rank                   State                 Percent
+       1        United States               91.19%           26        Portugal                              0.08%
+       2        Canada                       1.43%           27        Argentina                             0.07%
+       3        United Kingdom               0.88%           28        Greece                                0.07%
+       4        Australia                    0.68%           29        Indonesia                             0.07%
+       5        India                        0.59%           30        Afghanistan                           0.06%
+       6        Macedonia                    0.37%           31        United Arab Emirates                  0.06%
+      7         Puerto Rico                  0.21%           32        Colombia                              0.06%
+      8         Brazil                       0.19%           33        Saudi Arabia                          0.06%
+      9         Mexico                       0.19%           34        Ireland                               0.06%
+      10        France                       0.19%           35        China                                 0.06%
+      11        South Africa                 0.18%           36        Romania                               0.06%
+      12        Philippines                  0.16%           37        Japan                                 0.06%
+      13        Germany                      0.15%           38        Hong Kong                             0.06%
+      14        Netherlands                  0.14%           39        Poland                                0.06%
+      15        Belgium                      0.12%           40        Switzerland                           0.05%
+      16        Spain                        0.12%           41        Turkey                                0.05%
+      17        Russian Federation           0.12%           42        Thailand                              0.05%
+      18        Italy                        0.11%           43        Norway                                0.05%
+      19        Israel                       0.10%           44        Ukraine                               0.04%
+      20        New Zealand                  0.10%           45        Denmark                               0.04%
+      21        Pakistan                     0.10%           46        Egypt                                 0.04%
+      22        Malaysia                     0.08%           47        Republic of Korea                     0.04%
+      23        Singapore                    0.08%           48        Bulgaria                              0.03%
+      24        Sweden                       0.08%           49        Hungary                               0.03%
+      25        Nigeria                      0.08%           50        Chile                                 0.03%
+*Note: This total of complaints represents the top 50 countries that reported to the IC3. This total includes complaints
+that list dollar loss amounts and complaints that do not list dollar loss amounts. Figures were rounded to the nearest
+hundredth percent and do not total 100%.
+
+
+
+
+                                                                                                  2012 Internet Crime Report | 25
+Appendix III
+
+
+
+
+   Complainant Loss by Victim Country*
+
+
+        Rank               State                     Loss               Percent        Rank               State                   Loss            Percent
+          1         United States             $436,604,854.17            83.09%          26        Austria                   $972,691.33             0.19%
+          2         Canada                     $11,674,888.68             2.22%          27        Belgium                   $929,988.43             0.18%
+          3         United Kingdom              $7,182,281.40             1.37%          28        Sweden                    $775,663.43             0.15%
+          4         Australia                   $6,363,070.41             1.21%          29        Macedonia                 $765,840.14             0.15%
+          5         UAE**                        $5,077,979.17             0.97%         30        Pakistan                  $755,290.84             0.14%
+           6        India                        $3,740,736.53             0.71%         31        Portugal                  $728,714.70             0.14%
+           7        South Africa                 $2,692,682.45             0.51%         32        Switzerland               $726,506.02             0.14%
+           8        Nigeria                      $2,552,944.03             0.49%         33        Thailand                  $688,853.50             0.13%
+           9        Malaysia                     $1,952,399.20             0.37%         34        Indonesia                 $650,508.22             0.12%
+          10        Singapore                    $1,870,987.01             0.36%         35        New Zealand               $593,263.37             0.11%
+          11        China                        $1,802,677.77             0.34%         36        Norway                    $581,859.17             0.11%
+          12        Brazil                       $1,783,651.66             0.34%         37        Colombia                  $568,795.06             0.11%
+          13        Mexico                       $1,781,214.82             0.34%         38        Bulgaria                  $540,008.50             0.10%
+          14        Germany                      $1,716,441.98             0.33%         39        Croatia                   $529,642.36             0.10%
+          15        Netherlands                  $1,626,795.56             0.31%         40        Denmark                   $479,902.17             0.09%
+          16        Russian Federation           $1,575,918.31             0.30%         41        Kuwait                    $431,193.48             0.08%
+          17        Korea                        $1,539,751.66             0.29%         42        Chile                     $422,664.88             0.08%
+          18        Italy                        $1,372,370.43             0.26%         43        Ukraine                   $420,674.23             0.08%
+          19        Japan                        $1,352,920.06             0.26%         44        Poland                    $419,233.29             0.08%
+          20        Puerto Rico                  $1,332,401.92             0.25%         45        Egypt                     $412,396.21             0.08%
+          21        France                       $1,292,637.71             0.25%         46        Greece                    $393,388.48             0.07%
+          22        Spain                        $1,248,771.24             0.24%         47        Aruba                     $393,155.00             0.07%
+          23        Philippines                  $1,226,776.35             0.23%         48        Argentina                 $373,823.15             0.07%
+          24        Hong Kong                    $1,169,368.89             0.22%         49        Turks and Caicos          $371,694.62             0.07%
+          25        Saudi Arabia                  $998,406.22              0.19%         50        Iran                      $324,270.95             0.06%
+
+       *Note: This is the total number of complaints from the top 50 countries. Percentages were rounded to the nearest hundredth and do not add up to
+       precisely 100%. **UAE indicates the United Arab Emirates.
+
+
+
+
+26 |    Internet Crime Complaint Center
+                                                                                                                                                       Appendix IV
+ Appendix IV
+ State by State Statistics*
+       Alabama
+
+
+
+                                      Male                                           Female
+ Age Range          Complaints                Loss                  Complaints         Loss      Total Complaints                                   Total Loss
+ Under 20                   45               $11,505.76                      63       $59,220.60             108                                      $70,726.36
+ 20 - 29                   319              $381,642.60                     374      $238,179.75             693                                     $619,822.35
+ 30 - 39                  333               $468,486.07                     428      $412,027.46             761                                     $880,513.53
+ 40 - 49                  349               $324,374.26                     409      $496,646.69             758                                     $821,020.95
+ 50 - 59                   337              $879,889.73                     390      $607,867.35             727                                   $1,487,757.08
+ 60 & Over                342              $400,646.59                      270      $812,561.68             612                                   $1,213,208.27
+ Total                  1,725             $2,466,545.01                  1,934     $2,626,503.53           3,659                                   $5,093,048.54
+                                                                           National Rank                21                                              25
+                          Alaska
+
+
+
+                                        Male                                          Female
+  Age Range          Complaints                Loss                   Complaints                   Loss       Total Complaints                       Total Loss
+  Under 20                   10                $2,585.00                            4               $5,871.44               14                          $8,456.44
+  20 - 29                    79               $47,264.25                           64             $94,548.91              143                         $141,813.16
+  30 - 39                    70             $525,063.44                            77             $36,977.53              147                         $562,040.97
+  40 - 49                    77               $28,049.26                           92            $166,886.52              169                         $194,935.78
+  50 - 59                  785               $377,253.17                          103            $266,257.76              888                         $643,510.93
+  60 & Over                  73               $32,578.16                          108             $82,267.89              181                         $114,846.05
+  Total                  1,094             $1,012,793.28                          448            $652,810.05            1,542                       $1,665,603.33
+                                                                                 National Rank                                   35                         40
+                    Arizona
+
+
+                                         Male                                          Female
+   Age Range          Complaints                Loss                   Complaints                  Loss      Total Complaints   Total Loss
+   Under 20                   75               $22,910.74                       85                $60,453.96             160     $83,364.70
+   20 - 29                   437              $380,500.53                      481               $434,317.09             918     $814,817.62
+   30 - 39                   515              $596,847.69                      555               $436,224.51           1,070  $1,033,072.20
+   40 - 49                  548               $798,876.15                      636               $718,632.60           1,184  $1,517,508.75
+   50 - 59                  628             $1,203,750.40                      656             $1,009,954.95           1,284 $2,213,705.35
+   60 & Over                867             $2,749,304.67                      507             $3,072,438.57           1,374   $5,821,743.24
+   Total                  3,070             $5,752,190.18                   2,920              $5,732,021.68           5,990 $11,484,211.86
+                                                                                   National Rank                                  15                         11
+* Note: Complainant counts represent the number of individual complaints received from each state and do not represent the number of individual persons filing a complaint.
+
+                                                                                                                             2012 Internet Crime Report | 27
+Appendix IV
+
+             Arkansas
+
+
+
+                            Male                        Female
+ Age Range     Complaints         Loss        Complaints         Loss      Total Complaints     Total Loss
+ Under 20              33        $12,468.87            31       $17,166.13               64       $29,635.00
+ 20 - 29              175      $168,024.98            189      $134,579.04             364      $302,604.02
+ 30 - 39              164      $212,878.04            207      $297,923.04             371       $510,801.08
+ 40 - 49              170       $570,847.66           223      $181,819.09             393      $752,666.75
+ 50 - 59              174     $1,152,951.42           180      $211,576.58             354     $1,364,528.00
+ 60 & Over           235       $357,081.44            137      $247,157.63             372       $604,239.07
+ Total                951     $2,474,252.41           967    $1,090,221.51           1,918     $3,564,473.92
+                                                     National Rank                32                31
+           California
+
+
+
+
+                            Male                        Female
+ Age Range     Complaints     Loss            Complaints         Loss      Total Complaints     Total Loss
+ Under 20             515   $461,706.76               457     $282,479.72              972       $744,186.48
+ 20 - 29            2,578 $3,381,510.06             2,907    $1,991,290.27           5,485     $5,372,800.33
+ 30 - 39            3,137 $6,492,948.07             2,816    $4,614,085.89           5,953    $11,107,033.96
+ 40 - 49           3,122 $7,661,328.70             3,255     $7,759,465.10           6,377    $15,420,793.80
+ 50 - 59           3,446 $10,073,514.21            3,598     $8,313,675.16           7,044    $18,387,189.37
+ 60 & Over         3,285  $9,095,181.56            2,664     $7,992,878.56           5,949    $17,088,060.12
+ Total            16,083 $37,166,189.36           15,697    $30,953,874.70          31,780    $68,120,064.06
+                                                     National Rank                 1                1
+
+                Colorado
+
+
+
+                            Male                        Female
+ Age Range     Complaints         Loss        Complaints         Loss      Total Complaints     Total Loss
+ Under 20              71        $55,266.50            70       $66,288.98             141      $121,555.48
+ 20 - 29             436       $340,852.96            495      $316,024.71             931       $656,877.67
+ 30 - 39              527       $508,818.30           529      $339,997.26           1,056      $848,815.56
+ 40 - 49             585       $953,069.35            610      $908,390.74           1,195     $1,861,460.09
+ 50 - 59              613     $1,273,742.60           614      $886,003.44           1,227     $2,159,746.04
+ 60 & Over            575     $1,208,574.19           428    $1,501,544.04           1,003     $2,710,118.23
+ Total             2,807      $4,340,323.90         2,746    $4,018,249.17           5,553     $8,358,573.07
+                                                     National Rank                16                16
+
+28 |   Internet Crime Complaint Center
+                                                                                                 Appendix IV
+
+             Connecticut
+
+
+
+
+                          Male                          Female
+Age Range   Complaints         Loss           Complaints         Loss      Total Complaints     Total Loss
+Under 20            45        $22,917.60               32       $20,140.04               77       $43,057.64
+20 - 29            219       $264,822.74              243      $102,857.08             462      $367,679.82
+30 - 39           225        $322,933.28              215      $340,676.25             440      $663,609.53
+40 - 49           263        $354,167.93              291      $377,523.01             554      $731,690.94
+50 - 59           290        $488,057.81              289      $810,199.17             579    $1,298,256.98
+60 & Over          279       $399,901.67              183      $601,925.34             462     $1,001,827.01
+Total           1,321      $1,852,801.03           1,253     $2,253,320.89           2,574    $4,106,121.92
+                                                     National Rank                28                28
+        Delaware
+
+
+
+
+                         Male                           Female
+Age Range   Complaints            Loss        Complaints         Loss      Total Complaints    Total Loss
+Under 20            12           $36,545.26             9        $3,116.83               21      $39,662.09
+20 - 29             60           $50,604.82            52       $27,077.69             112        $77,682.51
+30 - 39             49          $153,111.84            67      $107,026.92             116      $260,138.76
+40 - 49             78          $117,612.19            78      $180,339.74             156      $297,951.93
+50 - 59             76           $35,367.38            85      $711,729.96             161       $747,097.34
+60 & Over           81          $221,685.83            73     $205,202.43              154      $426,888.26
+Total             356           $614,927.32           364    $1,234,493.57             720    $1,849,420.89
+                                                     National Rank                47                39
+
+            District of Columbia
+
+
+
+                         Male                          Female
+Age Range   Complaints        Loss            Complaints        Loss      Total Complaints     Total Loss
+Under 20             4        $1,806.99                10       $3,058.00               14        $4,864.99
+20 - 29             86       $49,033.82                93      $62,997.46             179      $112,031.28
+30 - 39             93       $83,558.06                93      $66,905.98             186      $150,464.04
+40 - 49             76       $97,790.97                66      $51,433.76             142      $149,224.73
+50 - 59             56       $86,436.78                67     $125,700.08             123      $212,136.86
+60 & Over           44       $89,350.40                45      $47,406.20               89     $136,756.60
+Total             359       $407,977.02               374     $357,501.48             733      $765,478.50
+                                                     National Rank               45                48
+
+                                                                                2012 Internet Crime Report | 29
+Appendix IV
+
+                  Florida
+
+
+
+                            Male                       Female
+ Age Range     Complaints     Loss            Complaints         Loss       Total Complaints   Total Loss
+ Under 20             271  $188,436.93                240      $221,105.17               511    $409,542.10
+ 20 - 29            1,318 $2,185,423.52            1,542     $1,045,625.84             2,860 $3,231,049.36
+ 30 - 39            1,570 $2,742,214.81            1,954     $2,279,272.09             3,524 $5,021,486.90
+ 40 - 49            2,103 $4,886,241.15            2,059      $3,810,114.01            4,162  $8,696,355.16
+ 50 - 59            1,914 $3,650,479.35             2,019    $3,618,463.95             3,933 $7,268,943.30
+ 60 & Over         2,385  $5,361,751.74            1,528     $4,430,219.65             3,913  $9,791,971.39
+ Total             9,561 $19,014,547.50            9,342 $15,404,800.71               18,903 $34,419,348.21
+                                                     National Rank                  2              2
+              Georgia
+
+
+
+
+                            Male                        Female
+ Age Range     Complaints         Loss        Complaints        Loss      Total Complaints  Total Loss
+ Under 20             105        $49,642.46           101      $47,723.32             206     $97,365.78
+ 20 - 29              478       $779,678.81           669     $427,713.51           1,147  $1,207,392.32
+ 30 - 39             636      $1,368,917.77           752     $740,197.59           1,388  $2,109,115.36
+ 40 - 49              627     $1,409,861.59           763   $1,046,528.49           1,390 $2,456,390.08
+ 50 - 59             594      $1,562,879.82           657   $1,663,883.28           1,251  $3,226,763.10
+ 60 & Over           440      $1,381,052.34           353   $1,672,442.48             793 $3,053,494.82
+ Total             2,880      $6,552,032.79        3,295    $5,598,488.67           6,175 $12,150,521.46
+                                                     National Rank                12               7
+                     Hawaii
+
+
+
+                            Male                        Female
+ Age Range     Complaints         Loss        Complaints         Loss      Total Complaints    Total Loss
+ Under 20              10         $1,167.95            10       $16,021.98               20      $17,189.93
+ 20 - 29               84        $56,005.41            79      $307,173.20             163      $363,178.61
+ 30 - 39              101        $51,438.18            86      $128,501.31             187      $179,939.49
+ 40 - 49              127       $183,050.26           103       $96,789.44             230      $279,839.70
+ 50 - 59              198       $598,442.44           117      $229,574.80             315      $828,017.24
+ 60 & Over           138        $304,407.36            82      $329,067.73             220      $633,475.09
+ Total               658      $1,194,511.60           477    $1,107,128.46           1,135    $2,301,640.06
+                                                     National Rank                40               37
+
+
+30 |   Internet Crime Complaint Center
+                                                                                             Appendix IV
+
+       Idaho
+
+
+
+
+                         Male                        Female
+Age Range   Complaints        Loss         Complaints        Loss      Total Complaints      Total Loss
+Under 20            18        $5,074.99             11         $181.08               29         $5,256.07
+20 - 29            109       $59,179.67             89      $25,894.65             198         $85,074.32
+30 - 39             93       $38,528.17            128      $47,555.32             221         $86,083.49
+40 - 49            115       $92,928.96            128    $905,064.19              243        $997,993.15
+50 - 59           128       $198,215.98            113     $348,677.21             241       $546,893.19
+60 & Over         136       $285,485.12            105      $89,667.13             241        $375,152.25
+Total             599       $679,412.89            574   $1,417,039.58           1,173      $2,096,452.47
+                                                  National Rank                39               38
+       Illinois
+
+
+
+
+                         Male                        Female
+Age Range   Complaints         Loss        Complaints         Loss      Total Complaints     Total Loss
+Under 20       166            $91,121.47       91            $34,924.70        257            $126,046.17
+20 - 29        714           $553,139.53      801           $336,609.49       1,515           $889,749.02
+30 - 39        737         $1,266,640.43      776           $570,476.19       1,513         $1,837,116.62
+40 - 49        756         $1,679,939.47      904         $2,003,044.43       1,660         $3,682,983.90
+50 - 59        828         $2,053,685.39     1,528        $3,378,401.39       2,356         $5,432,086.78
+60 & Over      567         $1,146,330.63      429         $1,201,794.60        996          $2,348,125.23
+Total         3,768        $6,790,856.92     4,529        $7,525,250.80       8,297        $14,316,107.72
+                                                  National Rank                 7                5
+      Indiana
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss         Complaints        Loss       Total Complaints    Total Loss
+Under 20            63       $64,234.39             51      $19,842.40              114       $84,076.79
+20 - 29           360       $221,049.44            444     $305,789.97              804      $526,839.41
+30 - 39           408       $557,189.32            499      $471,397.10             907    $1,028,586.42
+40 - 49           465       $910,773.28            544     $813,361.18            1,009    $1,724,134.46
+50 - 59            461     $936,426.66             500    $758.430.32               961    $1,694,856.98
+60 & Over          397    $1,170,062.93            234    $802,804.02               631    $1,972,866.95
+Total           2,154     $3,859,736.02          2,272   $3,171,624.99            4,426    $7,031,361.01
+                                                  National Rank                18               20
+
+                                                                            2012 Internet Crime Report | 31
+Appendix IV
+
+               Iowa
+
+
+                           Male                         Female
+Age Range     Complaints         Loss         Complaints         Loss      Total Complaints    Total Loss
+Under 20          29            $11,167.21        22             $8,603.54         51            $19,770.75
+20 - 29          157           $129,167.02       160           $116,365.70        317           $245,532.72
+30 - 39          147           $180,926.41       215           $276,952.81        362           $457,879.22
+40 - 49          165           $373,089.01       205           $452,016.55        370           $825,105.56
+50 - 59          155           $433,499.51       211           $633,684.41        366         $1,067,183.92
+60 & Over        199           $287,101.93       117           $386,151.50        316          $673,253.43
+Total            852         $1,414,951.09       930         $1,873,774.51       1,782        $3,288,725.60
+                                                     National Rank                 34              33
+
+
+
+                  Kansas
+
+
+                           Male                        Female
+Age Range     Complaints         Loss         Complaints        Loss      Total Complaints     Total Loss
+Under 20              38        $23,422.24             27       $6,566.14               65       $29,988.38
+20 - 29             186        $151,447.30            188     $148,119.03             374      $299,566.33
+30 - 39             188        $189,789.90            191      $65,766.56             379      $255,556.46
+40 - 49             189        $300,016.23            202     $571,729.74             391       $871,745.97
+50 - 59             232        $516,537.59            200     $324,050.78             432      $840,588.37
+60 & Over            193       $545,330.90            169     $527,543.90             362     $1,072,874.80
+Total             1,026      $1,726,544.16            977   $1,643,776.15           2,003     $3,370,320.31
+                                                     National Rank                31              32
+
+
+                      Kentucky
+
+
+
+                            Male                        Female
+ Age Range     Complaints         Loss        Complaints         Loss      Total Complaints    Total Loss
+ Under 20              38        $10,943.52            37       $37,218.87               75      $48,162.39
+ 20 - 29             234       $225,894.83            261     $122,338.50              495     $348,233.33
+ 30 - 39             255       $184,552.42            286     $284,142.67              541     $468,695.09
+ 40 - 49             235        $237,004.68           323     $498,732.46              558      $735,737.14
+ 50 - 59             238      $1,874,396.34           280     $413,928.49              518    $2,288,324.83
+ 60 & Over           185        $473,837.14           198      $376,174.15             383      $850,011.29
+ Total             1,185      $3,006,628.93        1,385    $1,732,535.14            2,570    $4,739,164.07
+                                                    National Rank                 29               26
+
+
+32 |   Internet Crime Complaint Center
+                                                                                              Appendix IV
+
+             Louisiana
+
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss         Complaints        Loss       Total Complaints     Total Loss
+Under 20            50       $37,494.57             36      $15,322.13                86       $52,816.70
+20 - 29           236       $325,248.10            291     $254,111.35              527       $579,359.45
+30 - 39           238       $302,742.51            330     $277,819.57              568       $580,562.08
+40 - 49            218      $275,685.77            331      $397,517.74             549       $673,203.51
+50 - 59           252       $528,697.69            309     $641,651.79              561     $1,170,349.48
+60 & Over          224      $536,327.69            216    $348,389.93               440       $884,717.62
+Total           1,218     $2,006,196.33         1,513    $1,934,812.51            2,731     $3,941,008.84
+                                                  National Rank                 27               29
+       Maine
+
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss         Complaints         Loss       Total Complaints    Total Loss
+Under 20            23        $3,678.92              8         $1,507.18               31       $5,186.10
+20 - 29             55       $63,926.78             74       $27,408.96              129       $91,335.74
+30 - 39             76       $41,110.49            101      $117,823.92              177      $158,934.41
+40 - 49            101      $349,752.25            103       $56,919.78              204      $406,672.03
+50 - 59           130       $111,401.47           125       $160,118.73              255      $271,520.20
+60 & Over          105      $191,634.23             64       $88,446.92              169      $280,081.15
+Total             490       $761,504.14            475      $452,225.49              965    $1,213,729.63
+                                                  National Rank                 43               44
+
+                 Maryland
+
+
+                         Male                       Female
+Age Range   Complaints         Loss        Complaints        Loss      Total Complaints       Total Loss
+Under 20            96       $68,522.41             66      $33,695.94             162        $102,218.35
+20 - 29            677      $722,198.22            503     $725,076.49           1,180       $1,447,274.71
+30 - 39            581     $1,417,277.48           637     $666,414.36           1,218      $2,083,691.84
+40 - 49            617    $1,197,859.47            691     $637,202.52           1,308      $1,835,061.99
+50 - 59           639     $1,332,586.62            678   $1,079,063.22           1,317      $2,411,649.84
+60 & Over          527      $877,875.13            434   $1,006,217.93             961      $1,884,093.06
+Total           3,137     $5,616,319.33         3,009    $4,147,670.46           6,146      $9,763,989.79
+                                                  National Rank                 13               14
+
+                                                                             2012 Internet Crime Report | 33
+Appendix IV
+
+                       Massachusetts
+
+
+
+                            Male                         Female
+ Age Range     Complaints          Loss        Complaints         Loss      Total Complaints     Total Loss
+ Under 20              79         $36,570.96            65       $32,690.26             144        $69,261.22
+ 20 - 29              415        $307,402.05           427      $345,515.19             842       $652,917.24
+ 30 - 39             422         $790,184.95           385      $371,026.59             807    $1,161,211.54
+ 40 - 49             459       $1,313,649.44           479      $785,109.86             938    $2,098,759.30
+ 50 - 59             538       $1,101,386.37           452      $783,725.65             990    $1,885,112.02
+ 60 & Over           393         $770,558.07           269      $496,579.90             662     $1,267,137.97
+ Total             2,306       $4,319,751.84         2,077    $2,814,647.45           4,383    $7,134,399.29
+                                                      National Rank                19                18
+
+               Michigan
+
+
+
+                            Male                         Female
+ Age Range     Complaints         Loss         Complaints        Loss      Total Complaints     Total Loss
+ Under 20            133         $46,057.11             86      $34,492.35             219        $80,549.46
+ 20 - 29             535        $412,171.67            577     $325,751.66           1,112       $737,923.33
+ 30 - 39             492        $464,984.17            620     $360,146.28           1,112       $825,130.45
+ 40 - 49              624       $976,335.14            799   $1,590,331.01           1,423     $2,566,666.15
+ 50 - 59             655      $1,951,312.21            667     $867,126.55           1,322     $2,818,438.76
+ 60 & Over           559        $815,310.11            388     $939,146.92             947     $1,754,457.03
+ Total             2,998      $4,666,170.41         3,137    $4,116,994.77           6,135     $8,783,165.18
+                                                      National Rank                14              15
+
+             Minnesota
+
+
+
+
+                            Male                         Female
+ Age Range     Complaints         Loss         Complaints         Loss      Total Complaints    Total Loss
+ Under 20              57        $15,464.90             37       $13,883.53               94      $29,348.43
+ 20 - 29             302       $175,536.93             270      $115,491.75             572      $291,028.68
+ 30 - 39              307       $479,818.53            321      $140,262.18             628      $620,080.71
+ 40 - 49              337       $741,707.20            347      $784,545.53             684    $1,526,252.73
+ 50 - 59             323       $722,568.05             322      $335,025.27             645    $1,057,593.32
+ 60 & Over           296        $608,941.35            197      $582,025.74             493    $1,190,967.09
+ Total             1,622      $2,744,036.96         1,494     $1,971,234.00           3,116    $4,715,270.96
+                                                      National Rank                26               27
+
+34 |   Internet Crime Complaint Center
+                                                                                              Appendix IV
+
+       Mississippi
+
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss        Complaints        Loss      Total Complaints       Total Loss
+Under 20            13       $11,227.00            13       $7,429.31               26         $18,656.31
+20 - 29            119      $142,233.93           182      $96,863.46             301         $239,097.39
+30 - 39            108      $123,590.86           186     $202,557.10             294         $326,147.96
+40 - 49            124      $107,006.91           222     $172,744.26             346         $279,751.17
+50 - 59           139       $133,358.37           161     $205,576.36             300        $338,934.73
+60 & Over          100      $134,499.07            83     $239,323.94             183        $373,823.01
+Total             603       $651,916.14           847     $924,494.43           1,450       $1,576,410.57
+                                                 National Rank                  37               41
+
+             Missouri
+
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss        Complaints         Loss      Total Complaints       Total Loss
+Under 20            54       $13,127.34            49       $23,491.19             103         $36,618.53
+20 - 29           334       $327,846.46           380      $218,715.71             714        $546,562.17
+30 - 39           330       $418,665.31           447      $599,451.85             777       $1,018,117.16
+40 - 49            391      $956,261.70           464    $1,259,793.24             855      $2,216,054.94
+50 - 59           443       $913,353.33           469      $801,085.02             912      $1,714,438.35
+60 & Over         394       $871,076.59           256      $705,633.81             650      $1,576,710.40
+Total           1,946     $3,500,330.73        2,065     $3,608,170.82           4,011      $7,108,501.55
+                                                 National Rank                20                  19
+
+               Montana
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss        Complaints           Loss      Total Complaints    Total Loss
+Under 20             9        $4,716.64             8          $7,321.00               17      $12,037.64
+20 - 29             64       $20,668.30            60         $59,027.97             124       $79,696.27
+30 - 39             77       $77,972.58            72         $62,591.92             149      $140,564.50
+40 - 49             71       $59,914.32            86         $91,164.26             157      $151,078.58
+50 - 59             71      $193,520.00            95        $105,152.56             166      $298,672.56
+60 & Over          100      $365,759.38            68         $32,382.05             168      $398,141.43
+Total             392       $722,551.22           389        $357,639.76             781    $1,080,190.98
+                                                 National Rank                  44               47
+
+                                                                             2012 Internet Crime Report | 35
+Appendix IV
+
+                    Nebraska
+
+
+                            Male                        Female
+ Age Range    Complaints          Loss        Complaints         Loss      Total Complaints     Total Loss
+ Under 20             19          $6,572.00            18        $3,118.95               37        $9,690.95
+ 20 - 29             167         $54,335.60            90       $45,916.60             257       $100,252.20
+ 30 - 39              99         $82,981.14           116       $46,075.16             215       $129,056.30
+ 40 - 49             119        $305,700.98           126      $295,505.28             245       $601,206.26
+ 50 - 59            136         $158,213.43            86      $171,810.61             222       $330,024.04
+ 60 & Over            66        $109,163.97            59      $121,099.72             125       $230,263.69
+ Total              606         $716,967.12           495      $683,526.32           1,101     $1,400,493.44
+                                                     National Rank                41                43
+           Nevada
+
+
+
+
+                           Male                        Female
+Age Range     Complaints          Loss        Complaints        Loss      Total Complaints      Total Loss
+Under 20              46         $16,257.65            71      $68,559.99             117         $84,817.64
+20 - 29             204         $187,567.88           257     $225,215.26             461        $412,783.14
+30 - 39              277       $596,826.82            431   $1,028,784.51             708      $1,625,611.33
+40 - 49              372        $811,172.68           401     $517,472.70             773      $1,328,645.38
+50 - 59             350         $979,137.12           461   $1,075,222.24             811      $2,054,359.36
+60 & Over           368         $857,861.61           317     $476,585.53             685      $1,334,447.14
+Total             1,617       $3,448,823.76        1,938    $3,391,840.23           3,555      $6,840,663.99
+                                                     National Rank                23                21
+
+        New Hampshire
+
+
+
+
+                            Male                        Female
+ Age Range     Complaints         Loss        Complaints          Loss      Total Complaints    Total Loss
+ Under 20              14         $5,984.00            13        $19,266.88               27      $25,250.88
+ 20 - 29               64        $35,560.14            76        $41,204.18             140       $76,764.32
+ 30 - 39               95        $47,429.90           100        $45,372.86             195       $92,802.76
+ 40 - 49             122        $179,537.78           130      $164,167.89              252      $343,705.67
+ 50 - 59              115       $129,479.56           131       $276,941.10             246      $406,420.66
+ 60 & Over            113        $60,523.84            74        $93,086.22             187      $153,610.06
+ Total               523        $458,515.22           524      $640,039.13            1,047    $1,098,554.35
+                                                     National Rank                 42               46
+
+36 |   Internet Crime Complaint Center
+                                                                                             Appendix IV
+
+      New Jersey
+
+
+
+
+                          Male                       Female
+Age Range    Complaints        Loss        Complaints         Loss      Total Complaints  Total Loss
+Under 20            119       $70,686.10            87       $46,419.67             206    $117,105.77
+20 - 29             511      $906,614.09           478     $449,968.44              989 $1,356,582.53
+30 - 39             591    $1,614,292.47           548     $432,896.58            1,139  $2,047,189.05
+40 - 49            636     $1,685,173.42           727    $1,924,819.61           1,363 $3,609,993.03
+50 - 59          3,836     $1,397,014.71           652    $1,685,019.04           4,488 $3,082,033.75
+60 & Over          533       $967,921.98           321     $752,683.97              854 $1,720,605.95
+Total            6,226     $6,641,702.77        2,813     $5,291,807.31           9,039 $11,933,510.08
+                                                  National Rank                5                 9
+
+            New Mexico
+
+
+
+                          Male                       Female
+Age Range    Complaints        Loss        Complaints         Loss      Total Complaints    Total Loss
+Under 20             22        $7,469.98            14        $7,553.95               36      $15,023.93
+20 - 29             127      $162,765.57           106       $70,248.16             233     $233,013.73
+30 - 39             111      $276,155.99           134      $275,643.07             245      $551,799.06
+40 - 49             133      $176,433.57           161      $215,837.90             294      $392,271.47
+50 - 59             146      $341,800.09           234      $502,170.44             380     $843,970.53
+60 & Over           196      $225,018.86           137      $105,508.39             333      $330,527.25
+Total              735     $1,189,644.06           786    $1,176,961.91           1,521    $2,366,605.97
+                                                  National Rank                36               36
+
+            New York
+
+
+
+                       Male                         Female
+Age Range   Complaints     Loss            Complaints         Loss      Total Complaints  Total Loss
+Under 20           301   $112,047.71               195      $105,768.76             496    $217,816.47
+20 - 29         1,282  $1,637,138.18            1,328     $1,278,590.20           2,610 $2,915,728.38
+30 - 39         1,280  $2,421,864.99            1,358     $2,177,386.53           2,638  $4,599,251.52
+40 - 49          1,372 $3,547,150.13             1,437    $3,720,936.91           2,809  $7,268,087.04
+50 - 59         1,686  $3,363,710.98             1,451    $3,762,977.25           3,137 $7,126,688.23
+60 & Over        1,070 $4,193,186.93               757    $1,787,838.30           1,827 $5,981,025.23
+Total           6,991 $15,275,098.92            6,526    $12,833,497.95          13,517 $28,108,596.87
+                                                 National Rank                 4                4
+
+                                                                            2012 Internet Crime Report | 37
+Appendix IV
+
+                      North Carolina
+
+
+                                Male                    Female
+ Age Range     Complaints         Loss        Complaints         Loss      Total Complaints  Total Loss
+ Under 20              99        $46,065.39            87       $92,879.38             186   $138,944.77
+ 20 - 29             508        $647,348.87           652      $389,763.60           1,160  $1,037,112.47
+ 30 - 39             590      $1,121,119.63           661      $617,722.58           1,251 $1,738,842.21
+ 40 - 49             672        $897,966.48           821    $1,308,288.02           1,493 $2,206,254.50
+ 50 - 59             606      $2,063,850.69           680      $841,213.12           1,286 $2,905,063.81
+ 60 & Over           505      $1,181,764.42           396    $1,007,285.89             901  $2,189,050.31
+ Total             2,980      $5,958,115.48         3,297    $4,257,152.59           6,277 $10,215,268.07
+                                                     National Rank                11             12
+
+
+                    North Dakota
+
+
+
+                           Male                         Female
+Age Range     Complaints         Loss         Complaints        Loss      Total Complaints      Total Loss
+Under 20               7         $3,604.98             11      $15,233.70               18        $18,838.68
+20 - 29               44        $32,002.11             60      $12,784.90             104         $44,787.01
+30 - 39               44       $333,619.48             50      $17,048.25               94       $350,667.73
+40 - 49               41       $264,066.59             41     $234,752.66               82       $498,819.25
+50 - 59               45       $231,483.10             35     $234,243.75               80      $465,726.85
+60 & Over             28         $7,699.30             21     $114,251.89               49       $121,951.19
+Total               209        $872,475.56            218     $628,315.15             427      $1,500,790.71
+                                                     National Rank                 50              42
+
+
+             Ohio
+
+
+
+                            Male                        Female
+Age Range     Complaints          Loss        Complaints          Loss      Total Complaints    Total Loss
+Under 20             107         $41,700.10           138        $61,780.58             245     $103,480.68
+20 - 29             550        $303,823.15            684      $328,612.34            1,234     $632,435.49
+30 - 39             654        $988,770.08            802      $553,109.25            1,456    $1,541.879.33
+40 - 49             695        $798,809.47            872       $953,741.15           1,567    $1,752,550.62
+50 - 59              727      $1,862,651.23           802     $1,766,926.91           1,529    $3,629,578.14
+60 & Over            781       $923,423.49            422    $1,293,565.28            1,203    $2,216,988.77
+Total             3,514       $4,919,177.52        3,720     $4,957,735.51            7,234    $9,876,913.03
+                                                     National Rank                  9               13
+
+38 |   Internet Crime Complaint Center
+                                                                                              Appendix IV
+
+                  Oklahoma
+
+
+
+                         Male                        Female
+Age Range   Complaints         Loss        Complaints        Loss      Total Complaints     Total Loss
+Under 20            33        $16,569.46            31      $11,957.82               64       $28,527.28
+20 - 29            165       $131,200.99           239    $154,596.34              404       $285,797.33
+30 - 39           189        $371,058.89           240     $143,917.20             429       $514,976.09
+40 - 49            237       $238,605.08           249     $194,993.01             486      $433,598.09
+50 - 59           283        $700,682.35           231     $448,507.94             514     $1,149,190.29
+60 & Over          219     $1,143,411.33           147     $242,084.26             366     $1,385,495.59
+Total           1,126      $2,601,528.10        1,137    $1,196,056.57           2,263     $3,797,584.67
+                                                  National Rank                30                30
+
+
+              Oregon
+
+
+
+                         Male                        Female
+Age Range   Complaints         Loss        Complaints         Loss      Total Complaints    Total Loss
+Under 20            41        $22,377.57            48       $22,927.82               89      $45,305.39
+20 - 29           229        $106,237.26           275      $119,462.83             504     $225,700.09
+30 - 39           285       $322,300.80            311      $307,099.47             596      $629,400.27
+40 - 49           322        $570,266.23           374      $650,844.52             696    $1,221,110.75
+50 - 59            378     $1,084,503.30           421      $404,636.27             799    $1,489,139.57
+60 & Over         405       $835,704.58            324    $1,720,004.45             729    $2,555,709.03
+Total           1,660      $2,941,389.74        1,753     $3,224,975.36           3,413    $6,166,365.10
+                                                  National Rank                24               23
+
+
+                Pennsylvania
+
+
+
+                         Male                       Female
+Age Range   Complaints         Loss        Complaints        Loss      Total Complaints  Total Loss
+Under 20          139        $88,510.96            119      $45,151.22             258    $133,662.18
+20 - 29            764      $584,058.42            766    $493,525.84            1,530  $1,077,584.26
+30 - 39            874    $1,164,792.76            968   $1,061,992.89           1,842 $2,226,785.65
+40 - 49            877     $1,193,947.76         1,016   $1,430,630.85           1,893  $2,624,578.61
+50 - 59           945     $2,260,248.50            994   $2,386,943.57           1,939  $4,647,192.07
+60 & Over          749    $1,547,404.14            552   $2,044,046.36           1,301 $3,591,450.50
+Total           4,348     $6,838,962.54         4,415    $7,462,290.73           8,763 $14,301,253.27
+                                                  National Rank                6                 6
+
+                                                                             2012 Internet Crime Report | 39
+Appendix IV
+
+         Rhode Island
+
+
+
+                            Male                             Female
+ Age Range     Complaints           Loss         Complaints         Loss      Total Complaints     Total Loss
+ Under 20              23           $7,000.70              5          $441.90               28        $7,442.60
+ 20 - 29               76         $151,786.07             56       $20,950.37             132       $172,736.44
+ 30 - 39               73          $18,309.42             61       $31,130.69             134        $49,440.11
+ 40 - 49               70          $42,926.21            102      $257,903.56             172      $300,829.77
+ 50 - 59               67         $270,812.11             81      $164,686.29             148      $435,498.40
+ 60 & Over             65          $44,406.70             52      $162,717.58             117       $207,124.28
+ Total                374         $535,241.21            357      $637,830.39             731     $1,173,071.60
+                                                        National Rank                46                45
+
+              South Carolina
+
+
+                            Male                             Female
+Age Range     Complaints         Loss           Complaints           Loss      Total Complaints    Total Loss
+Under 20              45        $17,861.67               38         $21,790.41               83      $39,652.08
+20 - 29              221       $236,701.47              325        $187,523.76             546      $424,225.23
+30 - 39              251      $334,732.73               451        $189,661.40             702      $524,394.13
+40 - 49             342        $416,129.44              353        $663,163.50             695    $1,079,292.94
+50 - 59              374     $1,108,665.25              373       $730,396.90               747   $1,839,062.15
+60 & Over            347     $1,181,133.81              213        $546,142.70             560    $1,727,276.51
+Total             1,580      $3,295,224.37           1,753       $2,338,678.67           3,333    $5,633,903.04
+                                                       National Rank                  25               24
+
+
+                   South Dakota
+
+
+
+                           Male                          Female
+Age Range    Complaints          Loss           Complaints         Loss      Total Complaints      Total Loss
+Under 20              9          $7,071.00                5        $2,680.00               14         $9,751.00
+20 - 29              57         $42,845.21               31        $8,030.97               88        $50,876.18
+30 - 39              28         $17,403.98               42       $27,303.25               70        $44,707.23
+40 - 49              39         $64,167.93               43       $15,438.03               82       $79,605.96
+50 - 59              46        $177,030.54               38       $41,930.88               84      $218,961.42
+60 & Over            39        $142,154.30               17       $46,734.22               56      $188,888.52
+Total              218         $450,672.96              176      $142,117.35             394       $592,790.31
+                                                       National Rank                51                 50
+
+
+40 |   Internet Crime Complaint Center
+                                                                                               Appendix IV
+
+                   Tennessee
+
+
+
+                          Male                        Female
+Age Range    Complaints         Loss        Complaints         Loss      Total Complaints    Total Loss
+Under 20             61        $32,991.88            85       $33,231.25             146       $66,223.13
+20 - 29             377       $360,195.54           419     $449,224.35              796      $809,419.89
+30 - 39             415      $754,739.69            502     $804,392.06              917    $1,559,131.75
+40 - 49            444       $484,488.90            616      $690,480.47           1,060    $1,174,969.37
+50 - 59            442        $860,521.10           649    $1,090,172.89           1,091    $1,950,693.99
+60 & Over          405        $847,718.08           312      $919,804.78             717    $1,767,522.86
+Total            2,144      $3,340,655.19        2,583     $3,987,305.80           4,727    $7,327,960.99
+                                                   National Rank                17                17
+
+               Texas
+
+
+
+
+                          Male                        Female
+Age Range    Complaints      Loss           Complaints          Loss      Total Complaints   Total Loss
+Under 20            284   $146,140.53               234      $175,653.36               518    $321,793.89
+20 - 29          1,395 $1,358,201.73             1,698      $1,077,641.35            3,093 $2,435,843.08
+30 - 39          1,703  $3,160,996.13            1,849      $2,744,378.86            3,552  $5,905,374.99
+40 - 49           1,740 $3,763,152.41             1,978     $3,479,689.46            3,718  $7,242,841.87
+50 - 59          1,684 $3,680,005.48              2,010     $4,394,153.07            3,694  $8,074,158.55
+60 & Over        1,522   $3,219,627.18           1,022      $3,245,852.65            2,544  $6,465,479.83
+Total            8,328 $15,328,123.46            8,791 $15,117,368.75               17,119 $30,445,492.21
+                                                   National Rank                  3              3
+
+            Utah
+
+
+
+                          Male                       Female
+Age Range    Complaints        Loss         Complaints        Loss      Total Complaints     Total Loss
+Under 20             37       $14,926.96             31      $10,972.89               68       $25,899.85
+20 - 29            228       $484,440.16            181    $156,826.98              409       $641,267.14
+30 - 39             210      $496,990.83            218     $234,448.16             428       $731,438.99
+40 - 49             190      $287,056.65            175     $458,050.31             365       $745,106.96
+50 - 59             181      $324,450.28            145     $212,830.98             326       $537,281.26
+60 & Over           173      $225,526.98             99     $100,059.09             272       $325,586.07
+Total            1,019     $1,833,391.86            849   $1,173,188.41           1,868     $3,006,580.27
+                                                   National Rank               33                34
+
+                                                                              2012 Internet Crime Report | 41
+Appendix IV
+
+        Vermont
+
+
+
+                            Male                         Female
+ Age Range     Complaints          Loss        Complaints         Loss      Total Complaints    Total Loss
+ Under 20              11          $5,439.62            10        $2,052.10               21       $7,491.72
+ 20 - 29               38         $22,794.35            37       $14,352.05               75      $37,146.40
+ 30 - 39               42         $30,620.88            42       $67,260.12               84      $97,881.00
+ 40 - 49               54          $9,986.82            47       $37,524.89             101       $47,511.71
+ 50 - 59               52         $43,073.78            55      $137,582.00             107     $180,655.78
+ 60 & Over             47         $62,421.85            29      $130,159.41               76    $192,581.26
+ Total               244         $174,337.30           220      $388,930.57             464     $563,267.87
+                                                      National Rank                48               51
+
+                      Virginia
+
+
+
+                            Male                         Female
+ Age Range     Complaints         Loss         Complaints        Loss      Total Complaints   Total Loss
+ Under 20            123         $59,399.18            107      $48,623.33             230    $108,022.51
+ 20 - 29              571       $572,012.52          1,119     $614,638.17           1,690 $1,186,650.69
+ 30 - 39             684        $553,957.55            805     $701,707.31           1,489 $1,255,664.86
+ 40 - 49              781     $1,471,279.99            887   $1,544,792.78           1,668  $3,016,072.77
+ 50 - 59             694      $1,228,802.73            799   $1,893,124.40           1,493   $3,121,927.13
+ 60 & Over            742     $1,569,478.76            500   $1,853,267.51           1,242  $3,422,746.27
+ Total             3,595      $5,454,930.73          4,217   $6,656,153.50           7,812 $12,111,084.23
+                                                      National Rank                 8               8
+
+                   Washington
+
+
+
+                            Male                         Female
+ Age Range     Complaints          Loss        Complaints          Loss      Total Complaints   Total Loss
+ Under 20             111         $47,517.35            75        $38,524.23             186      $86,041.58
+ 20 - 29             493       $501,023.86             461       $388,307.06             954    $889,330.92
+ 30 - 39             584        $640,557.67            591      $487,569.71            1,175   $1,128,127.38
+ 40 - 49             795       $890,018.05             720    $1,330,892.48            1,515  $2,220,910.53
+ 50 - 59             693      $1,386,839.86            742     $2,241,266.99           1,435  $3,628,106.85
+ 60 & Over           705      $2,021,630.29            464     $1,541,714.64           1,169 $3,563,344.93
+ Total             3,381      $5,487,587.08         3,053     $6,028,275.11            6,434 $11,515,862.19
+                                                      National Rank                 10              10
+
+42 |   Internet Crime Complaint Center
+                                                                                              Appendix IV
+
+            West Virginia
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss        Complaints         Loss      Total Complaints      Total Loss
+Under 20            19       $18,226.95            21       $12,190.65               40        $30,417.60
+20 - 29             84       $35,856.75           151       $73,850.45             235        $109,707.20
+30 - 39            111      $110,840.31           133       $77,454.97             244       $188,295.28
+40 - 49            105      $150,473.25           174      $725,830.81             279        $876,304.06
+50 - 59           122       $502,881.36           157     $753,903.50              279      $1,256,784.86
+60 & Over           90       $88,217.97            88      $118,770.92             178       $206,988.89
+Total              531      $906,496.59           724    $1,762,001.30           1,255      $2,668,497.89
+                                                 National Rank                  38               35
+            Wisconsin
+
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss        Complaints          Loss      Total Complaints     Total Loss
+Under 20            68       $27,214.35            58        $19,282.59             126        $46,496.94
+20 - 29           292      $295,805.36            329      $241,320.37              621       $537,125.73
+30 - 39            316     $395,704.44            379      $238,859.62              695      $634,564.06
+40 - 49           335       $516,295.03           480       $813,376.16             815     $1,329,671.19
+50 - 59            391    $1,408,422.37           401     $1,109,762.06             792     $2,518,184.43
+60 & Over          314      $715,556.50           230      $465,887.33              544     $1,181,443.83
+Total           1,716     $3,358,998.05        1,877     $2,888,488.13            3,593     $6,247,486.18
+                                                 National Rank                 22                22
+
+              Wyoming
+
+
+
+                         Male                       Female
+Age Range   Complaints        Loss        Complaints           Loss      Total Complaints    Total Loss
+Under 20             6        $1,635.85             3          $1,140.00                9       $2,775.85
+20 - 29             46       $27,452.89            45         $27,000.30               91      $54,453.19
+30 - 39             34      $106,287.69            40         $29,951.78               74    $136,239.47
+40 - 49             39       $15,077.00            56         $28,591.94               95     $43,668.94
+50 - 59             51      $157,025.28            60         $32,441.44             111     $189,466.72
+60 & Over           51      $159,011.04            30         $27,599.74               81    $186,610.78
+Total              227      $466,489.75           234        $146,725.20             461     $613,214.95
+                                                 National Rank                  49               49
+
+                                                                             2012 Internet Crime Report | 43
+www.ic3.gov
+
