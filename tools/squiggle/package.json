@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@quri/squiggle-lang": "^0.10.0",
+    "date-fns": "^4.4.0"
+  }
+}

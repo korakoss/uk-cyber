@@ -1,5 +1,7 @@
 # Project Notes
 
+> **See `docs/technical_summary.md`** for a standalone technical executive summary (how the simulation works, where each component's values come from, the bridge dead-ends, and the robustness/sensitivity arguments). This file remains the detailed running record.
+
 ## Handoff (as of 2026-07-14 — supersedes the 2026-07-07 handoff below, kept for history)
 
 **What this session did**: resolved the non-phishing bridge problem that the 2026-07-07 handoff left open. Started with 4 types solved via censored-MLE fits (Malware, DoS, Hacking, Takeover) and 2 fully stuck (Ransomware, Impersonation — every attempted model degenerate or contradictory). Ended with all 7 types having either a validated model or a defensible estimate.
@@ -20,14 +22,23 @@
 
 **How Ransomware and Impersonation got unstuck** (see "Follow-up (2026-07-13)" sections below for full detail): found a real, previously-unloaded per-attack count variable for Ransomware (`ranssoft_bands`) and a large "impersonation was the only thing that happened all year" clean subsample for Impersonation. Both let us isolate a subgroup where `damage_bands` IS the exact total (no bridging ambiguity), build an empirical per-attack cost distribution from it, and Monte-Carlo-simulate totals for the smaller multi-incident remainder — instead of forcing one smooth lognormal curve over all the evidence at once (which is what kept breaking). Caught and fixed a real bug along the way (simulated totals coming in below a firm's own observed worst-incident cost — logically impossible, fixed with an explicit floor). Stress-tested the result properly: outlier-vs-fitted-tail consistency checks (Ransomware passed, Impersonation didn't), and a leave-one-out check that quantified exactly how fragile Impersonation's figure is.
 
-**What's NOT done yet:**
-1. **`bridge_specification.py` has not been updated** with these Ransomware/Impersonation figures — it still uses the old conservative-fallback treatment for both types. This is the concrete next integration step (and needs care: Impersonation should go in as a range/distribution, not a point value, given the leave-one-out finding).
-2. **Step 1, the ONS business-count fetch, still hasn't been started.** Every figure above is £-per-business; scaling to an actual national total needs this.
-3. **The Squiggle simulation itself has not been built.**
-4. Charities untouched this session — business-side only.
-5. A data-quality wrinkle flagged but not fixed: `proc.py`'s `TYPE_COLNAMES` includes `type9/10/11/12`, which are actually Q53A meta-response codes ("any other"/"don't know"/"none"/"refused"), not real attack-type flags — may have subtly inflated "n_types" counts in a couple of earlier scripts (`type_specific_bridge.py`, `impersonation_investigation.py`).
+**Update (2026-07-14, same day): `bridge_specification.py` integration done.** Ransomware added to `BEST_ESTIMATE_BRIDGE` as a solid 2.21x multiplier (on the naive/freq=1-anchored per-firm base); Impersonation added as a genuine range (`IMPERSONATION_BRIDGE_LOW=3.11`, `IMPERSONATION_BRIDGE_HIGH=6.25`, applied per-firm via `best_total_low`/`best_total_high` columns rather than a single `best_total`). Rerun results:
+- Coverage: 99.4% of attacked-firm weight now has a genuine best-estimate bridge (up from ~0% for non-phishing freq>1 firms before this session). Only the tiny untested "Any other" bucket (0.7 weight) still falls back to conservative.
+- (a) fully conservative: £904.02/business. (b) fully pessimistic: £116,914.89/business (dominated by K_IMPLIED on high-freq firms — a known artifact, see existing pessimistic-tier caveats). (c) current best available: **£1,841.89–£2,707.93/business**, with the entire width attributable to Impersonation's range (every other resolved type is a point estimate).
+- `censored_bounds_only.py` (also new this session): a model-free companion check computing hard floor/naive figures directly from the censored records with zero distributional assumptions — confirms Impersonation's difficulty is a genuine data-coverage gap (55.8% of its weight is unresolved lower-censored, vs. 8.1% for Ransomware, and it has zero exact cost observations at all), not something more modeling effort would fix.
 
-**Recommended next step**: either (a) the `bridge_specification.py` integration (closes the loop on this whole thread with one clean number), or (b) switch tracks entirely to Step 1 (ONS business counts) or the Squiggle simulation build — both pure forward progress that this session didn't touch.
+**Update (2026-07-15): Steps 1 AND 6 done — we now have a national total.**
+- Step 1 (ONS business counts): `src/estimation/ons_business_counts.py`. Employer-frame N(size): Micro 1,150,875 / Small 220,085 / Medium 38,435 / Large 8,335.
+- Step 6 (national simulation): `src/estimation/national_simulation.py`. **Headline: total annual UK business cybercrime cost ≈ £3.1–3.2bn/yr (mean), ~£3.0bn median, 90% interval ~£1–6bn.** Runs BOTH a type-based and a freq-based decomposition in parallel — they agree to 0.99x, a strong cross-check. Engine: bootstrap the survey (resample firms within size band, weighted) → per-size cost/business samples → emitted into Squiggle `.squiggle` files in `src/estimation/build/` → run headless via the squiggle-lang CLI, which scales by N(size) and sums. Python computes the same as a cross-check.
+- Two modeling calls worth remembering (both forced by heavy tails): (a) cost per firm uses the lognormal's *analytic within-band conditional mean* (incl. a finite £100k+ tail mean), NOT a single point draw — a single uncapped draw made the replicate mean explode; (b) sparse `(size,freq)` cost cells (esp. all Large cells) fall back to the well-populated per-size lognormal shape when n_nonzero<20 or fitted σ>3.5, because sparse-cell σ is garbage and the open-tail mean is hyper-sensitive to it.
+- Tooling note: the squiggle-lang CLI (v0.10.0, `@quri/squiggle-lang`, needs `date-fns` added manually — undeclared dep) was installed into the session scratchpad `sqtool/`; the script auto-discovers it. If scratchpad is wiped, reinstall with `npm install @quri/squiggle-lang date-fns` and re-point. Squiggle gotchas found: variable names must be lowercase-initial; `SampleSet.fromList` needs ≥~10 samples.
+
+**What's NOT done yet:**
+1. Charities untouched — business-side only.
+2. Possible refinement: propagate uncertainty in the fitted lognormal *shapes* themselves (currently μ,σ held fixed across bootstrap; dominant uncertainties — prevalence, band mix, Impersonation bridge — ARE captured). Also the freq-based bridge m(freq) is a flat 1.02 for freq>1 (phishing-validated); could be refined per-freq.
+4. A data-quality wrinkle flagged but not fixed: `proc.py`'s `TYPE_COLNAMES` includes `type9/10/11/12`, which are actually Q53A meta-response codes ("any other"/"don't know"/"none"/"refused"), not real attack-type flags — may have subtly inflated "n_types" counts in a couple of earlier scripts (`type_specific_bridge.py`, `impersonation_investigation.py`).
+
+**Recommended next step**: switch tracks to Step 1 (ONS business counts) or the Squiggle simulation build — both pure forward progress not yet touched. The bridge-specification thread is now closed out.
 
 ---
 
@@ -98,18 +109,47 @@ Consolidated list of things "on the table" — genuine open choices, not yet set
 
 ---
 
+## National Simulation — methodology & choices (`national_simulation.py`, 2026-07-15)
+
+The final aggregation. Headline: **≈£3.1–3.2bn/yr mean, ~£3.0bn median, 90% interval ~£1–6bn.** This section documents the nontrivial choices, what else was tried/considered, and what the alternatives would have done — so the number can be defended and revisited.
+
+**Overall structure.** For each size band s: bootstrap-resample the survey firms in s (weighted by survey weight, sample size = n_s), compute each resampled firm's total annual cost (0 if not attacked), average to a cost-per-business for s. Repeat B=500 times → a bootstrap distribution of cost-per-business per band. Squiggle then multiplies each by the fixed ONS N(s) and sums → distribution of the national total. Prevalence enters implicitly (non-attacked firms contribute 0, so the band mean already blends prevalence × conditional cost).
+
+**Two decompositions run in parallel (cross-check, not either/or).** Both convert the survey's *single-worst-incident* cost (`damage_bands`) into a firm's *total annual* cost via a bridge multiplier, but slice the multiplier differently:
+- *Type-based:* bridge indexed by attack type (`disrupta`) — this session's per-type multipliers (Ransomware 2.21×, Impersonation 3.11–6.25× drawn per replicate, Malware 1.93×, DoS 0.36×, Hacking 1.01×, Takeover 5.50×, Phishing 1.02×; freq=1 → 1.0 exactly; unresolved/minor types → 1.0).
+- *Freq-based:* bridge = m(freq), flat 1.02 for freq>1 and 1.0 for freq=1 (the mixture-model-validated phishing figure, used as the project's representative freq-based best estimate).
+- They agree to **0.99×** — meaningful because they use different stratifications and different bridge logic. Had they diverged, it would have signalled that the per-type multipliers (esp. the big Ransomware/Impersonation ones) were doing something the flat bridge wasn't, or vice versa.
+
+**CHOICE 1 — within-band cost: analytic lognormal conditional mean (chosen) vs. single point draw (tried, rejected) vs. band midpoint (considered).**
+- *Midpoint (simplest):* assign each band its fixed midpoint (top band a capped value). Rejected because it truncates the tail — and the tail is exactly what dominates a total-cost estimate. Would understate the total and, worse, hide the tail uncertainty entirely.
+- *Single point draw from the fitted lognormal, conditioned on the band, top band uncapped (first implementation):* faithful to "draw a continuous value," but catastrophically unstable — with σ≈2.8 and an open £100k+ tail, one firm drawing far into the tail dominated an entire replicate's mean. Produced nonsense (freq-based national mean of £1,733bn on the first run, £64,459bn after a partial fix) while the *median* stayed sane (~£2.5bn). Diagnosis: the per-replicate mean over a small number of Large firms is a heavy-tailed estimator; a single draw per firm is pure lottery noise, not real uncertainty.
+- *Analytic within-band conditional mean E[X | L≤X<U] under the fitted lognormal (chosen):* uses the lognormal's own shape to place the cost within each band exactly, including a *finite* conditional mean E[X | X≥£100k] for the open top band. Removes the single-draw lottery while still being "lognormal within-band interpolation" and still letting the fitted tail set how heavy the top-band contribution is. Remaining uncertainty comes from band-mix resampling (how many firms land in the top band) + the Impersonation bridge draw — i.e. genuine parameter/sampling uncertainty, not draw noise.
+- *Note on the user's "no cap, follow the fitted tail" instruction:* honored in spirit — the top band uses the untruncated lognormal conditional mean (finite because a lognormal has finite mean), NOT a hard cap. What we did NOT do is let a single sample wander to arbitrarily large values. An explicit tail cap or a Pareto-tail alternative remains available if a different tail model is preferred.
+
+**CHOICE 2 — sparse (size,freq) cost cells: fall back to per-size pooled shape (chosen) vs. use the raw cell fit (rejected).** The freq-based model wants a lognormal per (size,freq) cell, but many cells — *all* Large cells especially — are too thin to fit σ reliably, and the open-tail conditional mean is hyper-sensitive to σ (a garbage σ≈5 makes E[X|X>100k] astronomically large; this is what produced the £7.7bn/business Large figure mid-development). Chosen rule: trust a cell's own fit only if it has ≥20 non-zero-cost obs AND fitted σ≤3.5; otherwise use the well-populated per-size pooled shape. Result: 11/24 cells use their own shape, the rest fall back. Consistent with the earlier project finding (freq_distribution.py) that sparse (size,freq) cells are unsafe to use directly. Alternative not taken: a hierarchical/shrinkage fit that partially pools σ toward the size-level estimate — cleaner in principle, more machinery; the hard fallback is a pragmatic stand-in.
+
+**CHOICE 3 — fitted shapes held fixed across the bootstrap (simplification, flagged).** μ,σ are estimated once on the full data and held constant across replicates; the bootstrap varies firm composition, not the fitted shape. So *parameter uncertainty in μ,σ themselves is not propagated*. Judged acceptable because the dominant uncertainties — prevalence, band mix (esp. top-band membership, only 8 firms), and the Impersonation bridge — ARE captured by resampling. Refitting per replicate was rejected for the sparse cells (unstable) and would be the natural refinement if tighter uncertainty accounting is wanted (would widen intervals somewhat, especially via σ on the top band).
+
+**CHOICE 4 — N(size) frame: ONS employer businesses (1+ employees), excluding the 4.27M zero-employee businesses.** See `ons_business_counts.py` — the survey's Micro band is 1–9 employees, so zero-employee sole traders are out of frame. Including them would require assuming the 1–9 prevalence/cost figures extend to sole traders, which they almost certainly don't. This is a *large* lever on the headline (see sensitivity notes) and a deliberate, documented scope choice.
+
+**CHOICE 5 — bootstrap B=500, weighted resampling.** Weighted bootstrap (sample firms ∝ survey weight) approximates the sampling distribution of the weighted mean. B=500 is enough for stable 5th/50th/95th percentiles here; not a sensitive knob.
+
+**Engine.** Squiggle-lang CLI (v0.10.0) run headless via `tools/squiggle/run.sh`. Generated models live in `src/estimation/build/*.squiggle` (per-size bootstrap samples × N(size)). Python reproduces the same aggregation as an independent cross-check (matches Squiggle to ~2 s.f.). Squiggle gotchas: lowercase-initial variable names only; `SampleSet.fromList` needs ≥~10 samples; the published CLI needs `date-fns` added manually.
+
+---
+
 ## Estimation Pipeline — Current Status
 
 **Formula:** Total annual UK cybercrime cost = Σ_size N(size) × P(attacked|size) × E[total annual cost | attacked, size]
 
 | Step | What | Status |
 |------|------|--------|
-| 1 | N(size): UK business count per size band | Not started. Source: ONS UK Business Population Estimates |
+| 1 | N(size): UK business count per size band | **Done** (`src/estimation/ons_business_counts.py`, 2026-07-15). ONS BPE 2025, employer frame (1+ employees, matches survey's Micro=1-9 band): Micro 1,150,875 / Small 220,085 / Medium 38,435 / Large 8,335 (= 1,417,730 employers). Excludes 4.27M zero-employee businesses (outside survey frame). |
 | 2 | P(attacked\|size): prevalence | **Done.** Micro 40%, Small 51%, Medium 66%, Large 69%. Use empirical values directly. |
 | 3 | P(freq\|size, attacked): freq distribution by size | **Decided.** Pool Micro/Small/Medium into one shared empirical freq distribution; Large kept separate. Cost distribution (Step 4) stays per (size, freq) cell, not affected by this pooling. Large's own thin ~daily cell (n=6) still unresolved. |
 | 4 | P(damage_bands\|freq, size): cost distribution | **Analysis done.** Lognormal fits well within cells; per-cell (mu, sigma). Handles within-band interpolation and top-band tail. |
 | 5 | Bridge: damage_bands → total annual cost | **Done for phishing.** Bridge ≈ 1.02 for type M (~95% of firms); close to 1 for type T at low freq. Conservative lower bound (total = max) quantitatively supported. |
-| 6 | Squiggle simulation and aggregation | Not started. Blocked on Steps 1 and 3. |
+| 6 | Squiggle simulation and aggregation | **Done** (`src/estimation/national_simulation.py`, 2026-07-15). Bootstrap → per-size cost/business → Squiggle CLI (headless) scales by N(size). **Result: ~£3.1–3.2bn/yr mean, ~£3.0bn median, 90% interval ~£1–6bn.** Type-based and freq-based decompositions agree to 0.99x — strong cross-check. |
 
 ---
 

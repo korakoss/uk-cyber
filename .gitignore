@@ -1,3 +1,6 @@
 */__pycache__/
 __pycache__/
 results/
+
+# squiggle CLI local install (reinstall via tools/squiggle npm install)
+tools/squiggle/node_modules/

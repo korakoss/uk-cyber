@@ -20,12 +20,20 @@ Per-type tiers, and where each comes from:
   the run's printed values — rerun that script if the data or model
   changes). Conservative=1, pessimistic=K_IMPLIED[freq] (same empirical
   multiplier convention as bridge_multiplier.py).
-- Ransomware (disrupta=1), Impersonation (disrupta=5), and the smaller
-  untested types (disrupta 8=student unauthorised access, 10=video/IM
-  eavesdropping, 12=any other): NO best estimate. Ransomware's censored
-  fit is degenerate/unidentified; Impersonation has no direct type-cost
-  column at all; the remaining types were never tested (too small).
-  Conservative=1, pessimistic=K_IMPLIED[freq], best-estimate=NaN.
+- Ransomware (disrupta=1): best estimate now resolved via the clean
+  single-attack-count reference subsample + Monte Carlo technique
+  (type_specific_montecarlo_bridge.py, 2026-07-14): £605.71/business vs.
+  a £273.56/business naive figure, an implied 2.21x multiplier. Solid,
+  confirmed consistent via a body-vs-tail lognormal check.
+- Impersonation (disrupta=5): same Monte Carlo technique, but fragile
+  (leave-one-out on its reference sample swings the estimate -50.2%), so
+  it is carried as a RANGE: £950.12-£1,908.61/business, implied multiplier
+  range 3.11x-6.25x on the naive £305.49/business base. Both endpoints
+  applied below (low/high best-estimate columns).
+- The smaller untested types (disrupta 8=student unauthorised access,
+  10=video/IM eavesdropping, 12=any other): NO best estimate, never
+  tested (too small). Conservative=1, pessimistic=K_IMPLIED[freq],
+  best-estimate=NaN.
 
 Output: applies all three tiers to every attacked firm in the sample and
 reports population-weighted (per-business; national scaling still needs
@@ -33,9 +41,9 @@ the pending ONS business-count step) totals for:
   (a) fully conservative (bridge=1 everywhere)
   (b) fully pessimistic (bridge=K_IMPLIED[freq] everywhere, phishing=1.70)
   (c) "current best available": best-estimate where one exists (phishing,
-      freq=1, and the 4 solid censored-model types), falling back to
-      conservative (=1) — the project's current default — for the
-      remaining unresolved types (Ransomware, Impersonation, minor types)
+      freq=1, Ransomware, Impersonation [low/high range], and the 4 solid
+      censored-model types), falling back to conservative (=1) — for the
+      remaining unresolved minor types
 Plus: what SHARE of total attacked-firm weight now has a genuine best
 estimate vs. still falls back to conservative-by-default, to make
 concrete how much this closes the original wide-bounds gap.
@@ -73,7 +81,12 @@ BEST_ESTIMATE_BRIDGE = {
     3: 0.36,   # Denial of service
     4: 1.01, 7: 1.01, 9: 1.01,  # Hacking (broad: bank acct + unauthorised access staff/outsiders)
     11: 5.50,  # Website/social/email takeover
+    1: 2.21,   # Ransomware (Monte Carlo bridge, £605.71 vs £273.56 naive — solid point estimate)
 }
+# Impersonation (disrupta=5) is a RANGE, not a point — fragile leave-one-out result.
+# Low = £950.12/business, High = £1,908.61/business, on a £305.49 naive base.
+IMPERSONATION_BRIDGE_LOW = 3.11
+IMPERSONATION_BRIDGE_HIGH = 6.25
 PESSIMISTIC_OVERRIDE = {6: 1.70}  # Phishing's pessimistic isn't K_IMPLIED-based — mixture-model upper bound
 
 TYPE_LABELS = {
@@ -94,16 +107,20 @@ attacked['pess_total'] = attacked.apply(
 )
 
 
-def best_total(row):
+def best_total(row, impersonation_bridge=None):
     if row['freq'] == 1:
         return row['damage_mid']  # bridge=1 exactly, no ambiguity
+    if int(row['disrupta']) == 5:  # Impersonation — range, not a fixed dict entry
+        return row['damage_mid'] * impersonation_bridge
     b = BEST_ESTIMATE_BRIDGE.get(int(row['disrupta']))
     if b is None:
         return np.nan  # unresolved — no best estimate for this type
     return row['damage_mid'] * b
 
 
-attacked['best_total'] = attacked.apply(best_total, axis=1)
+attacked['best_total'] = attacked.apply(lambda r: best_total(r, IMPERSONATION_BRIDGE_LOW), axis=1)
+attacked['best_total_low'] = attacked['best_total']
+attacked['best_total_high'] = attacked.apply(lambda r: best_total(r, IMPERSONATION_BRIDGE_HIGH), axis=1)
 attacked['has_best'] = attacked['best_total'].notna()
 
 # ---------------------------------------------------------------------------
@@ -118,7 +135,15 @@ by_type = freq_gt1.groupby('disrupta').agg(
     n=('weight', 'size'), w=('weight', 'sum'), has_best=('has_best', 'mean')
 ).reset_index()
 by_type['label'] = by_type['disrupta'].map(lambda d: TYPE_LABELS.get(int(d), str(d)))
-by_type['best_estimate_bridge'] = by_type['disrupta'].map(lambda d: BEST_ESTIMATE_BRIDGE.get(int(d), np.nan))
+def _bridge_label(d):
+    d = int(d)
+    if d == 5:
+        return f"{IMPERSONATION_BRIDGE_LOW}-{IMPERSONATION_BRIDGE_HIGH} (range)"
+    b = BEST_ESTIMATE_BRIDGE.get(d)
+    return b if b is not None else np.nan
+
+
+by_type['best_estimate_bridge'] = by_type['disrupta'].map(_bridge_label)
 print(by_type[['label', 'n', 'w', 'best_estimate_bridge', 'has_best']].to_string(index=False))
 
 print("\n" + "=" * 100)
@@ -137,31 +162,36 @@ pess_avg = pop_avg(attacked['pess_total'], attacked['weight'])
 
 resolved = attacked[attacked['has_best']]
 unresolved = attacked[~attacked['has_best']]
-best_avg_resolved_part = pop_avg(resolved['best_total'], resolved['weight'])
+best_avg_resolved_part_low = pop_avg(resolved['best_total_low'], resolved['weight'])
+best_avg_resolved_part_high = pop_avg(resolved['best_total_high'], resolved['weight'])
 # For unresolved types, current project default is conservative (=1) pending further work
 fallback_avg_unresolved_part = pop_avg(unresolved['cons_total'], unresolved['weight'])
-mixed_best_avg = best_avg_resolved_part + fallback_avg_unresolved_part
+mixed_best_avg_low = best_avg_resolved_part_low + fallback_avg_unresolved_part
+mixed_best_avg_high = best_avg_resolved_part_high + fallback_avg_unresolved_part
 
 print(f"(a) Fully conservative (bridge=1 everywhere):        £{cons_avg:,.2f} per business")
 print(f"(b) Fully pessimistic (K_IMPLIED / phishing 1.70):    £{pess_avg:,.2f} per business")
 print(f"(c) Current best available (best-estimate where it exists, conservative fallback elsewhere): "
-      f"£{mixed_best_avg:,.2f} per business")
-print(f"    of which £{best_avg_resolved_part:,.2f} comes from firms WITH a genuine best-estimate bridge, "
-      f"£{fallback_avg_unresolved_part:,.2f} from firms still on the conservative-by-default fallback")
+      f"£{mixed_best_avg_low:,.2f}-£{mixed_best_avg_high:,.2f} per business "
+      f"(range is entirely driven by Impersonation's low/high; all other resolved types are point estimates)")
+print(f"    of which £{best_avg_resolved_part_low:,.2f}-£{best_avg_resolved_part_high:,.2f} comes from firms "
+      f"WITH a genuine best-estimate bridge, £{fallback_avg_unresolved_part:,.2f} from firms still on the "
+      f"conservative-by-default fallback")
 
 w_total = attacked['weight'].sum()
 w_resolved = resolved['weight'].sum()
 print(f"\nShare of attacked-firm weight now covered by a genuine best-estimate bridge "
-      f"(freq=1, or phishing, or one of the 4 solid censored-model types): "
+      f"(freq=1, phishing, Ransomware, Impersonation, or one of the 4 solid censored-model types): "
       f"{100*w_resolved/w_total:.1f}% (was 0% for non-phishing freq>1 firms before this session's censored-model work)")
 
 print(
     "\nInterpretation: (c) sits between (a) and (b) as expected. The gap between (c) and (a) is entirely "
-    "attributable to firms where a genuine best-estimate bridge now exists (phishing + the 4 solid "
-    "censored-model types) — previously those firms contributed only the conservative floor. The "
-    "remaining gap between (c) and (b) is the true unresolved uncertainty: Ransomware (degenerate "
-    "censored fit), Impersonation (no direct cost column, confounded mixture retry), and the untested "
-    "minor types. Narrowing that further would require new data (e.g. an incident-level cost breakdown), "
-    "not more mining of the variables already tried."
+    "attributable to firms where a genuine best-estimate bridge now exists (phishing, Ransomware, "
+    "Impersonation, and the 4 solid censored-model types) — previously those firms contributed only the "
+    "conservative floor. Ransomware is a solid point estimate; Impersonation is carried as a range because "
+    "its reference-sample estimate is fragile (leave-one-out swings it ~50%) — that range is the dominant "
+    "source of the remaining width in (c) itself. The residual gap between (c) and (b) is the true "
+    "unresolved uncertainty in the untested minor types. Narrowing that further would require new data "
+    "(e.g. an incident-level cost breakdown), not more mining of the variables already tried."
 )
 print("\nDone.")
