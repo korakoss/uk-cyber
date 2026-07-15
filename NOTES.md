@@ -110,6 +110,18 @@ Consolidated list of things "on the table" — genuine open choices, not yet set
 
 ---
 
+## Quantified upward sensitivities — the "inflator" case (`upward_sensitivity.py`, 2026-07-15)
+
+Baseline ~£2.2bn is built from deflationary choices, so reasonable-argument room is mostly upward. Quantified scenarios (deterministic, on the type-based baseline):
+- **Sole-trader frame:** include the 4.27M zero-employee businesses at 20–40% of Micro's ~£1,325/business → **+£1.1–2.3bn** (new total ~£3.4–4.5bn). Biggest clean lever; data can't refute.
+- **Missing catastrophic (>£500k) tail:** 0 firms reported >£500k, but 0/982-with-valid-band only bounds the population rate to ≲0.14% (rule-of-three) ≈ up to ~1,950 unseen firms. At 0.05–0.14% × £1–5M → **+£0.7–3.9bn**. Note this partly reclaims the ~£0.9bn the open-tail *correction* removed — truth is between "open tail" and "hard £500k cap". Same bound also caps it.
+- **Indirect:direct uplift ×1.3–1.5** → £2.9–3.4bn; ×2 aggressive.
+- **Bridges-to-high-end / prevalence:** small (~+£0.2–0.4bn / ~+£0.1bn).
+- **Combined fair-inflator stack** (indirect multiplies expanded base): central ~£7.0bn, aggressive ~£13bn. Stacking best-cases is the overreach point.
+- **Net honest range: ~£1.0bn (freq/flat bridge) to ~£7bn (fair central inflator)**, preferred ~£2.2bn at the low end. The two upward levers our data can't close (sole-trader frame, unobservable catastrophic tail) = the top-2 next steps. Hard limits an inflator must respect: >£500k rate ≲ rule-of-three bound; prevalence already 40–69%; phishing bridge ~1.02 validated (body well-pinned).
+
+---
+
 ## Body vs. tail: the total is DEPTH-driven (`body_vs_tail.py`, 2026-07-15)
 
 Decomposed the national total by observed worst-incident band. **~64% of the (corrected) £2.26bn comes from the top band (£100k–£500k), which holds only 8 firms in the whole sample** (2 Micro, 2 Small, 1 Medium, 3 Large); ~36% comes from the body of sub-£100k incidents. Most extreme for Micro: ~86% of its contribution is those 2 top-band firms scaled by weight × 1.15M. So "Micro dominates" is true but NOT because of breadth of small incidents — it's a few large Micro incidents extrapolated across the population. This corrects an earlier loose claim that the total was breadth-driven; it is the opposite. (Pre-correction, with the open top band, this was ~74% of £3.1bn — the open-tail bug both inflated the total and exaggerated the tail's dominance.) The top-band rate rests on 1–3 firms per size band (~60–100% relative sampling error), though the Micro tail firms carry ordinary weights (~1.5), not extreme-weight artifacts. Top-band tail model is the #1 sensitivity to run. See `tail_sample_diagnostics.py` for per-band sample sizes and the codebook band definitions.
@@ -125,6 +137,7 @@ The final aggregation. Headline (corrected): **≈£2.2bn/yr type-based mean, me
 **Two decompositions run in parallel (cross-check, not either/or).** Both convert the survey's *single-worst-incident* cost (`damage_bands`) into a firm's *total annual* cost via a bridge multiplier, but slice the multiplier differently:
 - *Type-based:* bridge indexed by attack type (`disrupta`) — this session's per-type multipliers (Ransomware 2.21×, Impersonation 3.11–6.25× drawn per replicate, Malware 1.93×, DoS 0.36×, Hacking 1.01×, Takeover 5.50×, Phishing 1.02×; freq=1 → 1.0 exactly; unresolved/minor types → 1.0).
 - *Freq-based:* bridge = m(freq), flat 1.02 for freq>1 and 1.0 for freq=1 (the mixture-model-validated phishing figure, used as the project's representative freq-based best estimate).
+- (Note: the two also differ in the *cost-shape* stratification — type-based draws the incident cost from a per-SIZE lognormal, freq-based from a per-(SIZE,FREQ) cell with sparse-cell fallback. But the bridge is the dominant driver of the 2.3× gap: type-based applies large validated multipliers where freq-based flattens everything to 1.02.)
 - They **diverge 2.3×** (type-based ~£2.2bn vs freq-based ~£1.0bn) once the top band is correctly bounded — the bridge decomposition is a major lever. (The initially-reported "0.99× agreement" was an artifact of the open-top-band error inflating the shared tail until it swamped the bridge difference.) Type-based is preferred (validated per-type multipliers); freq-based flat-1.02-on-all-types is a lower variant.
 
 **CHOICE 1 — within-band cost: analytic lognormal conditional mean (chosen) vs. single point draw (tried, rejected) vs. band midpoint (considered).**

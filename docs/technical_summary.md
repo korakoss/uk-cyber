@@ -147,6 +147,17 @@ Already partly reflected in the interval (its 3.11–6.25× bridge is redrawn ea
 
 **Overall read:** ~£2.2bn (type-based) is a defensible *lower-central* estimate of self-reported employer-business incident costs, but its center of mass is **depth-driven** — it rests on ~8 large sample incidents extrapolated to the population, so it is fragile *upward and downward* in its tail. It is also sensitive to the bridge decomposition (the frequency-based variant gives ~£1.0bn), and nested inside a wider band of scope choices (sole-trader inclusion above all) that mostly push up. Two claims from an earlier draft have been retracted as too generous: "robust in its center" (the center *is* the thin tail) and "the methods agree to 0.99×" (an artifact of the since-corrected open-tail error).
 
+### E. Quantified upward ("inflator") sensitivities
+Because nearly every judgment call was deflationary (employer-only, hard £500k cap, direct costs only, midpoint bridges), the reasonable-argument room is mostly *upward*. `upward_sensitivity.py` quantifies it against the ~£2.2bn baseline:
+
+- **Sole-trader frame (largest clean lever): +£1.1–2.3bn.** Include the 4.27M zero-employee businesses at 20–40% of Micro's ~£1,325/business. New total ~£3.4–4.5bn. A scope choice our data can't refute.
+- **Missing catastrophic (>£500k) tail: +£0.7–3.9bn.** No firm reported an incident above £500k, but 0 in ~982 firms with a valid band only bounds the true rate to ≲0.14% of employers (rule-of-three) — i.e. up to ~1,950 firms the sample structurally can't see. At 0.05–0.14% × £1–5M mean, that's +£0.7–3.9bn. *This partly reclaims the ~£0.9bn the open-tail correction removed — the truth sits between "open tail" (unlimited) and "hard £500k cap" (rate exactly zero).* The same rule-of-three bound also **caps** this argument.
+- **Indirect:direct cost uplift: ×1.3–1.5** (literature-style multiplier for reputational/lost-business/uncosted-staff-time) → £2.9–3.4bn on its own; ×2 is the aggressive edge.
+- **Bridges to high ends / prevalence uplift:** small (~+£0.2–0.4bn and ~+£0.1bn respectively; prevalence is already 40–69% so bounded).
+- **Combined "fair inflator" stack** (these compound — indirect multiplies the expanded base): a *central* stack (sole-traders 30%, catastrophic 0.05%×£2M, indirect ×1.3) reaches **~£7.0bn**; an *aggressive-but-not-dishonest* stack (40%, 0.10%×£3M, ×1.5) reaches **~£13bn**. The stack is where honesty strains — each component is individually defensible, but multiplying every best-case together is the overreach an impartial reviewer should resist.
+
+**Net honest range:** ~£1.0bn (freq-based, flat bridge) up to ~£7bn (fair central inflator), with our preferred ~£2.2bn sitting deliberately at the low end. The two upward levers our data genuinely cannot close are the **sole-trader frame** and the **unobservable catastrophic tail** — the same two items at the top of §7's next-steps list.
+
 ---
 
 ## 7. Status and where to go next
