@@ -131,19 +131,21 @@ These sit *outside* the £1–6bn statistical interval; they're choices that mov
 
 So "interestingly low" is substantially by construction: business-only, employer-only, self-reported, single-incident-anchored — each choice trims.
 
-### B. Tail fragility — the real modeling weak point
-Only **8 firms** fall in the open £100k+ band, and a cost total is inherently tail-driven. The top band's contribution rides on how those 8 firms resample and on the fitted lognormal spread. Swapping the lognormal tail for a heavier Pareto, or perturbing the spread, could move the top-band contribution substantially. Classic "a handful of observations drive the tail which drives the total." Robustness here is **low** and this deserves a dedicated sensitivity analysis.
+### B. Tail fragility — the dominant driver, and the real modeling weak point
+This is not a minor caveat: it is *the* structural fact about the estimate. A body-vs-tail decomposition (`body_vs_tail.py`) shows **~74% of the entire national total comes from the open £100k+ top band, which contains just 8 firms in the whole sample** (2 Micro, 2 Small, 1 Medium, 3 Large). The total is **depth-driven, not breadth-driven**: it is dominated by a handful of catastrophic incidents extrapolated across the population, not by the mass of ordinary sub-£100k incidents (only ~26% of the total). This is most extreme for Micro, where ~86% of its ~£2bn contribution traces to 2 sample firms scaled up by weight × 1.15M businesses.
+
+Consequences: (i) the estimate rests on a very thin evidence base for the part that matters most; (ii) it is highly sensitive to the top-band tail model — swapping the lognormal for a heavier Pareto, or perturbing the fitted spread, moves the *majority* of the total, not a couple of billion at the margin; (iii) the bootstrap interval (£1–6bn) captures resampling of those 8 firms but **not** uncertainty in the fitted lognormal *shape* that sets how large the top-band conditional mean is — so the true uncertainty is wider than the stated interval. Robustness here is **low**, and the top-band tail is the highest-priority sensitivity analysis.
 
 ### C. Impersonation
 Already partly reflected in the interval (its 3.11–6.25× bridge is redrawn each replicate) and known to be the shakiest type. It's a meaningful contributor to the *width* of the interval, which is appropriate.
 
-### D. What is genuinely robust (reassuring)
-- **Type-based and frequency-based methods agree to 0.99×** — how we slice the bridge barely matters.
+### D. What is genuinely robust (reassuring — but narrower than it first appears)
+- **Type-based and frequency-based methods agree to 0.99×** — how we slice the *bridge* barely matters. (Note this is orthogonal to the tail issue in B: both methods share the same cost data and so share the same tail dependence.)
 - **Prevalence** is empirical and well-measured — not a lever.
-- **Phishing** (~half of incidents) has a bridge of ~1.02, so the largest single chunk of the estimate is essentially "sum the reported phishing costs" — very well pinned.
-- The **median has been stable** throughout development, even when a bug was blowing up the mean. The center of mass is solid.
+- **Phishing** (~half of incidents, bridge ~1.02) is well pinned — but phishing is a *body* phenomenon (cheap, high-volume), so this robustness applies to the ~26% of the total that is *least* important. The dominant ~74% (the tail) does not inherit it.
+- The **median (~£3.0bn) has been stable** through development. But given B, "stable median" mostly means "the 8 top-band firms and the fitted tail shape have stayed put," not that the estimate is anchored in a broad, robust evidence base.
 
-**Overall read:** ~£3bn is a defensible *lower-central* estimate of self-reported employer-business incident costs — robust in its center, fragile in its upper tail, and nested inside a wider band of legitimate scope choices (sole-trader inclusion above all).
+**Overall read:** ~£3bn is a defensible *lower-central* estimate of self-reported employer-business incident costs, but its center of mass is **depth-driven** — it rests on ~8 catastrophic sample incidents extrapolated to the population, so it is fragile *upward and downward* in its tail, and separately nested inside a wider band of scope choices (sole-trader inclusion above all) that mostly push up. The earlier framing of this as "robust in its center" was too generous: the center *is* the tail.
 
 ---
 

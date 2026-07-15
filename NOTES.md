@@ -109,6 +109,12 @@ Consolidated list of things "on the table" — genuine open choices, not yet set
 
 ---
 
+## Body vs. tail: the total is DEPTH-driven (`body_vs_tail.py`, 2026-07-15)
+
+Decomposed the national total by observed worst-incident band. **~74% of the £3.1bn comes from the open £100k+ top band, which holds only 8 firms in the whole sample** (2 Micro, 2 Small, 1 Medium, 3 Large); only ~26% comes from the body of sub-£100k incidents. Most extreme for Micro: ~86% of its ~£2bn is those 2 top-band firms scaled by weight × 1.15M. So "Micro dominates" is true but NOT because of breadth of small incidents — it's a few catastrophic Micro incidents extrapolated across the population. This corrects an earlier loose claim that the total was breadth-driven; it is the opposite. Implication: the estimate rests on a thin tail; the bootstrap interval (£1–6bn) captures resampling those 8 firms but NOT fitted-tail-*shape* uncertainty, so true uncertainty is wider. Top-band tail model is the #1 sensitivity to run. (This is a lower bound on tail-dependence: within-band lognormal tails also inflate the "body" figures.)
+
+---
+
 ## National Simulation — methodology & choices (`national_simulation.py`, 2026-07-15)
 
 The final aggregation. Headline: **≈£3.1–3.2bn/yr mean, ~£3.0bn median, 90% interval ~£1–6bn.** This section documents the nontrivial choices, what else was tried/considered, and what the alternatives would have done — so the number can be defended and revisited.
