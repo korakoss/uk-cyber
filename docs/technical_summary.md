@@ -6,22 +6,22 @@
 
 ## 1. The result
 
-**Estimated total annual cost of cybercrime to UK businesses ≈ £3.0–3.2 billion/year** (mean £3.1–3.2bn, median ~£3.0bn), with a **90% interval of roughly £1–6 billion**.
+**Estimated total annual cost of cybercrime to UK businesses ≈ £2.2 billion/year** (type-based method: mean £2.2bn, median £2.1bn, 90% interval ~£0.8–4.4bn). This is deliberately a *distribution*, not a point estimate.
 
-This is deliberately a *distribution*, not a point estimate — the whole pipeline is built to propagate uncertainty rather than collapse it to a single figure.
-
-Two independent methods (see §4) produce this number and agree to within 1%. That agreement is one of the main reasons to trust the central estimate. The caveats — and there are important ones — are in §6.
+**Important caveat on the method-agreement (see §5.7):** the two decompositions do *not* agree once the cost tail is modelled correctly — the type-based method gives ~£2.2bn, the frequency-based method ~£1.0bn, a 2.3× gap driven by the bridge assumption. An earlier version of this document reported the two agreeing "to within 1%"; that agreement turned out to be an artifact of a modelling error (treating the top cost band as open-ended, which inflated the tail so much it swamped the difference between the methods — see §6.B). With that error fixed, the bridge decomposition is revealed as a major lever, not a settled detail. Treat ~£2.2bn as the preferred central estimate and ~£1.0bn as a lower variant that applies a flat, phishing-style bridge to all attack types.
 
 Per-firm-size breakdown (type-based method):
 
 | Size band | Firms (N) | £/business | Contribution |
 |---|---|---|---|
-| Micro (1–9) | 1,150,875 | ~£1,700 | £1.96bn |
-| Small (10–49) | 220,085 | ~£3,900 | £0.86bn |
-| Medium (50–249) | 38,435 | ~£4,200 | £0.16bn |
-| Large (250+) | 8,335 | ~£13,500 | £0.11bn |
+| Micro (1–9) | 1,150,875 | ~£1,300 | £1.50bn |
+| Small (10–49) | 220,085 | ~£2,600 | £0.57bn |
+| Medium (50–249) | 38,435 | ~£2,950 | £0.11bn |
+| Large (250+) | 8,335 | ~£6,400 | £0.05bn |
 
 Micro businesses dominate the total by sheer count, despite the lowest per-firm cost.
+
+*Revision note (2026-07-15): figures above supersede an initial ~£3.1bn estimate that treated the top cost band (`damage_bands`=10) as open-ended. The CSBS codebook bounds that band at £100k–£500k and offers explicit higher bands (up to £5m+) that **no firm selected**, so the open-tail treatment manufactured cost the survey did not find. Correcting it lowered the total ~28% and broke the false method-agreement.*
 
 ---
 
@@ -115,7 +115,7 @@ Because the bridge can be sliced either by **attack type** or by **frequency**, 
 - **Type-based:** incident cost × per-type multiplier (§5.3–5.5).
 - **Frequency-based:** per-(size,freq) cost × a flat 1.02 bridge for repeat-attacked firms (the phishing-validated figure as a representative default).
 
-They stratify differently and use different bridge logic, yet agree to **0.99×** on the national total. This is strong evidence the central estimate is not an artifact of how we chose to slice the bridge.
+They stratify differently and use different bridge logic. With the cost tail correctly bounded (§6.B), they **diverge by 2.3×** (type-based ~£2.2bn, frequency-based ~£1.0bn) — so how we slice the bridge matters a great deal. The gap is because the frequency-based variant applies a flat ~1.02 (phishing-style) bridge to *all* attack types, whereas the type-based method applies the larger validated multipliers where they exist (Ransomware, Impersonation, Takeover). The type-based method is the more defensible of the two — its bridges are type-specific and validated — and the frequency-based ~£1.0bn is best read as a lower variant. **Caution:** an earlier version reported these agreeing to 0.99×; that was an artifact of the open-top-band error, which inflated the shared tail so much it drowned out the bridge difference. The apparent agreement was measuring the tail, not the bridge.
 
 ---
 
@@ -132,20 +132,20 @@ These sit *outside* the £1–6bn statistical interval; they're choices that mov
 So "interestingly low" is substantially by construction: business-only, employer-only, self-reported, single-incident-anchored — each choice trims.
 
 ### B. Tail fragility — the dominant driver, and the real modeling weak point
-This is not a minor caveat: it is *the* structural fact about the estimate. A body-vs-tail decomposition (`body_vs_tail.py`) shows **~74% of the entire national total comes from the open £100k+ top band, which contains just 8 firms in the whole sample** (2 Micro, 2 Small, 1 Medium, 3 Large). The total is **depth-driven, not breadth-driven**: it is dominated by a handful of catastrophic incidents extrapolated across the population, not by the mass of ordinary sub-£100k incidents (only ~26% of the total). This is most extreme for Micro, where ~86% of its ~£2bn contribution traces to 2 sample firms scaled up by weight × 1.15M businesses.
+This is not a minor caveat: it is *the* structural fact about the estimate. A body-vs-tail decomposition (`body_vs_tail.py`) shows **~64% of the national total comes from the top cost band (£100k–£500k), which contains just 8 firms in the whole sample** (2 Micro, 2 Small, 1 Medium, 3 Large). The total is **depth-driven, not breadth-driven**: it is dominated by a handful of large incidents extrapolated across the population, not by the mass of ordinary sub-£100k incidents (~36% of the total). Most extreme for Micro, where ~86% of its contribution traces to 2 sample firms scaled up by weight × 1.15M businesses. (Before the top-band bound was corrected this share was ~74% and the total ~£3.1bn; the open-tail error both inflated the total ~28% and exaggerated the tail's dominance.)
 
-Consequences: (i) the estimate rests on a very thin evidence base for the part that matters most; (ii) it is highly sensitive to the top-band tail model — swapping the lognormal for a heavier Pareto, or perturbing the fitted spread, moves the *majority* of the total, not a couple of billion at the margin; (iii) the bootstrap interval (£1–6bn) captures resampling of those 8 firms but **not** uncertainty in the fitted lognormal *shape* that sets how large the top-band conditional mean is — so the true uncertainty is wider than the stated interval. Robustness here is **low**, and the top-band tail is the highest-priority sensitivity analysis.
+The top-band rate is thinly estimated even though the *overall* samples are decent (Micro n≈1,000, ~400 attacked): the top-band count is what bounds the tail, and that is 1–3 firms per size band (rough relative sampling error ~60–100%). One mitigating point: the Micro top-band firms carry ordinary survey weights (~1.5), so they are not extreme-weight artifacts being blown up — they are treated as representative Micro firms. Still: (i) the estimate rests on a thin evidence base for the part that matters most; (ii) it is sensitive to the top-band model — a heavier (Pareto) tail or a wider fitted spread moves the majority of the total; (iii) the bootstrap interval captures resampling those 8 firms but **not** uncertainty in the fitted lognormal *shape*, so the true uncertainty is wider than stated. Robustness here is **low**, and the top-band tail is the highest-priority sensitivity analysis.
 
 ### C. Impersonation
 Already partly reflected in the interval (its 3.11–6.25× bridge is redrawn each replicate) and known to be the shakiest type. It's a meaningful contributor to the *width* of the interval, which is appropriate.
 
 ### D. What is genuinely robust (reassuring — but narrower than it first appears)
-- **Type-based and frequency-based methods agree to 0.99×** — how we slice the *bridge* barely matters. (Note this is orthogonal to the tail issue in B: both methods share the same cost data and so share the same tail dependence.)
+- ~~Type-based and frequency-based methods agree to 0.99×~~ — **retracted.** This was an artifact of the open-top-band error (§6.B); with the tail bounded, the methods diverge 2.3× and the bridge choice is a *major* lever. What survives: the two methods share the same cost data, so they at least agree the total is tail-concentrated.
 - **Prevalence** is empirical and well-measured — not a lever.
-- **Phishing** (~half of incidents, bridge ~1.02) is well pinned — but phishing is a *body* phenomenon (cheap, high-volume), so this robustness applies to the ~26% of the total that is *least* important. The dominant ~74% (the tail) does not inherit it.
+- **Phishing** (~half of incidents, bridge ~1.02) is well pinned — but phishing is a *body* phenomenon (cheap, high-volume), so this robustness applies to the ~36% of the total that is *least* important. The dominant ~64% (the tail) does not inherit it.
 - The **median (~£3.0bn) has been stable** through development. But given B, "stable median" mostly means "the 8 top-band firms and the fitted tail shape have stayed put," not that the estimate is anchored in a broad, robust evidence base.
 
-**Overall read:** ~£3bn is a defensible *lower-central* estimate of self-reported employer-business incident costs, but its center of mass is **depth-driven** — it rests on ~8 catastrophic sample incidents extrapolated to the population, so it is fragile *upward and downward* in its tail, and separately nested inside a wider band of scope choices (sole-trader inclusion above all) that mostly push up. The earlier framing of this as "robust in its center" was too generous: the center *is* the tail.
+**Overall read:** ~£2.2bn (type-based) is a defensible *lower-central* estimate of self-reported employer-business incident costs, but its center of mass is **depth-driven** — it rests on ~8 large sample incidents extrapolated to the population, so it is fragile *upward and downward* in its tail. It is also sensitive to the bridge decomposition (the frequency-based variant gives ~£1.0bn), and nested inside a wider band of scope choices (sole-trader inclusion above all) that mostly push up. Two claims from an earlier draft have been retracted as too generous: "robust in its center" (the center *is* the thin tail) and "the methods agree to 0.99×" (an artifact of the since-corrected open-tail error).
 
 ---
 

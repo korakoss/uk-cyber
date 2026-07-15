@@ -74,8 +74,12 @@ SIZE_LABELS = {1: 'Micro', 2: 'Small', 3: 'Medium', 4: 'Large'}
 BAND_BOUNDS = {
     1: (0, 0), 2: (1, 100), 3: (100, 500), 4: (500, 1000), 5: (1000, 5000),
     6: (5000, 10000), 7: (10000, 20000), 8: (20000, 50000),
-    9: (50000, 100000), 10: (100000, np.inf),
+    9: (50000, 100000), 10: (100000, 500000),
 }
+# Band 10 is BOUNDED at £100k-£500k per the CSBS codebook. The scale explicitly
+# continues (11=£500k-1M, 12=£1M-5M, 13=£5M+) and NO firm selected any band above
+# 10 — so the data contains no evidence of any >£500k most-disruptive incident.
+# Treating band 10 as open would manufacture tail cost the survey did not find.
 
 # --- bridges ----------------------------------------------------------------
 # Type-based (disrupta -> multiplier), from bridge_specification.py.
