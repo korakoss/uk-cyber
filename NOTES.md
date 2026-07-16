@@ -110,6 +110,18 @@ Consolidated list of things "on the table" — genuine open choices, not yet set
 
 ---
 
+## Does cyber damage scale with GDP share? (`gdp_scaling_test.py`, 2026-07-15) — NO
+
+Tested the "damages ∝ share of GDP" extrapolation premise, per sector and per size band. Damage share = survey-weighted type-based expected cost; economic-size share = GVA (sector, ≈GDP) / turnover (size, GDP proxy, from BPE).
+
+**Both cuts refute proportionality:**
+- **Sector:** corr(damage share, GVA share) = **0.30** (proportional ⇒ 1.0). Ratios span 0.02× (Education) to 7.0× (Info/comms). Info/comms takes **44.8% of all business cyber damage on 6.4% of GVA** — but this rests on just 2 top-band firms (tail-fragile). Finance 0.03× and Education 0.02× are artefactually low (finance turnover excluded / public-sector GVA confound). Even discounting the Info/comms tail, the relationship is weak.
+- **Size:** corr = **−0.58** — NEGATIVE. Damage share *falls* as turnover share rises. Micro 67.9% of damage on 13.7% of turnover (ratio 4.96×); Large 2.2% of damage on 52.6% of turnover (0.04×). GDP-proportional scaling isn't just wrong here, it's backwards — small firms bear wildly disproportionate cyber damage relative to economic size (per-firm damage is sublinear in size, turnover super-linear, so damage/turnover collapses with size).
+
+**Implication for the methodology:** a GDP-proportional bridge would massively over-attribute cyber damage to large/high-GVA entities and under-attribute to small ones. For cybercrime specifically it's a biased bridge; the bias is quantified and directional. **Caveats:** sector result is tail-fragile (Info/comms = 2 firms); turnover is a proxy (excludes finance); Education/Health GVA includes public provision outside the business survey; GVA section values partly apportioned from ONS 10-group data (documented in script). But the core signals — weak sector correlation, *negative* size correlation — are strong enough to survive these.
+
+---
+
 ## Quantified upward sensitivities — the "inflator" case (`upward_sensitivity.py`, 2026-07-15)
 
 Baseline ~£2.2bn is built from deflationary choices, so reasonable-argument room is mostly upward. Quantified scenarios (deterministic, on the type-based baseline):
