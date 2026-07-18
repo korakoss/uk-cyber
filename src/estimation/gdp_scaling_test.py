@@ -206,4 +206,59 @@ print("\nInterpretation: ratio = damage share ÷ economic-size share. ratio≈1 
 print("groups would support the GDP-proportional premise; large spread refutes it")
 print("(some sectors/sizes take far more or less cyber damage than their economic")
 print("size predicts). Watch n/ntop: small-n or 1-2-top-band sectors are unreliable.")
+
+
+# ==========================================================================
+# APPENDED 2026-07-17 — rerun TEST 1 with REAL section-level aGVA
+# ==========================================================================
+# Replaces the apportioned 10-group GVA above with direct section-level
+# figures from the ONS Annual Business Survey (ABS), "Sections A to S" table,
+# 2023 aGVA at basic prices (£ million), downloaded from:
+#   ons.gov.uk/.../uknonfinancialbusinesseconomyannualbusinesssurveysectionsas
+#
+# Why this is a genuine improvement over the apportioned GVA above:
+#  1. DIRECT, not apportioned — each SIC section has its own published value
+#     (no splitting of ONS 10-group aggregates by assumed proportions).
+#  2. PRIVATE-SECTOR / BUSINESS-ECONOMY frame — ABS aGVA is the non-financial
+#     *business* economy, i.e. the same frame the CSBS measures. This removes
+#     the public-sector confound that inflated Education/Health GVA in the
+#     total-GVA version: private Education aGVA is £38.3bn (not the ~£140bn
+#     total GVA incl. state schools) and private Health £53.3bn (not ~£215bn
+#     incl. NHS). So the earlier *PUB flag is no longer needed.
+#
+# Caveats specific to this source:
+#  - Finance & insurance (K, sector_comb2=5) is OUT OF FRAME (ABS = NON-
+#    financial business economy). We drop sector 5 from this rerun rather
+#    than mix denominators. (The turnover size-proxy also excludes finance,
+#    so this is internally consistent.)
+#  - Agriculture (A) has partial ABS coverage (small farms below the survey
+#    threshold excluded): aGVA only £3.1bn vs ~£17.8bn total GVA. Its ratio
+#    will therefore be overstated — flagged.
+AGVA_BN = {  # ONS ABS 2023 aGVA, £bn, by sector_comb2 group
+    1: 52.291 + 156.089,  # L real estate + N admin/support
+    2: 143.519,           # F construction
+    3: 38.260,            # P education (PRIVATE only)
+    4: 35.015 + 21.971,   # R arts + S other services
+    # 5: finance/insurance (K) — out of ABS frame, dropped
+    6: 67.002,            # I accommodation/food
+    7: 53.339,            # Q health/social (PRIVATE only)
+    8: 178.371,           # J information/communication
+    9: 250.315,           # M professional/sci/tech
+    10: 250.406,          # G wholesale/retail
+    11: 111.211,          # H transport/storage
+    12: 301.963,          # B-E production
+    13: 3.066,            # A agriculture (PARTIAL ABS coverage — understated)
+}
+AGVA_LABELS = {k: v for k, v in SECTOR_LABELS.items() if k in AGVA_BN}
+# damage shares must be recomputed on the SAME universe we have aGVA for
+# (i.e. excluding finance), so shares of both sides sum over the same sectors.
+print("\n\n")
+proportionality_report('sector_comb2', AGVA_LABELS, AGVA_BN,
+                       "TEST 1b — SECTOR: damage share vs REAL private-sector aGVA (ONS ABS 2023)",
+                       "aGVA", flag={13})
+print("  (*flag on Agriculture = partial ABS coverage, aGVA understated ⇒ ratio overstated.)")
+print("  (Finance/insurance K excluded — outside the ABS non-financial frame.)")
+print("  NB: damage shares here are over the finance-excluded universe, so they")
+print("      differ slightly from TEST 1; the comparison is like-for-like within it.")
+
 print("\nDone.")
