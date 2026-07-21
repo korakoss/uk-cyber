@@ -7,6 +7,56 @@ Technical but focused on reasoning and results rather than implementation detail
 
 ---
 
+## The headline: ~£2.2bn a year, and how it is built
+
+The estimate of total annual UK business cybercrime cost is **≈£2.2bn**
+(mean £2.23bn, median £2.06bn, 90% interval £0.79–4.35bn). It is a
+distribution, not a point, and it is assembled stratum by stratum:
+
+    Total = Σ_size  N(size) × E[annual cost per firm | size]
+
+with N(size) the ONS employer-business counts (Micro 1.15M, Small 220k,
+Medium 38k, Large 8.3k; the 4.27M zero-employee sole traders are out of the
+survey frame and excluded — a deliberate, documented scope choice).
+
+Each firm's annual cost is built from three moves, each of which was a genuine
+modelling decision made upstream:
+
+1. **Prevalence and band** come straight from the survey — a firm is attacked or
+   not (40/51/66/69% by size), and if attacked it reported the cost of its single
+   *most disruptive* incident as a **band**.
+2. **Band → pounds** uses the fitted per-size zero-inflated lognormal only to
+   place a value *within* the firm's own observed band (the semiparametric "A"
+   choice — the model never overrides how many firms sit in each band; see the
+   next section for why this matters and what the fully parametric alternative
+   does instead). The top band is bounded at £100k–£500k.
+3. **Worst-incident → annual total** applies the per-attack-type **bridge**
+   multiplier. The natural i.i.d. order-statistics bridge was rejected (cost does
+   not rise with attack frequency — it is flat-to-falling), so the bridge is a set
+   of per-type multipliers derived in their own upstream analyses (Ransomware
+   2.21×, Takeover 5.50×, Malware 1.93×, Phishing 1.02×, DoS 0.36×, Hacking 1.01×,
+   Impersonation a fragile 3.11–6.25× *range*). Firms reporting a single incident
+   (freq=1) need no bridge — their reported cost *is* the annual total.
+
+The uncertainty that matters lives in the **inputs**, not in sampling noise: at
+1.4M firms an i.i.d. draw per firm would collapse to its mean and hide everything.
+So the survey is **bootstrapped** (firms resampled within each size band, weighted
+by survey weight, B=500); each replicate produces a cost-per-business per band,
+scaled by the fixed N(size) and summed. The 90% interval is driven by the band mix
+(how many firms land in the top band — only 8 in the whole sample) and by the
+Impersonation bridge draw.
+
+**Where the total comes from:** Micro firms contribute ~£1.5bn of the £2.2bn —
+about two-thirds — despite the smallest per-firm cost, purely on their 1.15M count.
+This is *not* breadth of small incidents: it is a handful of large Micro incidents
+extrapolated across the population (see the body-vs-tail decomposition). That is
+the estimate's central fragility, and the next section isolates it precisely.
+
+*Script: `runs/estimate_national_baseline.py` (approach A), reproducing
+`src/estimation/national_simulation.py`'s type-based decomposition to 2 s.f.*
+
+---
+
 ## Valuing banded costs: the parametric ("B") cost model and what it reveals
 
 ### The problem
