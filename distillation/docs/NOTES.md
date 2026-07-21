@@ -53,6 +53,28 @@ columns MATCH the inline logic in national_simulation.py. Self-test attack rates
   £0.99-1.42bn, REPRODUCES the original src/estimation/size_type_cellmean_estimate.py
   exactly. Output -> runs/results/estimate_size_type_lognormal.txt.
 
+### Unit 3 — approach A national baseline (THE HEADLINE)  ✅ DONE + REPRODUCED
+`runs/estimate_national_baseline.py`: the spine. Semiparametric approach A —
+keep each firm's OWN observed band (empirical band mix), place a £ value within
+it via the per-size fitted lognormal (`band_conditional_mean`, band 10 bounded),
+multiply by the per-type bridge (freq==1 -> 1.0; Impersonation drawn per
+replicate from 3.11-6.25x). Weighted bootstrap B=500 within each size band ->
+per-size £/business -> x N(size) -> national-total distribution. Same seed
+(20260715) and RNG draw order (one Impersonation uniform, then 4 weighted
+resamples per replicate) as national_simulation.py's type-based branch, so it
+reproduces the recorded headline to 2 s.f.:
+- mean £2.23bn, median £2.06bn, 90% interval £0.79-4.35bn — all four within the
+  0.15 £bn reproduction tolerance. ALL CHECKS PASS.
+- per-size: Micro £1.50bn (£1,301/biz), Small £0.57bn, Medium £0.11bn, Large
+  £0.05bn — Micro is ~67% of the total, consistent with the body-vs-tail finding.
+Python-only engine (Squiggle emit skipped per scope; the original's Squiggle
+matched this Python aggregation to 2 s.f. anyway). Output ->
+runs/results/estimate_national_baseline.txt.
+
+Spine status: A (this, £2.2bn headline) + B (£1.0bn parametric floor) both now
+distilled and reproduced. The two bookend the honest range and both trace to the
+same ~2 Micro top-band firms.
+
 ### NARRATIVE.md — first section written
 "Valuing banded costs: the parametric (B) cost model and what it reveals."
 Documents A (semiparametric, empirical band mix, £2.26bn) vs B (fully parametric
@@ -76,5 +98,11 @@ not the data — see src/estimation/tail_ceiling_pareto.py, £6bn @ £5M cap ...
 - distillation/runs/diag_global_vs_stratified_fit.py (global vs per-size fit GOF)
 
 ## Next unit (not started)
-Either (a) the semiparametric baseline A as a distilled run (the headline number),
-or (b) the GDP-scaling refutation. A is the bigger spine piece.
+Approach A (the headline spine) is now DONE (Unit 3 above). Remaining robustness
+checks slated for the distillation, in rough priority:
+- (a) GDP-scaling refutation (sector + size cuts; the real-aGVA rerun is the
+  strong version) — the biggest "bases covered" defense not yet distilled.
+- (b) body-vs-tail decomposition (~64% of the total from 8 top-band firms).
+- (c) upward-sensitivity / inflator scenarios (the honest £1.0-7bn range).
+- (d) censored floor (model-free bounds) — smallest, quick.
+A NARRATIVE section for the A/B spine pairing would also close out the headline.
