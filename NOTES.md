@@ -972,3 +972,80 @@ For each type: (1) FLOOR = hard lower bound using each record's own band lower-e
 **This identifies the structural reason Impersonation is harder than Ransomware, independent of modeling choice**: Ransomware has enough directly-observed cost data (`ranscost_bands`) that a model only needs to extrapolate a small residual (8.1% of weight); Impersonation has almost no directly-observed data at all, so essentially all of its estimate is model-dependent extrapolation — which is exactly why it turned out to be so sensitive to a single reference-sample observation in the leave-one-out check above. Not a fixable modeling problem — a genuine data-coverage gap.
 
 **Minor cross-script consistency note**: this script's Ransomware "naive" (£238.12) doesn't exactly match the Monte-Carlo script's naive (£273.56) — the two classify firms slightly differently (direct-cost-column availability here vs. `ranssoft_bands` availability there), so a handful of firms land in different buckets between them. Not a contradiction, just a reminder the two scripts' "naive" baselines aren't built identically. Impersonation's two naive figures match closely since both scripts classify it the same way (via `damage_bands`/`disrupta`, no type-specific count variable exists for it either way).
+
+---
+
+## Alternative estimation approach: flood+peak Poisson with max-bias correction (2026-09 session)
+
+### Context and motivation
+
+Developed an independent estimation methodology that starts from a different generative model than the bridge-based approach. Instead of "bridge from worst-incident cost to total cost," this approach models the number of *costly* incidents (peaks) directly as a Poisson process and recovers the per-draw cost distribution from observed maxima.
+
+**Key insight**: the survey records the cost of the *most disruptive* incident. If a firm experiences K≥1 costly incidents (peaks, band ≥ 3), the observed cost band is max(T_1, ..., T_K) — an order-statistic bias. The Wald identity E[total peak cost] = λ·E[T] needs the per-draw E[T], not the observed-max E[T].
+
+### Flood+peak two-regime model
+
+Split firm-year costs into:
+- **Flood**: near-zero incidents (band ≤ 2, i.e. no cost or <£100). Ignored in total.
+- **Peaks**: costly incidents (band ≥ 3, i.e. ≥£100). Modeled as Poisson(λ) per firm-year.
+
+λ is recovered from binary peak occurrence: λ = −log(1 − P(peak)), where P(peak) = fraction of attacked firms with band ≥ 3. λ is conditioned on (size, n_types) cells for granularity.
+
+### Max-bias correction (`src/estimation/max_bias_correction.py`)
+
+Analytical inversion: given the observed-max CDF G(t) and the cell's λ, the per-draw CDF is F(t) = log(1 + G(t)·(e^λ − 1)) / λ. Derived from P(M_X ≤ b) = exp(−λ(1−F(b))).
+
+Results: Micro E[T] £7,926→£6,934 (−14.3%), Rest £13,841→£11,379 (−21.6%). National total drops ~15% from £2.17bn to £1.85bn with the correction.
+
+### Type-tier decomposition
+
+Defined three tiers based on attack type:
+- **Expensive**: Ransomware (1), DoS (3), Hacking (4)
+- **Mid**: Malware (2), Impersonation (5), sparse types (7, 8, 16)
+- **Cheap**: Phishing (6)
+
+Motivation: pooled T across all types is a "Frankenstein object" — it has no coherent generative model. A firm doesn't draw from a single cost distribution; it draws from type-specific distributions with different rates. The tier decomposition gives a real probability model: three independent Poisson processes, each with its own λ and T distribution.
+
+### Scripts and results
+
+| Script | Approach | National total (corrected) |
+|--------|----------|---------------------------|
+| `max_bias_correction.py` | Pooled λ×T with max-bias correction | £1.85bn |
+| `unified_tiered_estimate.py` | λ and T conditioned on same tier space | £1.66–1.74bn (varies by conditioning) |
+| `tier_decomposed_estimate.py` | Per-tier λ and T via disrupta | £1.60–1.74bn |
+| `tier_mle.py` | Full MLE for 3 independent Poisson processes | **£1.75bn** |
+| `type_buckets.py` | Exploratory type bucketing | (diagnostic) |
+| `lambda_conditioning.py` | Exploratory λ conditioning analysis | (diagnostic) |
+
+### MLE model (`src/estimation/tier_mle.py`)
+
+The most principled version. Fits λ_e, λ_m, λ_c and discrete PMFs for T_e, T_m, T_c simultaneously per size group (Micro/Rest). 24 parameters per group (3 log-λ + 3×7 softmax PMF values).
+
+Uses the identity P(disrupta=X, band=b) = P(M_X=b)·Π_{Y≠X} P(M_Y<b) — the probability that tier X "wins" (produces the highest-cost peak) at band b while all other tiers produce peaks below b. This automatically handles cross-tier selection bias (disrupta only shows which tier had the highest cost).
+
+**Fitted results:**
+- Micro: λ_e=0.055, λ_m=0.102, λ_c=0.142; E[T_e]=£17,685, E[T_m]=£9,229, E[T_c]=£1,517
+- Rest: λ_e=0.062, λ_m=0.212, λ_c=0.181; E[T_e]=£51,122, E[T_m]=£4,728, E[T_c]=£6,443
+- National total: **£1.75bn**
+
+**GOF**: MAPE 3.3–3.5% (excellent fit). Formal χ² test is inapplicable — 24 parameters exceed the number of observable cells after pooling sparse ones (~11 Micro, ~19 Rest). The model fits well by absolute measures but is technically overparameterized relative to the observable contingency table.
+
+### Key methodological insights from this session
+
+1. **Pooled T has no coherent generative model.** There is no "random draw" from a single distribution — a firm's cost draws come from type-specific distributions at type-specific rates. Pooled λ·E[T] happens to give a similar answer because the pooled T is implicitly weighted by peak shares, but it's not a principled object.
+
+2. **Max-bias correction is automatic in the MLE.** The MLE fits per-draw T distributions directly from observed maxima — no separate correction step needed. The correction is baked into the likelihood via P(M_X ≤ b) = exp(−λ_X(1−F_X(b))).
+
+3. **Cross-tier selection bias.** disrupta only shows which tier produced the highest-cost peak. A firm with both an expensive ransomware attack and a cheap phishing attack only reports the ransomware in disrupta. The MLE handles this via the competition model; simpler approaches (like directly computing E[T] per disrupta tier) overestimate each tier's T because they only see the "winners."
+
+4. **Convergence of estimates.** All approaches (pooled with correction, tier-conditioned, disrupta-based, MLE) converge to ~£1.7–1.85bn. The spread is narrow, suggesting the answer is robust to methodological choices within this framework.
+
+### Relationship to the bridge-based estimate
+
+The bridge-based approach (£2.2bn type-based, §National Simulation above) and the Poisson peak approach (£1.75bn MLE) address the same question from different angles. The bridge approach multiplies worst-incident cost by a bridge factor; the Poisson approach models peak counts and per-draw costs directly. The ~20% gap is expected — the bridge approach uses per-type multipliers that can be >1 (Ransomware 2.21×, Impersonation 3.11–6.25×), while the Poisson approach attributes multi-incident costs via λ rather than explicit multipliers.
+
+### Status
+
+- All six scripts committed and pushed to this repo.
+- The MLE-based £1.75bn has not been adopted as the headline; the bridge-based £2.2bn remains the primary figure pending a decision on which framework to prefer.
+- Open: whether to add n_types conditioning to the MLE (currently uses size_group only for the two groups), and whether the overparameterization issue warrants constraining the T distributions.
