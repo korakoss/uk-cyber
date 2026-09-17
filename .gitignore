@@ -4,3 +4,4 @@ results/
 
 # squiggle CLI local install (reinstall via tools/squiggle npm install)
 tools/squiggle/node_modules/
+.venv/
