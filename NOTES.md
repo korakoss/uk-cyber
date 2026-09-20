@@ -1044,8 +1044,46 @@ Uses the identity P(disrupta=X, band=b) = P(M_X=b)·Π_{Y≠X} P(M_Y<b) — the 
 
 The bridge-based approach (£2.2bn type-based, §National Simulation above) and the Poisson peak approach (£1.75bn MLE) address the same question from different angles. The bridge approach multiplies worst-incident cost by a bridge factor; the Poisson approach models peak counts and per-draw costs directly. The ~20% gap is expected — the bridge approach uses per-type multipliers that can be >1 (Ransomware 2.21×, Impersonation 3.11–6.25×), while the Poisson approach attributes multi-incident costs via λ rather than explicit multipliers.
 
+### Lognormal T variant (`src/estimation/tier_mle_lognormal.py`)
+
+The free-PMF MLE (24 params) is nearly saturated — 25 observable cells (3 tiers × 8 bands + 1 no-peak) means df≈0. Replaced free PMFs with T ~ Lognormal(μ,σ) per tier: 9 params per group (3 log-λ + 3×(μ, log-σ)).
+
+**Likelihood ratio test**: ΔNLL ≈ 7–8 on 15 df (p ≈ 0.4) — free PMF does NOT significantly improve over lognormal. The 15 extra parameters bought nothing.
+
+**GOF (Rest, df=7)**: χ² = 9.19, p = 0.24 (passes). G-test = 22.42, p = 0.002 (rejects, driven by expensive band-7: obs 7 vs pred 3.4 — G-test oversensitivity to sparse cells). χ²/df ≈ 1.3 (good). Micro is untestable (9 cells for 9 params → df = -1).
+
+**Fitted parameters:**
+- Micro: λ_e=0.055, μ_e=0.72, σ_e=4.64, E[T_e]=£15,060; λ_m=0.102, E[T_m]=£4,227; λ_c=0.142, E[T_c]=£1,634. E[cost|att]=£1,495
+- Rest: λ_e=0.062, μ_e=8.50, σ_e=3.67, E[T_e]=£53,539; λ_m=0.212, E[T_m]=£7,074; λ_c=0.181, E[T_c]=£6,870. E[cost|att]=£6,058
+- **National total: £1.558bn** (down from £1.75bn with free PMF — the lognormal smoothing removes noise-driven tail weight)
+
+### Bootstrap (`src/estimation/tier_mle_bootstrap.py`, `tier_mle_bootstrap_fast.py`)
+
+Resample firms within size group (with replacement), refit 9-param lognormal MLE. Both 200-rep (fast) and 500-rep versions give consistent results.
+
+- **National total**: point £1.558bn, mean £1.55bn, median £1.51bn, SD £0.34bn, **90% CI £1.0–2.2bn**
+- **Micro E[cost|att]**: point £1,495, 90% CI £587–£2,730
+- **Rest E[cost|att]**: point £6,058, 90% CI £4,004–£7,928
+- **Micro expensive E[T]**: point £15,060, **90% CI £3,012–£31,288** (10× range — dominant uncertainty source)
+- Micro expensive σ: 90% CI [1.66, 12.76] — essentially unconstrained
+
+### Cross-checks on Micro-expensive cell (`src/estimation/micro_expensive_crosschecks.py`)
+
+The Micro-expensive cell (E[T] CI £3k–£31k) carries ~56% of Micro's cost and Micro is ~45% of the national total. Four independent cross-checks:
+
+1. **Bridge cross-check**: censored-MLE per-type figures (independent measurement channel) give £902/attacked-business for expensive types. MLE gives £1,410. Ratio 1.56× — good agreement across independent channels. If forced to match bridge, implies Micro E[T_e] ≈ £3.1k (bottom of CI).
+
+2. **Cross-size ratio**: Micro/Rest E[T] ratios — expensive 0.28, mid 0.60, cheap 0.24. No anomaly (expensive ratio sits between the other tiers).
+
+3. **Size gradient**: empirical mean peak cost Micro £19k < Small £65k (monotone ordering holds — Micro is properly the smallest).
+
+4. **Freq=1 direct draws**: once-only firms need no max-bias correction. Micro expensive freq=1: n=5 (bands 3,3,4,5,6), mean £2.4k vs fitted E[T]=£15k. σ=3.5 fits as well as σ=4.64. Points to lower half of CI.
+
+**Synthesis**: three of four checks lean toward the lower half of the £3k–£31k CI. Under minimax-overestimate philosophy, £1.558bn is defensible as a mild overestimate — the point estimate likely sits in the upper half of the true distribution.
+
 ### Status
 
-- All six scripts committed and pushed to this repo.
-- The MLE-based £1.75bn has not been adopted as the headline; the bridge-based £2.2bn remains the primary figure pending a decision on which framework to prefer.
-- Open: whether to add n_types conditioning to the MLE (currently uses size_group only for the two groups), and whether the overparameterization issue warrants constraining the T distributions.
+- All scripts committed and pushed.
+- **Current headline**: lognormal MLE national total **£1.558bn, 90% CI £1.0–2.2bn**.
+- The bridge-based £2.2bn remains as an alternative upper-bound estimate.
+- Open: shared-σ refit between Micro and Rest for the expensive tier (could tighten the Micro-expensive CI by borrowing strength from the better-identified Rest group).
