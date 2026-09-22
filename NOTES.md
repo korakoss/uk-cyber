@@ -1087,3 +1087,40 @@ The Micro-expensive cell (E[T] CI £3k–£31k) carries ~56% of Micro's cost and
 - **Current headline**: lognormal MLE national total **£1.558bn, 90% CI £1.0–2.2bn**.
 - The bridge-based £2.2bn remains as an alternative upper-bound estimate.
 - Open: shared-σ refit between Micro and Rest for the expensive tier (could tighten the Micro-expensive CI by borrowing strength from the better-identified Rest group).
+
+---
+
+## Two-Process Investigation (2026-09-22)
+
+### Motivation
+Questioning whether the band>=3 "peak" cutoff is the right operationalization for separating costly from non-costly incidents. Hypothesis: two latent processes at the ATTACK level — nuisance (high-freq, low-cost) and serious (rare, heavier right tail). These are NOT firm-level clusters; a single firm experiences both.
+
+### Attack-type mapping
+Natural clustering by attack type: **Nuisance** = phishing (type6, disrupta=6) + impersonation (type5, disrupta=5). **Serious** = everything else (ransomware, malware, DoS, hacking, unauth access, takeover). Evidence: only-nuisance-type firms have 65% band=1 at freq=1; only-serious have much higher success rates and heavier cost tails.
+
+### Disrupta-based decomposition (`two_process_disrupta.py`)
+The survey's `disrupta` variable (which type was MOST DISRUPTIVE) directly attributes each firm's max cost to one of the two processes — no latent-variable inference needed.
+
+**Key findings:**
+
+| Metric | Nuisance | Serious |
+|--------|----------|---------|
+| Share of disrupta | 83.5% | 16.5% |
+| Micro P(success) | 0.37 | 0.66 |
+| Micro E[T\|success] | £3,481 | £9,471 |
+| Rest P(success) | 0.51 | 0.84 |
+| Rest E[T\|success] | £4,153 | £24,785 |
+| Rest freq=1 E[T] | £1,464 | £45,379 |
+
+The serious process has ~2× higher success rate AND ~3-6× higher E[T|success]. The right tail (bands 7-10) is overwhelmingly dominated by serious disrupta. But nuisance is 83.5% of all disrupta attributions, so its aggregate contribution is non-trivial.
+
+National total (max cost only, no bridge): £1.729bn — consistent with canonical estimates.
+
+### Failed approaches
+- **Pure subsamples** (only-nuisance or only-serious firms): serious-only subsample too sparse (n=40 total, n=13 successful freq=1) and unrepresentative — most firms with serious types ALSO have nuisance types (n=273 "both").
+- **Two-process lognormal MLE** (`two_process_mle.py`): H process collapsed to degenerate zero-cost (lognormal can't represent "96% zero, 4% band-2").
+- **Two-process free-PMF MLE** (`two_process_free_pmf.py`): GOF terrible because freq-to-K Poisson mapping is wrong (freq measures periodicity, not incident count).
+
+### Open questions
+- How to use this decomposition in the national estimate — replace the tier-based approach, or use as a cross-check?
+- The disrupta attribution gives us the max-cost process, but not the cost from the OTHER process's incidents (the non-disrupta attacks). For a total-cost estimate, need a bridge for the sub-maximal process too.
