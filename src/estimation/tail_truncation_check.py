@@ -34,8 +34,8 @@ def main():
             for ch, (p, mu, s) in CH.items():
                 rq = q[{"T": "lamT", "M": "mM", "I": "lamI", "S": "mS"}[ch]]
                 ek = (1 - q["pi"]) * rq + q["pi"] * rq * np.exp(q["d" + ch])
-                capped = j.trunc_mean(q[mu], q[s])
-                uncapped = np.exp(q[mu] + q[s] ** 2 / 2)
+                capped = j.trunc_mean(q[mu], q[s], cap=500_000)
+                uncapped = j.trunc_mean(q[mu], q[s])
                 p_over = norm.sf((np.log(500_000) - q[mu]) / q[s])
                 gc += ek * q[p] * capped
                 gu += ek * q[p] * uncapped

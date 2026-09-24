@@ -3,7 +3,7 @@
 Channels (independent):  T targeted phishing, M mass phishing, I impersonation, S serious.
   K_T ~ Poisson(lam_T)     K_M ~ NegBin(m_M, r_M)
   K_I ~ Poisson(lam_I)     K_S ~ NegBin(m_S, r_S)
-  each attack: no cost w.p. 1-p; else banded lognormal(mu, sigma) on bands 2..10 (cap £500k)
+  each attack: no cost w.p. 1-p; else banded lognormal(mu, sigma) on bands 2..13 (open tail)
 
 Per firm we observe (any may be missing):
   flags      phishing = 1{K_T+K_M>=1}, impersonation = 1{K_I>=1}, serious = 1{K_S>=1}
@@ -37,9 +37,10 @@ EDGES = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16, 21, 31, 51, 76, 101,
 NB = len(EDGES) - 1
 REP = (EDGES[:-1] + EDGES[1:] - 1) / 2.0
 WIDTH = EDGES[1:] - EDGES[:-1]
-NY, NL = 11, 4            # max band 0..10 (0 = no attacks); label none/P/I/S
-LO = np.array([BAND_BOUNDS[b][0] for b in range(2, 11)], float)
-HI = np.array([BAND_BOUNDS[b][1] for b in range(2, 11)], float)
+NY, NL = 14, 4            # max band 0..13 (0 = no attacks); label none/P/I/S
+LO = np.array([BAND_BOUNDS[b][0] for b in range(2, 14)], float)
+HI = np.array([BAND_BOUNDS[b][1] for b in range(2, 14)], float)
+HI[-1] = 5e8              # finite cap for band 13 (£5M+ open interval) — wide enough not to bind
 SERIOUS = [c for c in GENUINE_TYPE_COLS if c not in ("type5", "type6")]
 CAL_EDGES = np.array([1, 2, 3, 5, 9, 17, 33, 65, 129, 10**6])
 
@@ -79,7 +80,7 @@ def load_firms():
     d.loc[d["att"] == 0, ["freq", "band", "disrupta", "N"]] = np.nan
     d.loc[(d["fP"] == 0) | ~(d["N"] >= 1), "N"] = np.nan
     d.loc[~d["freq"].between(1, 6), "freq"] = np.nan
-    d.loc[~d["band"].between(1, 10), "band"] = np.nan
+    d.loc[~d["band"].between(1, 13), "band"] = np.nan
     lab = d["disrupta"].map(lambda v: 1 if v == 6 else 2 if v == 5 else
                             3 if v in (1, 2, 3, 4, 7, 8, 9, 10, 11, 12) else np.nan)
     ok = ((lab == 1) & (d["fP"] == 1)) | ((lab == 2) & (d["fI"] == 1)) | ((lab == 3) & (d["fS"] == 1))
@@ -124,12 +125,11 @@ def pack(q):
 
 
 def band_cdf(p, mu, s):
-    """G[y] = P(single-attack band <= y), y = 0..10 (G[0] = 0)."""
+    """G[y] = P(single-attack band <= y), y = 0..13 (G[0] = 0). Open tail, no renorm."""
     up = norm.cdf((np.log(HI) - mu) / s)
     lo = norm.cdf((np.log(LO) - mu) / s)
     lo[0] = 0.0
     mass = np.maximum(up - lo, 0) + 1e-15
-    mass /= mass.sum()
     G = np.zeros(NY)
     G[1] = 1 - p
     G[2:] = (1 - p) + p * np.cumsum(mass)
@@ -230,7 +230,10 @@ class Likelihood:
 
 
 # ----------------------------------------------------------------------------- reporting
-def trunc_mean(mu, s, cap=500_000):
+def trunc_mean(mu, s, cap=None):
+    """E[C | success]. No cap: full lognormal mean. With cap: truncated."""
+    if cap is None:
+        return np.exp(mu + s ** 2 / 2)
     a = (np.log(cap) - mu) / s
     return np.exp(mu + s ** 2 / 2) * norm.cdf(a - s) / norm.cdf(a)
 
@@ -288,8 +291,8 @@ def moment_checks(d, sim):
     s = att_s["D"].value_counts(normalize=True).reindex([1, 2, 3], fill_value=0)
     print("  most-disruptive share P/I/S: obs " + " ".join(f"{v:.2f}" for v in o) +
           "  |  sim " + " ".join(f"{v:.2f}" for v in s))
-    o = att_o["band"].dropna().astype(int).value_counts(normalize=True).reindex(range(1, 11), fill_value=0)
-    s = att_s["M"].value_counts(normalize=True).reindex(range(1, 11), fill_value=0)
+    o = att_o["band"].dropna().astype(int).value_counts(normalize=True).reindex(range(1, 14), fill_value=0)
+    s = att_s["M"].value_counts(normalize=True).reindex(range(1, 14), fill_value=0)
     print("  worst band | attacked: obs " + " ".join(f"{v:.3f}" for v in o))
     print("                         sim " + " ".join(f"{v:.3f}" for v in s))
     for lab in (3,):
