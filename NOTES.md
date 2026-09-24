@@ -1182,4 +1182,19 @@ National total (max cost only, no bridge): £1.729bn — consistent with canonic
 - Caveat: `moment_checks` compares against UNWEIGHTED observed moments, so the weighted fit's checks are not like-for-like (its prevalence/co-occurrence "misfit" is partly that).
 - Open: freq measurement model per channel; weighted moment checks; size split; weighted-vs-unweighted gap (2.7×) is now the largest lever on the headline.
 
+**Size split (`joint_frailty_by_size.py`, 2026-09-24).** Frailty model fitted per size group, survey-weighted within group, national = Σ N_g · E[cost/firm | g]. Pooled freq calibration; warm start from pooled weighted fit; both starts converge in every group. Params + costs in `build/joint_frailty_<group>_<w>.json`.
+
+| group | π exposed | £/firm | T | M | I | S | national |
+|---|---|---|---|---|---|---|---|
+| Micro | 0.37 | 369 | 93 | 1 | 113 | 162 | £0.424bn |
+| Small | 0.42 | 1,816 | 174 | 6 | 502 | 1,135 | £0.400bn |
+| Medium | 0.57 | 2,301 | 366 | 5 | 585 | 1,346 | £0.088bn |
+| Large | 0.66 | 7,616 | 3,083 | 11 | 97 | 4,426 | £0.063bn |
+| Rest (pooled 2–4) | 0.44 | 2,029 | 258 | 7 | 486 | 1,278 | £0.541bn |
+
+- **Headline: £0.965bn (Micro + Rest) / £0.975bn (4-way)** — the two splits agree. Unweighted-within-group gives £1.26bn (over-represents Medium/Large inside Rest). Pooled weighted £0.86bn was close; pooled unweighted £2.34bn was the size-mix artefact.
+- Serious is the largest channel everywhere except Micro (where imp ≈ serious); mass phishing is negligible (£1–11/firm).
+- **Weighted checks (like-for-like now):** prevalence matches in every group (e.g. Rest 0.530 vs 0.529). Triple co-occurrence under-predicted in Micro/Small/Medium/Rest (e.g. Rest 0.202 vs 0.157) — binary frailty not fully enough. Serious worst-band tail under-predicted in Small/Medium (mean 4.15 vs 3.58) → likely biased LOW. Large fits well but is thin (n=140 attacked); Medium & Large serious NegBin r hits the upper bound (→ Poisson).
+- Positioning vs earlier project numbers: production type-based £2.2bn, approach B £1.0–1.4bn, freq-based £1.0bn → the generative model lands at the low end. Still excludes the >£500k tail, sole traders, indirect costs; freq measurement-model misfit unresolved.
+
 **Next step:** get E[K_τ] from counts, not flags — `Cybercrime_phishsum` for phishing (and `_hacksum`, `_ranssum` where populated); impersonation has no count data (identification gap). Verify the CSBS cyber-crime counting definition first.
