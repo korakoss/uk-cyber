@@ -1174,4 +1174,12 @@ National total (max cost only, no bridge): £1.729bn — consistent with canonic
 - **Implication:** linearity still makes E[total] = Σ E[K]·p·E[C] valid, but the *likelihood* with wrong dependence biases the parameters. Needs a shared firm-level factor (e.g. binary "exposed/quiet" class scaling all channel rates). md-clean `frailty_test.py` found binary frailty gives conditional track independence — consistent. Extension is cheap: likelihood = Σ_class π_c · L_c.
 - Weighted vs unweighted differ ~2.7× — size mix matters; size handling still open.
 
+**Joint fit + binary frailty (`joint_four_channel_frailty.py`, 2026-09-24).** Firms quiet (1−π) / exposed (π); per-channel rates differ by class; success/cost shared. Reduces exactly to the independent fit at δ=0 (verified). All 4 starts converge to the same optimum.
+- **Unweighted: LR gain 438.5 for 5 params; π=0.43.** Quiet firms get almost nothing (rates 0.01–0.10); exposed firms carry nearly all attacks (targeted 1.4, mass 29, imp 0.76, serious 0.68 per year).
+- **Fixed:** prevalence (0.517 vs obs 0.519), flag co-occurrence (triple 0.152 vs 0.191; single-type cells within ~0.01–0.04), worst-band distribution, serious worst-band tail (P(band≥5) 0.36 vs 0.36).
+- **Still misfit:** (a) freq in single-type subsamples (obs 51–56% "once" vs sim 31–33%). Likely the freq measurement model: calibrated P(freq=1 | N=1) is only 0.37, so the model can't produce many "once" answers; calibration is phishing-derived and applied to all channels. (b) Phishing P(no cost | N=1): obs 0.49 vs sim 0.77 — targeted split degraded (p_T 0.26 vs 0.55 standalone).
+- **Headline is stable across dependence structures:** unweighted £1,650/firm → £2.34bn (indep. £2.30bn); weighted £606/firm → £0.86bn (indep. £0.85bn). Composition shifts (targeted ↑, mass ↓ to ~£1/firm); serious dominates (~60% unweighted, ~50% weighted).
+- Caveat: `moment_checks` compares against UNWEIGHTED observed moments, so the weighted fit's checks are not like-for-like (its prevalence/co-occurrence "misfit" is partly that).
+- Open: freq measurement model per channel; weighted moment checks; size split; weighted-vs-unweighted gap (2.7×) is now the largest lever on the headline.
+
 **Next step:** get E[K_τ] from counts, not flags — `Cybercrime_phishsum` for phishing (and `_hacksum`, `_ranssum` where populated); impersonation has no count data (identification gap). Verify the CSBS cyber-crime counting definition first.
