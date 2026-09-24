@@ -1124,3 +1124,32 @@ National total (max cost only, no bridge): £1.729bn — consistent with canonic
 ### Open questions
 - How to use this decomposition in the national estimate — replace the tier-based approach, or use as a cross-check?
 - The disrupta attribution gives us the max-cost process, but not the cost from the OTHER process's incidents (the non-disrupta attacks). For a total-cost estimate, need a bridge for the sub-maximal process too.
+
+---
+
+## Four-channel generative model — writeup draft + review (2026-09-24)
+
+**Direction (user):** abandon "model max + bridge". Mainline = latent generative model; total via Wald identity. Writeup structure: **Model / Claims / Inference / Estimate.**
+
+**Model:** per size group, 4 channels — mass phishing (F_M, latent), targeted phishing (F_T, latent), impersonation, serious. Each channel: count K_τ, per-attack success gate p_τ, lognormal(μ_τ, σ_τ) cost | success. E[total] = Σ_τ E[K_τ]·p_τ·E[C|success,τ].
+
+**Claims status:**
+- *Two phishing clusters:* solid (SVD rank-2 at 99%+, reproduced by engagement grouping).
+- *Independence:* NOT needed for the point estimate (linearity of expectation). Only matters for distributional statements.
+- *Lognormal | success:* not rejected for impersonation (freq=1, χ²=1.94), serious, F_M proxy — but see review caveat 3.
+- *Size bucketing:* shelved. Nuisance cost|success shape roughly stable across sizes; serious shifts right for Large (χ²=24 under pooled fit). Success-rate gradient with size is confounded by larger firms having more attacks.
+- *Poisson counts:* **REJECTED** with a shared rate, even within size group. Once-only and daily firms coexist in every (size, channel) cell. Up to ~monthly is band-ambiguous; weekly+ is unambiguous: 33% of phishing-only, 12.5% of serious-only (5 firms), 1% of impersonation-only. Attacker-side framing (Poisson campaigns × uniform random targeting) reduces to the same Poisson — spread must come from firm-level exposure heterogeneity or burstiness → mixed Poisson / NegBin.
+
+**Review corrections (2026-09-24) — earlier claims in this session that were wrong:**
+1. λ = −ln(1−q) from type flags is invalid under firm heterogeneity (flag gives P(K≥1), says ~nothing about E[K]). md-clean `count_calibration.py` already showed this: Poisson-from-flags underestimates E[N|N≥1] by 14.7× for phishing.
+2. F_M + F_T superposition at the same firm is still Poisson — it cannot explain overdispersion. Only across-firm mixing can.
+3. p_τ, lognormal fits on freq>1 firms, and the size gradient were read off the max-of-K, not per-attack draws.
+4. SVD mixing weight π_f is a firm-level share of max-distributions, not λ_T/λ_phish.
+
+**Exposure proxies (`exposure_proxies.py`):** within size group, freq is NOT predicted by sector (Kruskal p=0.20), Sum10Steps, AllEssentials, trained, audit, insurex, priority, policy/rules (|ρ|≤0.25, scattered p<0.05 ≈ chance). `income2` has 0% coverage. Heterogeneity, if exposure-driven, isn't captured by observables.
+
+**Key data: `Cybercrime_phishsum` / `Cybercrime_allsum` are real per-firm counts** (scale vars; missing codes negative; values ≥100 legitimate — do NOT apply the banded filter). ~51–55% coverage of attacked. Median count by freq band: 1, 3, 5.5, 12, 30, 62 — far below our FREQ_TO_K (1, 6, 12, 52, 365, 730) at weekly+ (4–12× lower). Caveat: CSBS "cyber crime" definition excludes cyber-facilitated fraud and may count a subset of phishing attempts — check definition before equating with K.
+
+**Prior art in `/home/user/md-clean` (read before redoing):** `count_calibration.py`, `negbin_test.py` (NegBin ≫ Poisson but still poor fit; heaping at 5/10/12), `frailty_test.py` (binary frailty doesn't rescue Poisson; n_types UNDERdispersed → heterogeneity is type-specific, no shared vulnerability dial), `iid_test.py` (i.i.d. within phishing rejected). See md-clean NOTES.md lines ~330–790.
+
+**Next step:** get E[K_τ] from counts, not flags — `Cybercrime_phishsum` for phishing (and `_hacksum`, `_ranssum` where populated); impersonation has no count data (identification gap). Verify the CSBS cyber-crime counting definition first.
