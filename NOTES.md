@@ -1152,4 +1152,13 @@ National total (max cost only, no bridge): £1.729bn — consistent with canonic
 
 **Prior art in `/home/user/md-clean` (read before redoing):** `count_calibration.py`, `negbin_test.py` (NegBin ≫ Poisson but still poor fit; heaping at 5/10/12), `frailty_test.py` (binary frailty doesn't rescue Poisson; n_types UNDERdispersed → heterogeneity is type-specific, no shared vulnerability dial), `iid_test.py` (i.i.d. within phishing rejected). See md-clean NOTES.md lines ~330–790.
 
+**Count definition verified (md-clean `type_count_inventory.py`):** `Cybercrime_phishsum` is a gross phishing incident count (not engagement-gated). Coverage is NOT random: 45% of no-cost phishing firms vs 65–100% of costly ones; 48% Micro → 70% Large. Handled with IPW by band as sensitivity.
+
+**Two-channel phishing fit on (N, M) (`phishing_count_mixture.py`, 2026-09-24).** Model C: K_T ~ Poisson(λ_T), K_M ~ NegBin(m, r), per-attack success gate + banded lognormal per channel. Baseline A: one-channel iid. Sizes pooled.
+- **C beats A decisively** (phishing-only n=162: −ll 208 vs 300, ΔAIC 172; disrupta==6 n=304: ΔAIC 359). C's joint fit reproduces the flat-to-rising no-cost rate across N (obs 0.49/0.63/0.57/0.61/0.43 vs C 0.55/0.53/0.72/0.67/0.33); A predicts 0.96→0.03. The phishing half of the four-channel model survives the test md-clean's one-channel iid failed.
+- **Preferred fit = joint P(N,M), phishing-only:** λ_T=0.40, mass m=14.4, r=0.094 (extreme exposure heterogeneity; 62% of phishing firms get no mass attacks), p_T=0.55 (μ 4.9, σ 2.2 → £730/attack), p_M=0.008 (→ £2.40/attack). Per phishing firm: targeted £295, mass £34. IPW: λ_T=0.27, m=9.7 → £144 + £21.
+- Conditional-only fit P(M|N) leaves the counts unidentified (λ_T 0.04) — don't use.
+- disrupta==6 population: mass lognormal hits parameter bounds (σ=5, μ=14) → mass tail unidentified there; its large mass contribution (£667–793) is an artefact. Phishing-only is the cleaner population.
+- **Caveats:** rates are for phishing firms with a count (N≥1), not all firms — scaling to population still needs the phishing flag rate; n=162, sizes pooled; count heaping ignored.
+
 **Next step:** get E[K_τ] from counts, not flags — `Cybercrime_phishsum` for phishing (and `_hacksum`, `_ranssum` where populated); impersonation has no count data (identification gap). Verify the CSBS cyber-crime counting definition first.
