@@ -1200,3 +1200,13 @@ National total (max cost only, no bridge): £1.729bn — consistent with canonic
 **£500k cap in the joint fits (`tail_truncation_check.py`, 2026-09-24).** Both the likelihood (`band_cdf` renormalises the lognormal onto bands 2–10) and the estimate (`trunc_mean(cap=500k)`) cut costs at £500k — a carry-over convention, not a data fact (bands 11–13 were offered, zero chosen). Recomputing with the uncapped lognormal mean on the SAME params: national £0.97bn → **£3.8–3.9bn (×4)**, almost all from serious in Small/Medium/Large (σ≈3.1–3.6, P(>£500k|succ)≈1.2–1.8%, E[C|succ] £11k → £60–100k). Micro barely moves. This overstates: params were fitted under renormalisation, so the fat tail was never penalised by the empty >£500k bands (Rest params imply ~2 expected >£500k serious incidents vs 0 observed). **Next: refit with open tail — bands 11–13 in the likelihood as observed zeros.**
 
 **Next step:** get E[K_τ] from counts, not flags — `Cybercrime_phishsum` for phishing (and `_hacksum`, `_ranssum` where populated); impersonation has no count data (identification gap). Verify the CSBS cyber-crime counting definition first.
+
+**Open-tail refit results (2026-09-24).** Extended `band_cdf()` to bands 1–13, removed renormalisation, switched `trunc_mean()` to uncapped lognormal mean. Zero counts in bands 11–13 (>£500k) now constrain σ through the likelihood. Refitted all: pooled frailty (-loglik 7148.58), then per-size-group frailty (micro, rest).
+
+| Split | Per firm | N_pop | National |
+|-------|---------|-------|----------|
+| Micro | £394 | 1,150,875 | £0.454bn |
+| Rest  | £5,405 | 266,855 | £1.442bn |
+| **Total** | | | **£1.90bn** |
+
+Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit lands between, as expected — the empty >£500k bands constrain σ downward, giving a principled "minimax overestimate." The 4-way split (small/medium/large separately) still to run as a sensitivity check.
