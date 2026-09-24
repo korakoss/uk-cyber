@@ -1161,4 +1161,10 @@ National total (max cost only, no bridge): £1.729bn — consistent with canonic
 - disrupta==6 population: mass lognormal hits parameter bounds (σ=5, μ=14) → mass tail unidentified there; its large mass contribution (£667–793) is an artefact. Phishing-only is the cleaner population.
 - **Caveats:** rates are for phishing firms with a count (N≥1), not all firms — scaling to population still needs the phishing flag rate; n=162, sizes pooled; count heaping ignored.
 
+**Agnostic feature screen (`feature_screen.py`, 2026-09-24).** 248 pre-incident firm features (governance, controls, 10 Steps, insurance, supply chain, incident plans, respondent title); 65 survive coverage≥80% + missingness-leakage filter. HistGB, repeated 5-fold CV, gain over size+sector baseline. Run with `OMP_NUM_THREADS=1` (multithreaded HGB stalls in this container).
+- **Exposure (log phishing count, freq): nothing.** Gain +0.005 R² / +0.028 R² (noise). Rate heterogeneity is not explained by observables.
+- **Vulnerability (any cost | log N): AUC 0.54 → 0.67.** **Severity (band | costly): R² −0.02 → 0.07.** Modest but real.
+- **Direction: more preparedness ↔ MORE reported cost** throughout (incident-response plans `incidaction*`, governance `manage_comb`, risk identification `ident*`, `Sum10Steps`, training, supplier review; also respondent `title`). Candidate explanations: reverse causality (hurt firms invest), cost *recognition* (prepared firms detect/account for costs that unprepared firms report as "no cost" — would mean our estimate is biased LOW), or within-size complexity confound (more IT/value → more governance and more to lose). None gives a clean handle on the latents.
+- Caveat: several 1=yes/2=no/3=depends codes and nominal `title` were treated as numeric by the trees — fine for a screen, not for inference.
+
 **Next step:** get E[K_τ] from counts, not flags — `Cybercrime_phishsum` for phishing (and `_hacksum`, `_ranssum` where populated); impersonation has no count data (identification gap). Verify the CSBS cyber-crime counting definition first.
