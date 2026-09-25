@@ -1225,3 +1225,10 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
 - Ransomware = 21% of serious-flagged firms, weighted prevalence 2.6%.
 - **Why it matters:** one lognormal fitted to a ransomware + "other" mixture gets an inflated σ — and the open-tail mean exp(μ+σ²/2) is very sensitive to σ. The serious σ≈3.1–3.6 that drove the open-tail result may partly be this mixing. Candidate test: 5-channel model with ransomware split out (flag type1, disrupta code 1).
 - Caveats: disrupta profiles are worst-incident, not per-attack; small n per subtype; ransomware's low no-cost rate may partly be reporting (only noticed if it bit).
+
+**Ransomware split (`joint_five_channel.py`, 2026-09-25).** 5 channels (T, M, I, R=ransomware, S=other serious), binary frailty, pooled weighted, open tail. Same data, two fits: *free* (R own p/μ/σ, 29 params) vs *tied* (R shares S cost params, 26).
+- −loglik free 7348.50 vs tied 7350.87 → LR 4.7, df 3, **p=0.19: tying not rejected.**
+- But the estimate moves: **tied £738/firm, free £981/firm** (R £145 → £476). Free: pR 0.60, μ 6.48, σ 2.76, E[C|succ] £29k, E[K_R] 0.027 (Poisson-like). Tied: E[K_R] 0.127 (r=0.03), E[C|succ] £3.8k. Count-vs-cost tradeoff for R is weakly identified — only 30 firms with disrupta=ransomware.
+- Other-serious σ 2.13 (free) vs lumped serious 2.35 — the "mixing inflates σ" hypothesis is minor in the pooled fit (the σ≈3.1–3.6 figures were size-split Rest params).
+- Verdict so far: lumping is statistically tolerable but not innocent (~30% swing in pooled £/firm, unresolved). Next candidate: check whether the tied fit reproduces ransomware's near-zero P(no cost | disrupta=R) (obs 0.03).
+- User note: "only noticed when it does damage" is not a concern — detected cost is what the estimate needs.
