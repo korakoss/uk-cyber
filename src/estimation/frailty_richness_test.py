@@ -227,6 +227,38 @@ def main():
         else:
             print(f"    {label:25s}  WORSE by {res.fun - best2.fun:.2f}")
 
+    # Continuous frailty shape
+    print(f"\n  Continuous frailty shape (K=10 fit):")
+    q10 = unpack_K(best10.x, 10)
+    sig = np.exp(q10["frailty_logsig"])
+    print(f"    LogNormal(0, sig={sig:.3f})  CV(Z) = {np.sqrt(np.exp(sig**2)-1):.2f}")
+    print(f"    Channel loadings (rate *= Z^load):")
+    for ch in "TMIS":
+        load = q10["load_" + ch]
+        eff_cv = np.sqrt(np.exp((load * sig) ** 2) - 1)
+        print(f"      {ch}: load={load:.3f}  effective CV = {eff_cv:.2f}")
+    weights, mults = get_K_classes(q10, 10)
+    print(f"    10 equi-probable classes (rate multipliers):")
+    print(f"      {'class':>5s}  {'T':>8s}  {'M':>8s}  {'I':>8s}  {'S':>8s}")
+    for k in range(10):
+        print(f"      {k+1:5d}  {mults['T'][k]:8.2f}  {mults['M'][k]:8.2f}  "
+              f"{mults['I'][k]:8.2f}  {mults['S'][k]:8.2f}")
+    print(f"    Top/bottom ratio: " + "  ".join(
+        f"{ch} {mults[ch][-1]/mults[ch][0]:.0f}x" for ch in "TMIS"))
+
+    # 3-class structure
+    print(f"\n  3-class structure:")
+    q3 = unpack3(best3.x)
+    w0, w1, w2 = class_weights_3(q3)
+    print(f"    weights: quiet={w0:.3f}  mid={w1:.3f}  hot={w2:.3f}")
+    print(f"    rate multipliers vs quiet:")
+    for ch in "TMIS":
+        r0 = q3[fr.CHANNEL_RATE[ch]]
+        r1 = r0 * np.exp(q3["d" + ch + "1"])
+        r2 = r0 * np.exp(q3["d" + ch])
+        print(f"      {ch}: quiet={r0:.4f}  mid={r1:.3f} ({r1/r0:.0f}x)  "
+              f"hot={r2:.3f} ({r2/r0:.0f}x)")
+
     # Cost comparison
     print(f"\n  Per-firm cost estimates:")
     for label, res, np_ in results:
