@@ -52,12 +52,12 @@ def main():
         posteriors.extend(post.tolist())
         firm_weights.extend(wt.tolist())
         fP, fI, fS, nb = key
-        attacked = fP or fI or fS
+        attacked = bool(fP or fI or fS)
         firm_attacked.extend([attacked] * len(post))
 
     posteriors = np.array(posteriors)
     firm_weights = np.array(firm_weights)
-    firm_attacked = np.array(firm_attacked)
+    firm_attacked = np.array(firm_attacked, dtype=bool)
 
     # Histogram of posteriors
     bins = np.linspace(0, 1, 21)
