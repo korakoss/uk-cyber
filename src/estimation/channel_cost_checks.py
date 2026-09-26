@@ -109,5 +109,26 @@ def main():
               f" {gap_s:8.2f} | {gaps[0]:9.2f} {gaps[1]:9.2f}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and "coverage" not in __import__("sys").argv:
     main()
+
+
+def per_type_cost_coverage():
+    """Cyber crime module per-type annual cost vars: how many firms report 2+ types?"""
+    from data import load_raw
+    raw = load_raw()
+    cols = ["ranscost_bands", "hackcost_bands", "viruscost_bands", "doscost_bands", "tkvrcost_bands"]
+    v = raw[cols].apply(lambda s: j.banded(s).where(j.banded(s).between(1, 13)))
+    att = j.banded(raw["type_comb1"]) == 1
+    print("\nPER-TYPE ANNUAL COST VARIABLES (cyber crime module), attacked firms n =", int(att.sum()))
+    for c in cols:
+        x = v.loc[att, c]
+        print(f"  {c:18s} reported {x.notna().sum():3d}  of which >no-cost {(x > 1).sum():3d}")
+    k = v.loc[att].notna().sum(1)
+    k2 = (v.loc[att] > 1).sum(1)
+    print("  firms reporting k types:        " + "  ".join(f"k={i}: {(k == i).sum()}" for i in range(1, 6)))
+    print("  firms with k types costing >0:  " + "  ".join(f"k={i}: {(k2 == i).sum()}" for i in range(1, 6)))
+
+
+if __name__ == "__main__" and "coverage" in __import__("sys").argv:
+    per_type_cost_coverage()
