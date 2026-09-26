@@ -12,7 +12,8 @@ size group independently (everything varies).
 Weights are normalised to mean 1 WITHIN each size group: the model conditions on size and
 national totals scale by ONS counts per size, so weights only need to correct within size.
 
-Models: pool | rates | rates_gates | rates_mu | sep:<size 1-4>
+Models: pool | rates | rates_gates | rates_mu | rates_Spois | sep:<size 1-4>
+rates_Spois: 'rates' with other-serious counts Poisson (NegBin shape pinned at bound).
 Run: OMP_NUM_THREADS=1 PYTHONPATH=/home/user/md-clean/src:src/estimation \
      python3 src/estimation/joint_size_model.py MODEL
 """
@@ -30,7 +31,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SIZES = [1, 2, 3, 4]
 N_BY_SIZE = {1: 1_150_875, 2: 220_085, 3: 38_435, 4: 8_335}
 BLOCKS = {"pool": [], "rates": ["rates"], "rates_gates": ["rates", "gates"],
-          "rates_mu": ["rates", "mu"]}
+          "rates_mu": ["rates", "mu"], "rates_Spois": ["rates"]}
+POIS_LOG_R = 5.0          # log NegBin shape at its upper bound (r ~ 148): Poisson for these rates
 NBASE = 29
 
 
@@ -125,6 +127,16 @@ def main():
         nll_fn = lik.nll
         x0 = np.concatenate([x_base] + [np.zeros(18 if b == "rates" else 15) for b in blocks])
         npar = len(x0)
+        if model == "rates_Spois":
+            # other-serious counts Poisson: pin log r_S (index 14) at the bound; warm start from 'rates'
+            x0 = np.array(json.load(open(os.path.join(HERE, "build", "size_model_rates.json")))["x"])
+            x0[14] = POIS_LOG_R
+
+            def nll_fn(x, _f=lik.nll):
+                x = x.copy()
+                x[14] = POIS_LOG_R
+                return _f(x)
+            npar -= 1
 
     best = None
     rng = np.random.default_rng(1)
