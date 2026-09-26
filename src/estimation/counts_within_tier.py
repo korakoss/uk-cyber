@@ -95,5 +95,58 @@ def main():
             label="RANSOMWARE COUNT within tiers (tiers from flags excluding ransomware + malware)", rng=rng)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def poisson_prediction_test():
+    """Sharper Step-4 test. Tiers from the Step-3 flag LCA on ALL 10 types (within size).
+    Under Poisson-within-tier, a tier's hit probability p pins its mean: lambda = -ln(1-p), so
+    counts among hit firms follow zero-truncated Poisson(lambda) -- a prediction with nothing
+    fitted to counts. Compare with observed counts (phishing N; ransomware count).
+    Co-labelling (more phishing incidents -> more impersonation ticks -> pushed to higher tiers)
+    biases the low tier towards FEWER high counts, i.e. against finding overdispersion."""
+    X, w, size = load()
+    d = f.load_firms()
+    rng = np.random.default_rng(0)
+    for chan, col, cnt in (("PHISHING", 0, np.where(d["fP"].values == 1, d["N"].values, np.nan)),
+                           ("RANSOMWARE", 2, d["NR"].values)):
+        print("\n" + "=" * 100)
+        print(f"{chan}: observed counts among hit firms vs Poisson prediction lambda = -ln(1 - p_tier)")
+        print("=" * 100)
+        print(f"  {'size':>6s} {'tier':>5s} {'share':>6s} {'p_hit':>6s} {'lambda':>7s} {'n':>4s} {'cert':>5s}"
+              f"  {'P(1)':>11s} {'P(2-3)':>11s} {'P(4-10)':>11s} {'P(>10)':>11s} {'mean':>13s}   (obs / Poisson)")
+        for slab, sizes in (("Micro", [1]), ("Rest", [2, 3, 4])):
+            m = np.isin(size, sizes)
+            ww = w[m] / w[m].mean()
+            P, c = patterns(X[m], ww)
+            _, pi, th = lca(P, c, 3, rng, starts=20)
+            order = np.argsort(th.mean(1))
+            pi, th = pi[order], th[order]
+            Xm = X[m]
+            lp = np.log(pi)[None] + Xm @ np.log(th).T + (1 - Xm) @ np.log(1 - th).T
+            post = np.exp(lp - lp.max(1, keepdims=True))
+            post /= post.sum(1, keepdims=True)
+            tier, cert = post.argmax(1), post.max(1)
+            x_all = cnt[m]
+            for t in range(3):
+                p = th[t, col]
+                lam = -np.log(1 - p)
+                sel = (tier == t) & ~np.isnan(x_all)
+                if sel.sum() == 0:
+                    continue
+                x, wx = x_all[sel], ww[sel]
+                k = np.arange(0, 5000)
+                pk = poisson.pmf(k, lam)
+                pk[0] = 0
+                pk /= pk.sum()
+                bins = [(1, 1), (2, 3), (4, 10), (11, 10**9)]
+                obs = [np.average((x >= a) & (x <= b), weights=wx) for a, b in bins]
+                pred = [pk[(k >= a) & (k <= b)].sum() for a, b in bins]
+                print(f"  {slab:>6s} {TIER[t]:>5s} {pi[t]:6.2f} {p:6.3f} {lam:7.3f} {sel.sum():4d} {cert[sel].mean():5.2f}  " +
+                      " ".join(f"{o:5.2f}/{q:5.2f}" for o, q in zip(obs, pred)) +
+                      f"  {np.average(x, weights=wx):6.1f}/{(k * pk).sum():5.2f}")
+
+
+if __name__ == "__main__" and "poisson" in __import__("sys").argv:
+    poisson_prediction_test()
