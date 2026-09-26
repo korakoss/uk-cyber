@@ -140,5 +140,30 @@ def main():
         run(Xm[m], ww, merged_names, f"{glabel} / B: co-labelling pairs merged", rng)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def share_captured():
+    """Plain effect size: share of the departure from independence captured by each model,
+    (LL_model - LL_indep) / (LL_ceiling - LL_indep). Two ceilings: the saturated table (every
+    flag pattern at its observed frequency; over-fits rare patterns) and the 5-class LCA."""
+    X, w, size = load()
+    rng = np.random.default_rng(0)
+    Xm = np.column_stack([X[:, 0] | X[:, 1], X[:, 2] | X[:, 3], X[:, 4:]])
+    print(f"\n{'setting':38s} {'ceiling':>10s}  {'2 classes':>9s} {'3 classes':>9s} {'4 classes':>9s} {'continuous':>10s}")
+    for glabel, m in (("Micro", size == 1), ("Small+Medium+Large", np.isin(size, [2, 3, 4]))):
+        ww = w[m] / w[m].mean()
+        for ilabel, XX in (("10 types", X[m]), ("pairs merged", Xm[m])):
+            P, c = patterns(XX, ww)
+            ll = {K: lca(P, c, K, rng, starts=15)[0] for K in (1, 2, 3, 4, 5)}
+            llt, _ = trait(P, c, rng)
+            sat = (c * np.log(c / c.sum())).sum()
+            for cname, ceil in (("saturated", sat), ("5-class", ll[5])):
+                sh = lambda v: (v - ll[1]) / (ceil - ll[1])
+                print(f"{glabel + ', ' + ilabel:38s} {cname:>10s}  {sh(ll[2]):9.0%} {sh(ll[3]):9.0%} "
+                      f"{sh(ll[4]):9.0%} {sh(llt):10.0%}")
+
+
+if __name__ == "__main__" and "share" in __import__("sys").argv:
+    share_captured()
