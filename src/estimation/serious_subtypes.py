@@ -137,3 +137,44 @@ def ranssum_profile():
 
 if __name__ == "__main__" and "ranssum" in __import__("sys").argv:
     ranssum_profile()
+
+
+def other_serious_homogeneity():
+    """Cost-profile homogeneity among the populated OTHER-serious subtypes (ransomware excluded).
+    Firms whose most disruptive attack was the subtype; worst band coarsened. Chi-square with a
+    permutation p-value (small expected counts), unweighted and survey-weighted (Kish-scaled)."""
+    from scipy.stats import chi2 as chi2d
+    d = j.load_firms()
+    w = d["weight"].fillna(d["weight"].median()).values
+    subs = {2: "Other malware", 3: "DoS", 4: "Bank hacking", 11: "Takeover"}
+    m = d["disrupta"].isin(list(subs)).values & d["band"].notna().values
+    lab, band, ww = d["disrupta"].values[m].astype(int), d["band"].values[m], w[m]
+    for name, edges in (("5 bins {no cost, £1-500, £500-5k, £5k-20k, £20k+}", [2, 4, 6, 8]),
+                        ("3 bins {no cost, £1-500, £500+}", [2, 4])):
+        cb = np.digitize(band, edges)
+        K = cb.max() + 1
+
+        def stat(labels, weights=None):
+            wt = np.ones(len(labels)) if weights is None else weights
+            T = np.array([[wt[(labels == s) & (cb == k)].sum() for k in range(K)] for s in subs])
+            E = T.sum(1, keepdims=True) * T.sum(0, keepdims=True) / T.sum()
+            return ((T - E) ** 2 / np.where(E > 0, E, 1)).sum(), T
+
+        x2, T = stat(lab)
+        rng = np.random.default_rng(0)
+        perm = np.array([stat(rng.permutation(lab))[0] for _ in range(5000)])
+        wn = ww / ww.mean()
+        x2w, Tw = stat(lab, wn)
+        deff = (wn ** 2).mean()                     # Kish design effect (mean-1 weights)
+        dof = (len(subs) - 1) * (K - 1)
+        print(f"\nOTHER-SERIOUS HOMOGENEITY (ransomware excluded), {name}")
+        for (code, s), row, roww in zip(subs.items(), T, Tw):
+            print(f"  {s:14s} n={int(row.sum()):3d}  raw " + " ".join(f"{int(v):3d}" for v in row) +
+                  "   weighted shares " + " ".join(f"{v / roww.sum():.2f}" for v in roww))
+        print(f"  unweighted X2={x2:.1f}, dof={dof}: asymptotic p={chi2d.sf(x2, dof):.3f}, "
+              f"permutation p={np.mean(perm >= x2):.3f}")
+        print(f"  weighted X2/deff={x2w / deff:.1f} (deff {deff:.2f}): p={chi2d.sf(x2w / deff, dof):.3f}")
+
+
+if __name__ == "__main__" and "homog" in __import__("sys").argv:
+    other_serious_homogeneity()
