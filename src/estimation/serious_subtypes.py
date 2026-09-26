@@ -118,3 +118,22 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def ranssum_profile():
+    """Cybercrime_ranssum among firms by ransomware flag: coding, coverage, values."""
+    import joint_five_channel as f
+    raw = load_raw()
+    d = f.load_firms()
+    x = pd.to_numeric(raw["Cybercrime_ranssum"], errors="coerce")
+    print("\nCybercrime_ranssum raw value counts (all rows):")
+    print(x.value_counts(dropna=False).sort_index().to_string())
+    nr = d["NR"]
+    print(f"\nfR=1 firms: {int(d.fR.sum())}; with NR>=1: {int(nr.notna().sum())}")
+    print("NR values:", nr.dropna().astype(int).value_counts().sort_index().to_dict())
+    for lab, m in (("disrupta=R", d["D"] == 3), ("not disrupta=R", (d["D"] != 3) & (d.fR == 1))):
+        print(f"  {lab}: n={int(m.sum())}, NR coverage {nr[m].notna().mean():.2f}")
+
+
+if __name__ == "__main__" and "ranssum" in __import__("sys").argv:
+    ranssum_profile()

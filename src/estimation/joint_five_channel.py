@@ -11,7 +11,8 @@ Two fits on identical data:
 LR(free vs tied) asks whether ransomware's per-attack cost differs from other serious.
 
 Run: OMP_NUM_THREADS=1 PYTHONPATH=/home/user/md-clean/src:src/estimation \
-     python3 src/estimation/joint_five_channel.py {free|tied}
+     python3 src/estimation/joint_five_channel.py {free|tied} [rcount]
+rcount: also use Cybercrime_ranssum (ransomware count) where reported, like the phishing count.
 """
 
 import json
@@ -53,6 +54,8 @@ def load_firms():
     ok = (((lab == 1) & (d["fP"] == 1)) | ((lab == 2) & (d["fI"] == 1)) |
           ((lab == 3) & (d["fR"] == 1)) | ((lab == 4) & (d["fS"] == 1)))
     d["D"] = lab.where(ok)
+    nr = pd.to_numeric(raw["Cybercrime_ranssum"], errors="coerce")[keep][sel].reset_index(drop=True)
+    d["NR"] = nr.where((d["fR"] == 1) & (nr >= 1))
     return d
 
 
@@ -121,7 +124,7 @@ def restrict(S, flag):
 
 
 class Lik:
-    def __init__(self, d, F, w, tied):
+    def __init__(self, d, F, w, tied, use_rcount=False):
         self.F, self.tied = F, tied
         d = d.copy()
         d["nb"] = np.where(d["N"].notna(), np.searchsorted(
@@ -134,8 +137,11 @@ class Lik:
         d.loc[d["att"] == 0, "li"] = 0
         d.loc[d["li"] < 0, "li"] = NLAB
         d["w"] = w
+        nr = d["NR"] if use_rcount else pd.Series(np.nan, index=d.index)
+        d["nbR"] = np.where(nr.notna(), np.searchsorted(
+            j.EDGES, nr.fillna(1).clip(upper=j.KMAX), side="right") - 1, -1)
         self.groups = [(key, g["fi"].values, g["yi"].values, g["li"].values, g["w"].values)
-                       for key, g in d.groupby(["fP", "fI", "fR", "fS", "nb"])]
+                       for key, g in d.groupby(["fP", "fI", "fR", "fS", "nb", "nbR"])]
 
     def values(self, q):
         tab = lambda ch, kind: channel_table(
@@ -143,17 +149,27 @@ class Lik:
             j.band_cdf(q["p" + ch], q["mu" + ch], q["s" + ch]), LAB[ch])
         P = combine(tab("T", "pois"), tab("M", "nb"))
         SI, SR, SS = tab("I", "pois"), tab("R", "nb"), tab("S", "nb")
-        X = {(a, b, c): combine(combine(restrict(SI, a), restrict(SR, b)), restrict(SS, c))
-             for a in (0, 1) for b in (0, 1) for c in (0, 1)}
+        X = {}
+
+        def xtab(a, b, c, nbR):
+            if (a, b, c, nbR) not in X:
+                if nbR >= 0:
+                    R = np.zeros_like(SR)
+                    R[nbR] = SR[nbR] / j.WIDTH[nbR]
+                else:
+                    R = restrict(SR, b)
+                X[(a, b, c, nbR)] = combine(combine(restrict(SI, a), R), restrict(SS, c))
+            return X[(a, b, c, nbR)]
+
         Fext = np.vstack([self.F.T, np.ones(j.NB)])
         out = []
-        for (fP, fI, fR, fS, nb), fi, yi, li, w in self.groups:
+        for (fP, fI, fR, fS, nb, nbR), fi, yi, li, w in self.groups:
             if nb >= 0:
                 Pr = np.zeros_like(P)
                 Pr[nb] = P[nb] / j.WIDTH[nb]
             else:
                 Pr = restrict(P, fP)
-            C = combine(X[(fI, fR, fS)], Pr)
+            C = combine(xtab(fI, fR, fS, nbR), Pr)
             Q = np.einsum("fc,cyl->fyl", Fext, C)
             Q = np.concatenate([Q, Q.sum(1, keepdims=True)], 1)
             Q = np.concatenate([Q, Q.sum(2, keepdims=True)], 2)
@@ -172,11 +188,13 @@ class Lik:
 
 def main():
     tied = sys.argv[1] == "tied"
+    rcount = "rcount" in sys.argv
+    tag = sys.argv[1] + ("_rcount" if rcount else "")
     d = load_firms()
     F, _, _ = j.calibrate_freq(d)
     w = d["weight"].fillna(d["weight"].median()).values
     w = w / w.mean()
-    lik = Lik(d, F, w, tied)
+    lik = Lik(d, F, w, tied, use_rcount=rcount)
 
     q4 = json.load(open(os.path.join(HERE, "build", "joint_four_channel_frailty_weighted.json")))
     q0 = dict(q4)
@@ -189,11 +207,11 @@ def main():
         res = minimize(lik.nll, x0, method="L-BFGS-B", options=dict(maxiter=400))
         res = minimize(lik.nll, res.x, method="Nelder-Mead",
                        options=dict(maxiter=6000, maxfev=6000, xatol=1e-4, fatol=1e-3))
-        print(f"  {sys.argv[1]} start {start}: -loglik {res.fun:.2f}", flush=True)
+        print(f"  {tag} start {start}: -loglik {res.fun:.2f}", flush=True)
         if best is None or res.fun < best.fun:
             best = res
     q = unpack(best.x, tied)
-    print(f"\n{sys.argv[1].upper()}: -loglik {best.fun:.2f}  params {len(best.x)}  pi {q['pi']:.3f}")
+    print(f"\n{tag.upper()}: -loglik {best.fun:.2f}  params {len(best.x)}  pi {q['pi']:.3f}")
     print(f"  {'ch':>2s} {'rate q':>7s} {'rate e':>7s} {'E[K]':>7s} {'r':>6s} {'p':>6s} {'mu':>6s}"
           f" {'sigma':>6s} {'E[C|succ]':>11s} {'P(>£500k|s)':>11s} {'£/firm':>9s}")
     from scipy.stats import norm
@@ -212,7 +230,7 @@ def main():
               f" {q['mu' + ch]:6.2f} {q['s' + ch]:6.2f} £{ec:10,.0f} "
               f"{norm.sf((np.log(5e5) - q['mu' + ch]) / q['s' + ch]):11.4f} £{c:8,.0f}")
     print(f"  total £{total:,.0f}/firm -> crude pooled national £{total * 1_417_730 / 1e9:.2f}bn")
-    with open(os.path.join(HERE, "build", f"joint_five_channel_{sys.argv[1]}_weighted.json"), "w") as fh:
+    with open(os.path.join(HERE, "build", f"joint_five_channel_{tag}_weighted.json"), "w") as fh:
         json.dump({k: float(v) for k, v in q.items()} | {"nll": float(best.fun), "npar": len(best.x),
                    "cost_per_firm": float(total)} | {f"cost_{k}": float(v) for k, v in out.items()},
                   fh, indent=1)
