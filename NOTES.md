@@ -1232,3 +1232,10 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
 - Other-serious σ 2.13 (free) vs lumped serious 2.35 — the "mixing inflates σ" hypothesis is minor in the pooled fit (the σ≈3.1–3.6 figures were size-split Rest params).
 - Verdict so far: lumping is statistically tolerable but not innocent (~30% swing in pooled £/firm, unresolved). Next candidate: check whether the tied fit reproduces ransomware's near-zero P(no cost | disrupta=R) (obs 0.03).
 - User note: "only noticed when it does damage" is not a concern — detected cost is what the estimate needs.
+
+**Ransomware split + ransomware count (`joint_five_channel.py ... rcount`, 2026-09-26).** Added `Cybercrime_ranssum` (35 of 82 ransomware firms; 25 report 1; one reports 100, one 24; coverage 73% for disrupta=R vs 25% otherwise — depends on observables, so MAR-in-likelihood like the phishing count). Regression check: without count, likelihood reproduces earlier optima exactly.
+- Count **fixes the frequency identification**: E[K_R] 0.094 (free) vs 0.096 (tied); before it was 0.027 vs 0.127. rR ≈ 0.03 (heavily overdispersed — the 100/24 reports).
+- Remaining free-vs-tied gap is **purely ransomware's cost tail**: medians ~£220 vs ~£260 (μ 5.38 vs 5.57), but σ 2.93 vs 2.36 → E[C|succ] £15.9k vs £4.3k. p 0.38 vs 0.32.
+- −loglik free 7417.80 vs tied 7419.88 → LR 4.2, df 3, **p=0.24** — data can't resolve ransomware σ (~30 worst-band obs).
+- £/firm: **tied 753, free 1,062** (R £131 vs £558). ~40% of pooled cost/firm hinges on ransomware tail width.
+- Read: splitting is warranted on sense + descriptives; the split's consequence is a tail question the survey can't answer. Under minimax-overestimate, free fit is the defensible upper end. Next when returning to size groups: share R cost params across sizes, let R rate vary.
