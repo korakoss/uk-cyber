@@ -1249,3 +1249,12 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
 - phishing p=0.73 (n_eff 355), impersonation p=0.58 (109), **ransomware p=0.25 (n_eff 13)**, other serious p=0.99 (65). **Lognormal not rejected anywhere.** Ransomware bimodality is visible but not significant at n_eff≈13.
 - ⇒ Per user's logic, the free ransomware fit IS the estimate (σ_R 2.93); the wide σ interval [2.2, 4.2] is sampling uncertainty, not misspecification. Split ransomware out; carry its σ uncertainty.
 - **Cost-frailty screen** (# other channel groups flagged, high £5k+ vs low £1–5k worst band from channel L; obs gap vs model gap, model has frailty on counts only): phishing −0.14 vs +0.05; **impersonation +0.48 vs +0.04 (Micro +0.68, Rest +0.32)**; ransomware +1.17 (only 2 low-cost firms — uninformative); other serious +0.33 (Micro +0.61, Rest −0.30). Only impersonation shows a consistent hint that costs share the firm-level factor. Suggestive, not decisive.
+
+**Which parameters vary by size? (`joint_size_model.py`, 2026-09-26).** 5-channel binary-frailty model with ransomware count, all firms, size groups Micro/Small/Medium/Large; Micro base + additive shifts. Weights normalised to mean 1 WITHIN each size group (model conditions on size; national = Σ N_g·E[cost|g]). Weighted pseudo-LR (approximate):
+- rates+π vary vs pooled: ΔNLL 165, 18 df, p≈1e-59 → **attack rates and exposed share must vary** (π 0.35/0.41/0.58/0.65 Micro→Large).
+- + success gates vary: ΔNLL 3.8, 15 df, p=0.94 → share gates.
+- + cost μ varies: ΔNLL 10.2, 15 df, p=0.16 → share cost distributions.
+- separate full fits per size vs rates-only: ΔNLL 41.5, 69 df, p=0.12 → full separation not supported; and it's harmful for tails (Medium ransomware σ hit bound 5 → £6.5M/firm).
+- **Chosen structure: size shifts rates + π; gates, cost lognormals, NegBin shapes, frailty deltas shared.** Replaces micro-vs-rest separate fits; also solves ransomware sparsity (6–9 disrupta=R firms per size).
+- Rates-only model: £/firm Micro 1,411 / Small 2,649 / Medium 2,642 / Large 14,002 → national £2.42bn (not headline-ready). Ransomware ~half of Micro, ~70% of Large; σ_R ≈ 3.0 remains the dominant quantitative uncertainty. Shared σ: T 2.54, I 2.48, S 2.49.
+- Caveat: L-BFGS-B starts differ by ~4 NLL on the bigger models (imperfect convergence; doesn't change conclusions).
