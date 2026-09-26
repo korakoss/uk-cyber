@@ -142,6 +142,41 @@ Decomposed the national total by observed worst-incident band. **~64% of the (co
 
 ---
 
+## The #1 tail sensitivity, run: the empty high bands can't pin the catastrophic tail (`tail_ceiling_pareto.py`, written up 2026-07-21)
+
+Ran the top-band tail model flagged as the #1 sensitivity by `body_vs_tail.py`. The idea: the CSBS offered loss bands *above* band 10 (11=£500k–1M, 12=£1M–5M, 13=£5M+) and **no firm selected any** — so "we asked about bigger losses and found none" is itself evidence that can bound how heavy the >£100k tail is allowed to be. Method: model losses above u=£100k as a power law P(loss>x)=(x/u)^(−α), anchor on the 8 firms observed in [£100k,£500k] with 0 above £500k, and find the heaviest (smallest) α whose expected count above £500k reaches ~3 (the "we'd probably have seen one" / rule-of-three-spirit level). Then price the band-10 firms at that tail's mean and re-run the national total.
+
+**Result — the empty bands do NOT pin the tail.** The ceiling α* = **0.807**, which is **< 1**, meaning the uncapped Pareto tail has *infinite* mean — so a cap on the single largest credible loss is mandatory, and the ceiling is driven by that assumed cap, not by the data:
+
+| Cap C on largest single loss | tail mean/firm | ceiling national total | × £2.26bn baseline |
+|---|---|---|---|
+| £5M | £683,905 | £6.05bn | 2.68× |
+| £50M | £1,299,842 | £10.75bn | 4.77× |
+| £500M | £2,259,788 | £18.09bn | 8.02× |
+
+**Honest conclusion:** with only 8 firms above £100k, "we saw none above £500k" is weak evidence — it cannot bound the catastrophic tail on its own. A defensible upper ceiling needs an **external** cap on the maximum credible single UK-business cyber loss (from breach-cost datasets, insurance/cat-bond data, or named incidents), not just this survey's empty bands. This resolves the #1 sensitivity as *"the survey can't answer it"* rather than producing a survey-derived number, and it dovetails with the inflator case's "unobservable catastrophic tail" lever (`upward_sensitivity.py`): both say the >£500k tail is the largest thing our data genuinely cannot close. **Next step if pursued:** source an external maximum-single-loss cap and report the ceiling at that cap.
+
+---
+
+## Approach B (size×type cell-mean, no per-firm debanding): a lower cross-check at ~£1.0–1.4bn (`size_type_cellmean_estimate.py`, written up 2026-07-21)
+
+An alternative aggregation that lets attack *type* move the cost **distribution**, not just the bridge. The production type-based baseline fits the cost *shape* by SIZE only (type enters solely through the bridge multiplier), then debands each firm's own band. Approach B instead fits a zero-inflated lognormal per **(size, type) cell**, collapses each cell to a single analytic bounded-mean single-incident cost, and replaces each firm's own band with its cell mean. Kept otherwise identical to the baseline for comparability: band 10 bounded at £100k–£500k, bridge=1.0 at freq=1 else the type multiplier, Impersonation as its 3.11–6.25× range, thin cells fall back to the per-size shape (10/40 cells use their own shape).
+
+**Result: national total £0.99bn (Impersonation low) – £1.42bn (high)** — notably *below* the production ~£2.2bn. Per-size contributions (low): Micro £0.45bn, Small £0.40bn, Medium £0.09bn, Large £0.05bn.
+
+**Why it's lower — diagnostic finding (the useful part):** collapsing each cell to its *fitted analytic* mean discards observed-band tail excess that the lognormal under-predicts. The per-size diagnostic (empirical band-mix mean vs fitted analytic mean):
+
+| size | emp. mean £ | fit. mean £ | emp/fit | obs band10 | fit band10 |
+|---|---|---|---|---|---|
+| Micro | 1,291 | 872 | **1.48×** | 0.46% | 0.09% |
+| Small | 2,969 | 2,932 | 1.01× | 0.66% | 0.66% |
+| Medium | 2,449 | 3,247 | 0.75× | 0.39% | 0.67% |
+| Large | 8,546 | 9,243 | 0.92× | 2.06% | 2.41% |
+
+Micro is the tell: the lognormal fits only 0.09% of Micro firms into band 10 but 0.46% are actually observed there (5×), so its fitted mean (£872) is 1.48× below the empirical band-mix mean (£1,291) — and since Micro dominates the national total, approach B's use of the fitted analytic mean throws away exactly the Micro tail excess that drives the depth-driven baseline (see body-vs-tail). **Read:** approach B is not "more correct" — it's a *lower-variance but tail-truncating* alternative. The gap between it (~£1.0–1.4bn) and the production baseline (~£2.2bn) is essentially the Micro top-band tail excess again, viewed a third way (after body-vs-tail and the tail-ceiling run). It belongs on the low side of the honest range alongside the freq-based ~£1.0bn variant, and reinforces that **how the Micro top band is modeled is the single biggest lever on the headline.**
+
+---
+
 ## National Simulation — methodology & choices (`national_simulation.py`, 2026-07-15)
 
 The final aggregation. Headline (corrected): **≈£2.2bn/yr type-based mean, median £2.1bn, 90% interval ~£0.8–4.4bn; freq-based variant ~£1.0bn.** (Pre-correction the open top band gave ~£3.1bn with a spurious type/freq agreement — see the Step-6 correction note above.) This section documents the nontrivial choices, what else was tried/considered, and what the alternatives would have done — so the number can be defended and revisited.
@@ -598,6 +633,9 @@ All scripts run from the project root: `source .venv/bin/activate && python3 <pa
 | `src/estimation/bridge_specification.py` | Consolidates every bridge finding into one per-type 3-tier multiplier table, applied to the real sample | 86.3% of attacked-firm (freq>1) weight now has a genuine best-estimate bridge (phishing + 4 censored-model types), up from 0% for non-phishing freq>1 firms; £904→£950 per business moving from fully-conservative to current-best-available; fully-pessimistic (£116,915) confirmed implausible (dominated by K_IMPLIED=1000 for freq=6, consistent with the pre-existing "freq=4+ implausible" caveat) |
 | `src/estimation/ransomware_impersonation_rawdata.py` | Descriptive-only raw-data survey of Ransomware and Impersonation (no fitting) | Discovered ranssoft_bands/ransdem_bands/ranspay_bands/ranspayyn (Q83 series) for Ransomware and fraud1/2/3 (Q88A) for Impersonation, previously unloaded; on its own, neither looked like it unlocked a new model — but see type_specific_montecarlo_bridge.py, which combined ranssoft_bands with the right reference subsample and got a real result |
 | `src/estimation/type_specific_montecarlo_bridge.py` | Working, non-degenerate bridge for BOTH Ransomware and Impersonation, via a clean single-incident reference subsample + Monte Carlo | Ransomware £605.71/business (~70% of weight needs no bridge at all, via ranssoft_bands); Impersonation £1,908.61/business but downgraded to a £950-£1,900 range after leave-one-out (46.4% of weight is a clean impersonation-only subsample); caught and fixed a real logical-floor bug (MC estimate below own observed damage_bands); robustness-checked |
+| `src/estimation/tail_ceiling_pareto.py` | #1 tail sensitivity: Pareto ceiling from the empty >£100k bands | α*=0.807 (<1, infinite uncapped mean) — empty bands can't pin the tail; ceiling driven by an assumed external cap: £6.05bn (cap £5M) → £18.09bn (cap £500M). Bounding the catastrophic tail needs an external max-loss cap, not this survey |
+| `src/estimation/tail_sample_diagnostics.py` | Per-band sample sizes behind the depth-driven total | Codebook band definitions + n per band; documents the 8-firm top band |
+| `src/estimation/size_type_cellmean_estimate.py` | Approach B: size×type cell-mean aggregation, no per-firm debanding | £0.99–1.42bn (below production £2.2bn); the gap is Micro top-band tail excess the fitted lognormal under-predicts (Micro emp/fit mean 1.48×) — a lower, tail-truncating cross-check |
 | `src/estimation/censored_bounds_only.py` | Model-free view of the raw censored bounds — no lognormal, no Monte Carlo | Ransomware: floor £91.40/business, naive £238.12/business, only 8.1% of weight unresolved (no-ceiling); Impersonation: floor £119.63/business, naive £305.58/business, 55.8% of weight unresolved AND zero exact observations — identifies the structural (not modeling) reason Impersonation is harder |
 
 ---
@@ -934,3 +972,349 @@ For each type: (1) FLOOR = hard lower bound using each record's own band lower-e
 **This identifies the structural reason Impersonation is harder than Ransomware, independent of modeling choice**: Ransomware has enough directly-observed cost data (`ranscost_bands`) that a model only needs to extrapolate a small residual (8.1% of weight); Impersonation has almost no directly-observed data at all, so essentially all of its estimate is model-dependent extrapolation — which is exactly why it turned out to be so sensitive to a single reference-sample observation in the leave-one-out check above. Not a fixable modeling problem — a genuine data-coverage gap.
 
 **Minor cross-script consistency note**: this script's Ransomware "naive" (£238.12) doesn't exactly match the Monte-Carlo script's naive (£273.56) — the two classify firms slightly differently (direct-cost-column availability here vs. `ranssoft_bands` availability there), so a handful of firms land in different buckets between them. Not a contradiction, just a reminder the two scripts' "naive" baselines aren't built identically. Impersonation's two naive figures match closely since both scripts classify it the same way (via `damage_bands`/`disrupta`, no type-specific count variable exists for it either way).
+
+---
+
+## Alternative estimation approach: flood+peak Poisson with max-bias correction (2026-09 session)
+
+### Context and motivation
+
+Developed an independent estimation methodology that starts from a different generative model than the bridge-based approach. Instead of "bridge from worst-incident cost to total cost," this approach models the number of *costly* incidents (peaks) directly as a Poisson process and recovers the per-draw cost distribution from observed maxima.
+
+**Key insight**: the survey records the cost of the *most disruptive* incident. If a firm experiences K≥1 costly incidents (peaks, band ≥ 3), the observed cost band is max(T_1, ..., T_K) — an order-statistic bias. The Wald identity E[total peak cost] = λ·E[T] needs the per-draw E[T], not the observed-max E[T].
+
+### Flood+peak two-regime model
+
+Split firm-year costs into:
+- **Flood**: near-zero incidents (band ≤ 2, i.e. no cost or <£100). Ignored in total.
+- **Peaks**: costly incidents (band ≥ 3, i.e. ≥£100). Modeled as Poisson(λ) per firm-year.
+
+λ is recovered from binary peak occurrence: λ = −log(1 − P(peak)), where P(peak) = fraction of attacked firms with band ≥ 3. λ is conditioned on (size, n_types) cells for granularity.
+
+### Max-bias correction (`src/estimation/max_bias_correction.py`)
+
+Analytical inversion: given the observed-max CDF G(t) and the cell's λ, the per-draw CDF is F(t) = log(1 + G(t)·(e^λ − 1)) / λ. Derived from P(M_X ≤ b) = exp(−λ(1−F(b))).
+
+Results: Micro E[T] £7,926→£6,934 (−14.3%), Rest £13,841→£11,379 (−21.6%). National total drops ~15% from £2.17bn to £1.85bn with the correction.
+
+### Type-tier decomposition
+
+Defined three tiers based on attack type:
+- **Expensive**: Ransomware (1), DoS (3), Hacking (4)
+- **Mid**: Malware (2), Impersonation (5), sparse types (7, 8, 16)
+- **Cheap**: Phishing (6)
+
+Motivation: pooled T across all types is a "Frankenstein object" — it has no coherent generative model. A firm doesn't draw from a single cost distribution; it draws from type-specific distributions with different rates. The tier decomposition gives a real probability model: three independent Poisson processes, each with its own λ and T distribution.
+
+### Scripts and results
+
+| Script | Approach | National total (corrected) |
+|--------|----------|---------------------------|
+| `max_bias_correction.py` | Pooled λ×T with max-bias correction | £1.85bn |
+| `unified_tiered_estimate.py` | λ and T conditioned on same tier space | £1.66–1.74bn (varies by conditioning) |
+| `tier_decomposed_estimate.py` | Per-tier λ and T via disrupta | £1.60–1.74bn |
+| `tier_mle.py` | Full MLE for 3 independent Poisson processes | **£1.75bn** |
+| `type_buckets.py` | Exploratory type bucketing | (diagnostic) |
+| `lambda_conditioning.py` | Exploratory λ conditioning analysis | (diagnostic) |
+
+### MLE model (`src/estimation/tier_mle.py`)
+
+The most principled version. Fits λ_e, λ_m, λ_c and discrete PMFs for T_e, T_m, T_c simultaneously per size group (Micro/Rest). 24 parameters per group (3 log-λ + 3×7 softmax PMF values).
+
+Uses the identity P(disrupta=X, band=b) = P(M_X=b)·Π_{Y≠X} P(M_Y<b) — the probability that tier X "wins" (produces the highest-cost peak) at band b while all other tiers produce peaks below b. This automatically handles cross-tier selection bias (disrupta only shows which tier had the highest cost).
+
+**Fitted results:**
+- Micro: λ_e=0.055, λ_m=0.102, λ_c=0.142; E[T_e]=£17,685, E[T_m]=£9,229, E[T_c]=£1,517
+- Rest: λ_e=0.062, λ_m=0.212, λ_c=0.181; E[T_e]=£51,122, E[T_m]=£4,728, E[T_c]=£6,443
+- National total: **£1.75bn**
+
+**GOF**: MAPE 3.3–3.5% (excellent fit). Formal χ² test is inapplicable — 24 parameters exceed the number of observable cells after pooling sparse ones (~11 Micro, ~19 Rest). The model fits well by absolute measures but is technically overparameterized relative to the observable contingency table.
+
+### Key methodological insights from this session
+
+1. **Pooled T has no coherent generative model.** There is no "random draw" from a single distribution — a firm's cost draws come from type-specific distributions at type-specific rates. Pooled λ·E[T] happens to give a similar answer because the pooled T is implicitly weighted by peak shares, but it's not a principled object.
+
+2. **Max-bias correction is automatic in the MLE.** The MLE fits per-draw T distributions directly from observed maxima — no separate correction step needed. The correction is baked into the likelihood via P(M_X ≤ b) = exp(−λ_X(1−F_X(b))).
+
+3. **Cross-tier selection bias.** disrupta only shows which tier produced the highest-cost peak. A firm with both an expensive ransomware attack and a cheap phishing attack only reports the ransomware in disrupta. The MLE handles this via the competition model; simpler approaches (like directly computing E[T] per disrupta tier) overestimate each tier's T because they only see the "winners."
+
+4. **Convergence of estimates.** All approaches (pooled with correction, tier-conditioned, disrupta-based, MLE) converge to ~£1.7–1.85bn. The spread is narrow, suggesting the answer is robust to methodological choices within this framework.
+
+### Relationship to the bridge-based estimate
+
+The bridge-based approach (£2.2bn type-based, §National Simulation above) and the Poisson peak approach (£1.75bn MLE) address the same question from different angles. The bridge approach multiplies worst-incident cost by a bridge factor; the Poisson approach models peak counts and per-draw costs directly. The ~20% gap is expected — the bridge approach uses per-type multipliers that can be >1 (Ransomware 2.21×, Impersonation 3.11–6.25×), while the Poisson approach attributes multi-incident costs via λ rather than explicit multipliers.
+
+### Lognormal T variant (`src/estimation/tier_mle_lognormal.py`)
+
+The free-PMF MLE (24 params) is nearly saturated — 25 observable cells (3 tiers × 8 bands + 1 no-peak) means df≈0. Replaced free PMFs with T ~ Lognormal(μ,σ) per tier: 9 params per group (3 log-λ + 3×(μ, log-σ)).
+
+**Likelihood ratio test**: ΔNLL ≈ 7–8 on 15 df (p ≈ 0.4) — free PMF does NOT significantly improve over lognormal. The 15 extra parameters bought nothing.
+
+**GOF (Rest, df=7)**: χ² = 9.19, p = 0.24 (passes). G-test = 22.42, p = 0.002 (rejects, driven by expensive band-7: obs 7 vs pred 3.4 — G-test oversensitivity to sparse cells). χ²/df ≈ 1.3 (good). Micro is untestable (9 cells for 9 params → df = -1).
+
+**Fitted parameters:**
+- Micro: λ_e=0.055, μ_e=0.72, σ_e=4.64, E[T_e]=£15,060; λ_m=0.102, E[T_m]=£4,227; λ_c=0.142, E[T_c]=£1,634. E[cost|att]=£1,495
+- Rest: λ_e=0.062, μ_e=8.50, σ_e=3.67, E[T_e]=£53,539; λ_m=0.212, E[T_m]=£7,074; λ_c=0.181, E[T_c]=£6,870. E[cost|att]=£6,058
+- **National total: £1.558bn** (down from £1.75bn with free PMF — the lognormal smoothing removes noise-driven tail weight)
+
+### Bootstrap (`src/estimation/tier_mle_bootstrap.py`, `tier_mle_bootstrap_fast.py`)
+
+Resample firms within size group (with replacement), refit 9-param lognormal MLE. Both 200-rep (fast) and 500-rep versions give consistent results.
+
+- **National total**: point £1.558bn, mean £1.55bn, median £1.51bn, SD £0.34bn, **90% CI £1.0–2.2bn**
+- **Micro E[cost|att]**: point £1,495, 90% CI £587–£2,730
+- **Rest E[cost|att]**: point £6,058, 90% CI £4,004–£7,928
+- **Micro expensive E[T]**: point £15,060, **90% CI £3,012–£31,288** (10× range — dominant uncertainty source)
+- Micro expensive σ: 90% CI [1.66, 12.76] — essentially unconstrained
+
+### Cross-checks on Micro-expensive cell (`src/estimation/micro_expensive_crosschecks.py`)
+
+The Micro-expensive cell (E[T] CI £3k–£31k) carries ~56% of Micro's cost and Micro is ~45% of the national total. Four independent cross-checks:
+
+1. **Bridge cross-check**: censored-MLE per-type figures (independent measurement channel) give £902/attacked-business for expensive types. MLE gives £1,410. Ratio 1.56× — good agreement across independent channels. If forced to match bridge, implies Micro E[T_e] ≈ £3.1k (bottom of CI).
+
+2. **Cross-size ratio**: Micro/Rest E[T] ratios — expensive 0.28, mid 0.60, cheap 0.24. No anomaly (expensive ratio sits between the other tiers).
+
+3. **Size gradient**: empirical mean peak cost Micro £19k < Small £65k (monotone ordering holds — Micro is properly the smallest).
+
+4. **Freq=1 direct draws**: once-only firms need no max-bias correction. Micro expensive freq=1: n=5 (bands 3,3,4,5,6), mean £2.4k vs fitted E[T]=£15k. σ=3.5 fits as well as σ=4.64. Points to lower half of CI.
+
+**Synthesis**: three of four checks lean toward the lower half of the £3k–£31k CI. Under minimax-overestimate philosophy, £1.558bn is defensible as a mild overestimate — the point estimate likely sits in the upper half of the true distribution.
+
+### Status
+
+- All scripts committed and pushed.
+- **Current headline**: lognormal MLE national total **£1.558bn, 90% CI £1.0–2.2bn**.
+- The bridge-based £2.2bn remains as an alternative upper-bound estimate.
+- Open: shared-σ refit between Micro and Rest for the expensive tier (could tighten the Micro-expensive CI by borrowing strength from the better-identified Rest group).
+
+---
+
+## Two-Process Investigation (2026-09-22)
+
+### Motivation
+Questioning whether the band>=3 "peak" cutoff is the right operationalization for separating costly from non-costly incidents. Hypothesis: two latent processes at the ATTACK level — nuisance (high-freq, low-cost) and serious (rare, heavier right tail). These are NOT firm-level clusters; a single firm experiences both.
+
+### Attack-type mapping
+Natural clustering by attack type: **Nuisance** = phishing (type6, disrupta=6) + impersonation (type5, disrupta=5). **Serious** = everything else (ransomware, malware, DoS, hacking, unauth access, takeover). Evidence: only-nuisance-type firms have 65% band=1 at freq=1; only-serious have much higher success rates and heavier cost tails.
+
+### Disrupta-based decomposition (`two_process_disrupta.py`)
+The survey's `disrupta` variable (which type was MOST DISRUPTIVE) directly attributes each firm's max cost to one of the two processes — no latent-variable inference needed.
+
+**Key findings:**
+
+| Metric | Nuisance | Serious |
+|--------|----------|---------|
+| Share of disrupta | 83.5% | 16.5% |
+| Micro P(success) | 0.37 | 0.66 |
+| Micro E[T\|success] | £3,481 | £9,471 |
+| Rest P(success) | 0.51 | 0.84 |
+| Rest E[T\|success] | £4,153 | £24,785 |
+| Rest freq=1 E[T] | £1,464 | £45,379 |
+
+The serious process has ~2× higher success rate AND ~3-6× higher E[T|success]. The right tail (bands 7-10) is overwhelmingly dominated by serious disrupta. But nuisance is 83.5% of all disrupta attributions, so its aggregate contribution is non-trivial.
+
+National total (max cost only, no bridge): £1.729bn — consistent with canonical estimates.
+
+### Failed approaches
+- **Pure subsamples** (only-nuisance or only-serious firms): serious-only subsample too sparse (n=40 total, n=13 successful freq=1) and unrepresentative — most firms with serious types ALSO have nuisance types (n=273 "both").
+- **Two-process lognormal MLE** (`two_process_mle.py`): H process collapsed to degenerate zero-cost (lognormal can't represent "96% zero, 4% band-2").
+- **Two-process free-PMF MLE** (`two_process_free_pmf.py`): GOF terrible because freq-to-K Poisson mapping is wrong (freq measures periodicity, not incident count).
+
+### Open questions
+- How to use this decomposition in the national estimate — replace the tier-based approach, or use as a cross-check?
+- The disrupta attribution gives us the max-cost process, but not the cost from the OTHER process's incidents (the non-disrupta attacks). For a total-cost estimate, need a bridge for the sub-maximal process too.
+
+---
+
+## Four-channel generative model — writeup draft + review (2026-09-24)
+
+**Direction (user):** abandon "model max + bridge". Mainline = latent generative model; total via Wald identity. Writeup structure: **Model / Claims / Inference / Estimate.**
+
+**Model:** per size group, 4 channels — mass phishing (F_M, latent), targeted phishing (F_T, latent), impersonation, serious. Each channel: count K_τ, per-attack success gate p_τ, lognormal(μ_τ, σ_τ) cost | success. E[total] = Σ_τ E[K_τ]·p_τ·E[C|success,τ].
+
+**Claims status:**
+- *Two phishing clusters:* solid (SVD rank-2 at 99%+, reproduced by engagement grouping).
+- *Independence:* NOT needed for the point estimate (linearity of expectation). Only matters for distributional statements.
+- *Lognormal | success:* not rejected for impersonation (freq=1, χ²=1.94), serious, F_M proxy — but see review caveat 3.
+- *Size bucketing:* shelved. Nuisance cost|success shape roughly stable across sizes; serious shifts right for Large (χ²=24 under pooled fit). Success-rate gradient with size is confounded by larger firms having more attacks.
+- *Poisson counts:* **REJECTED** with a shared rate, even within size group. Once-only and daily firms coexist in every (size, channel) cell. Up to ~monthly is band-ambiguous; weekly+ is unambiguous: 33% of phishing-only, 12.5% of serious-only (5 firms), 1% of impersonation-only. Attacker-side framing (Poisson campaigns × uniform random targeting) reduces to the same Poisson — spread must come from firm-level exposure heterogeneity or burstiness → mixed Poisson / NegBin.
+
+**Review corrections (2026-09-24) — earlier claims in this session that were wrong:**
+1. λ = −ln(1−q) from type flags is invalid under firm heterogeneity (flag gives P(K≥1), says ~nothing about E[K]). md-clean `count_calibration.py` already showed this: Poisson-from-flags underestimates E[N|N≥1] by 14.7× for phishing.
+2. F_M + F_T superposition at the same firm is still Poisson — it cannot explain overdispersion. Only across-firm mixing can.
+3. p_τ, lognormal fits on freq>1 firms, and the size gradient were read off the max-of-K, not per-attack draws.
+4. SVD mixing weight π_f is a firm-level share of max-distributions, not λ_T/λ_phish.
+
+**Exposure proxies (`exposure_proxies.py`):** within size group, freq is NOT predicted by sector (Kruskal p=0.20), Sum10Steps, AllEssentials, trained, audit, insurex, priority, policy/rules (|ρ|≤0.25, scattered p<0.05 ≈ chance). `income2` has 0% coverage. Heterogeneity, if exposure-driven, isn't captured by observables.
+
+**Key data: `Cybercrime_phishsum` / `Cybercrime_allsum` are real per-firm counts** (scale vars; missing codes negative; values ≥100 legitimate — do NOT apply the banded filter). ~51–55% coverage of attacked. Median count by freq band: 1, 3, 5.5, 12, 30, 62 — far below our FREQ_TO_K (1, 6, 12, 52, 365, 730) at weekly+ (4–12× lower). Caveat: CSBS "cyber crime" definition excludes cyber-facilitated fraud and may count a subset of phishing attempts — check definition before equating with K.
+
+**Prior art in `/home/user/md-clean` (read before redoing):** `count_calibration.py`, `negbin_test.py` (NegBin ≫ Poisson but still poor fit; heaping at 5/10/12), `frailty_test.py` (binary frailty doesn't rescue Poisson; n_types UNDERdispersed → heterogeneity is type-specific, no shared vulnerability dial), `iid_test.py` (i.i.d. within phishing rejected). See md-clean NOTES.md lines ~330–790.
+
+**Count definition verified (md-clean `type_count_inventory.py`):** `Cybercrime_phishsum` is a gross phishing incident count (not engagement-gated). Coverage is NOT random: 45% of no-cost phishing firms vs 65–100% of costly ones; 48% Micro → 70% Large. Handled with IPW by band as sensitivity.
+
+**Two-channel phishing fit on (N, M) (`phishing_count_mixture.py`, 2026-09-24).** Model C: K_T ~ Poisson(λ_T), K_M ~ NegBin(m, r), per-attack success gate + banded lognormal per channel. Baseline A: one-channel iid. Sizes pooled.
+- **C beats A decisively** (phishing-only n=162: −ll 208 vs 300, ΔAIC 172; disrupta==6 n=304: ΔAIC 359). C's joint fit reproduces the flat-to-rising no-cost rate across N (obs 0.49/0.63/0.57/0.61/0.43 vs C 0.55/0.53/0.72/0.67/0.33); A predicts 0.96→0.03. The phishing half of the four-channel model survives the test md-clean's one-channel iid failed.
+- **Preferred fit = joint P(N,M), phishing-only:** λ_T=0.40, mass m=14.4, r=0.094 (extreme exposure heterogeneity; 62% of phishing firms get no mass attacks), p_T=0.55 (μ 4.9, σ 2.2 → £730/attack), p_M=0.008 (→ £2.40/attack). Per phishing firm: targeted £295, mass £34. IPW: λ_T=0.27, m=9.7 → £144 + £21.
+- Conditional-only fit P(M|N) leaves the counts unidentified (λ_T 0.04) — don't use.
+- disrupta==6 population: mass lognormal hits parameter bounds (σ=5, μ=14) → mass tail unidentified there; its large mass contribution (£667–793) is an artefact. Phishing-only is the cleaner population.
+- **Caveats:** rates are for phishing firms with a count (N≥1), not all firms — scaling to population still needs the phishing flag rate; n=162, sizes pooled; count heaping ignored.
+
+**Agnostic feature screen (`feature_screen.py`, 2026-09-24).** 248 pre-incident firm features (governance, controls, 10 Steps, insurance, supply chain, incident plans, respondent title); 65 survive coverage≥80% + missingness-leakage filter. HistGB, repeated 5-fold CV, gain over size+sector baseline. Run with `OMP_NUM_THREADS=1` (multithreaded HGB stalls in this container).
+- **Exposure (log phishing count, freq): nothing.** Gain +0.005 R² / +0.028 R² (noise). Rate heterogeneity is not explained by observables.
+- **Vulnerability (any cost | log N): AUC 0.54 → 0.67.** **Severity (band | costly): R² −0.02 → 0.07.** Modest but real.
+- **Direction: more preparedness ↔ MORE reported cost** throughout (incident-response plans `incidaction*`, governance `manage_comb`, risk identification `ident*`, `Sum10Steps`, training, supplier review; also respondent `title`). Candidate explanations: reverse causality (hurt firms invest), cost *recognition* (prepared firms detect/account for costs that unprepared firms report as "no cost" — would mean our estimate is biased LOW), or within-size complexity confound (more IT/value → more governance and more to lose). None gives a clean handle on the latents.
+- Caveat: several 1=yes/2=no/3=depends codes and nominal `title` were treated as numeric by the trees — fine for a screen, not for inference.
+
+**Joint four-channel likelihood (`joint_four_channel.py`, 2026-09-24).** All 2,175 businesses (non-attacked contribute P(all K=0)). Per firm: 3 flags, freq via a calibrated measurement model P(freq | count bin) (from 566 firms with counts), phishing count N (MAR given band), worst band, disrupta as argmax label. Exact bucketed computation, 24 ms/eval; params in `build/joint_four_channel_{unweighted,weighted}.json`.
+- Headline (pooled sizes): unweighted £1,620/firm → crude £2.30bn; weighted £600/firm → £0.85bn. Serious is the largest channel unweighted (£993/firm), then impersonation, targeted, mass.
+- **Moment checks FAIL on channel independence.** Among attacked firms, all three flags together: obs 0.191 vs sim 0.032 (unw); phishing+impersonation 0.215 vs 0.147; single-type cells over-predicted 2–3×; prevalence over-predicted (0.674 vs 0.519 unw). Channels are strongly POSITIVELY co-occurring at the firm level. (The earlier "mild negative association" was computed among attacked firms only — conditioning on attacked induces a Berkson-type negative association; it was the wrong test.)
+- Knock-on misfits: serious-only and imp-only freq too high in sim (obs 56%/51% once vs sim 26%/32%); phishing P(no cost | N) now misfit (0.57–0.61 obs vs 0.80–0.87 sim) — the joint fit traded phishing fit to explain the other margins; serious worst-band too low (mean 3.0 vs 3.8).
+- **Implication:** linearity still makes E[total] = Σ E[K]·p·E[C] valid, but the *likelihood* with wrong dependence biases the parameters. Needs a shared firm-level factor (e.g. binary "exposed/quiet" class scaling all channel rates). md-clean `frailty_test.py` found binary frailty gives conditional track independence — consistent. Extension is cheap: likelihood = Σ_class π_c · L_c.
+- Weighted vs unweighted differ ~2.7× — size mix matters; size handling still open.
+
+**Joint fit + binary frailty (`joint_four_channel_frailty.py`, 2026-09-24).** Firms quiet (1−π) / exposed (π); per-channel rates differ by class; success/cost shared. Reduces exactly to the independent fit at δ=0 (verified). All 4 starts converge to the same optimum.
+- **Unweighted: LR gain 438.5 for 5 params; π=0.43.** Quiet firms get almost nothing (rates 0.01–0.10); exposed firms carry nearly all attacks (targeted 1.4, mass 29, imp 0.76, serious 0.68 per year).
+- **Fixed:** prevalence (0.517 vs obs 0.519), flag co-occurrence (triple 0.152 vs 0.191; single-type cells within ~0.01–0.04), worst-band distribution, serious worst-band tail (P(band≥5) 0.36 vs 0.36).
+- **Still misfit:** (a) freq in single-type subsamples (obs 51–56% "once" vs sim 31–33%). Likely the freq measurement model: calibrated P(freq=1 | N=1) is only 0.37, so the model can't produce many "once" answers; calibration is phishing-derived and applied to all channels. (b) Phishing P(no cost | N=1): obs 0.49 vs sim 0.77 — targeted split degraded (p_T 0.26 vs 0.55 standalone).
+- **Headline is stable across dependence structures:** unweighted £1,650/firm → £2.34bn (indep. £2.30bn); weighted £606/firm → £0.86bn (indep. £0.85bn). Composition shifts (targeted ↑, mass ↓ to ~£1/firm); serious dominates (~60% unweighted, ~50% weighted).
+- Caveat: `moment_checks` compares against UNWEIGHTED observed moments, so the weighted fit's checks are not like-for-like (its prevalence/co-occurrence "misfit" is partly that).
+- Open: freq measurement model per channel; weighted moment checks; size split; weighted-vs-unweighted gap (2.7×) is now the largest lever on the headline.
+
+**Size split (`joint_frailty_by_size.py`, 2026-09-24).** Frailty model fitted per size group, survey-weighted within group, national = Σ N_g · E[cost/firm | g]. Pooled freq calibration; warm start from pooled weighted fit; both starts converge in every group. Params + costs in `build/joint_frailty_<group>_<w>.json`.
+
+| group | π exposed | £/firm | T | M | I | S | national |
+|---|---|---|---|---|---|---|---|
+| Micro | 0.37 | 369 | 93 | 1 | 113 | 162 | £0.424bn |
+| Small | 0.42 | 1,816 | 174 | 6 | 502 | 1,135 | £0.400bn |
+| Medium | 0.57 | 2,301 | 366 | 5 | 585 | 1,346 | £0.088bn |
+| Large | 0.66 | 7,616 | 3,083 | 11 | 97 | 4,426 | £0.063bn |
+| Rest (pooled 2–4) | 0.44 | 2,029 | 258 | 7 | 486 | 1,278 | £0.541bn |
+
+- **Headline: £0.965bn (Micro + Rest) / £0.975bn (4-way)** — the two splits agree. Unweighted-within-group gives £1.26bn (over-represents Medium/Large inside Rest). Pooled weighted £0.86bn was close; pooled unweighted £2.34bn was the size-mix artefact.
+- Serious is the largest channel everywhere except Micro (where imp ≈ serious); mass phishing is negligible (£1–11/firm).
+- **Weighted checks (like-for-like now):** prevalence matches in every group (e.g. Rest 0.530 vs 0.529). Triple co-occurrence under-predicted in Micro/Small/Medium/Rest (e.g. Rest 0.202 vs 0.157) — binary frailty not fully enough. Serious worst-band tail under-predicted in Small/Medium (mean 4.15 vs 3.58) → likely biased LOW. Large fits well but is thin (n=140 attacked); Medium & Large serious NegBin r hits the upper bound (→ Poisson).
+- Positioning vs earlier project numbers: production type-based £2.2bn, approach B £1.0–1.4bn, freq-based £1.0bn → the generative model lands at the low end. Still excludes the >£500k tail, sole traders, indirect costs; freq measurement-model misfit unresolved.
+
+**£500k cap in the joint fits (`tail_truncation_check.py`, 2026-09-24).** Both the likelihood (`band_cdf` renormalises the lognormal onto bands 2–10) and the estimate (`trunc_mean(cap=500k)`) cut costs at £500k — a carry-over convention, not a data fact (bands 11–13 were offered, zero chosen). Recomputing with the uncapped lognormal mean on the SAME params: national £0.97bn → **£3.8–3.9bn (×4)**, almost all from serious in Small/Medium/Large (σ≈3.1–3.6, P(>£500k|succ)≈1.2–1.8%, E[C|succ] £11k → £60–100k). Micro barely moves. This overstates: params were fitted under renormalisation, so the fat tail was never penalised by the empty >£500k bands (Rest params imply ~2 expected >£500k serious incidents vs 0 observed). **Next: refit with open tail — bands 11–13 in the likelihood as observed zeros.**
+
+**Next step:** get E[K_τ] from counts, not flags — `Cybercrime_phishsum` for phishing (and `_hacksum`, `_ranssum` where populated); impersonation has no count data (identification gap). Verify the CSBS cyber-crime counting definition first.
+
+**Open-tail refit results (2026-09-24).** Extended `band_cdf()` to bands 1–13, removed renormalisation, switched `trunc_mean()` to uncapped lognormal mean. Zero counts in bands 11–13 (>£500k) now constrain σ through the likelihood. Refitted all: pooled frailty (-loglik 7148.58), then per-size-group frailty (micro, rest).
+
+| Split | Per firm | N_pop | National |
+|-------|---------|-------|----------|
+| Micro | £394 | 1,150,875 | £0.454bn |
+| Rest  | £5,405 | 266,855 | £1.442bn |
+| **Total** | | | **£1.90bn** |
+
+Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit lands between, as expected — the empty >£500k bands constrain σ downward, giving a principled "minimax overestimate." The 4-way split (small/medium/large separately) still to run as a sensitivity check.
+
+**Frailty specification tests (2026-09-25).** Pooled, survey-weighted, open-tail model.
+- *All-Poisson + binary frailty* (`frailty_allpoisson_test.py`): −loglik 11834 vs 7149 with NegBin M/S (Δ4685 for 2 params). NegBin on M/S is necessary; frailty does not absorb within-channel overdispersion. Cost barely moves (£739 vs £729/firm).
+- *Frailty shape, free K-class mixture* (`frailty_free_mixture.py`, NPMLE-style: free weights + free per-channel multipliers, nothing assumed about shape): K=2 7148.1, **K=3 7109.0 (BIC best)**, K=4 7107.9 with the 4th class at weight 0.000 → **three support points**: quiet 55% (≈0.03 attacks/yr per channel), mid 37% (T 0.43, M 8, I 0.25, S 0.20), hot 9% (T 1.06, M 55, I 0.95, S 1.72). Hot tier is most amplified on serious (~120× quiet). Parametric lognormal frailty (`frailty_richness_test.py`, 23 params) −loglik 7136 — beats binary, loses to 3-class → heterogeneity is a few discrete tiers, not smooth. Quiet-class M rate ≈ 0 (multiplier at bound, unidentified).
+- **Headline invariant to frailty spec:** £729–732/firm across binary / 3-class / 4-class / lognormal / all-Poisson. Frailty shape matters for distributional claims, not E[total]. Current production model is still binary; switching to 3-class is justified on fit but not needed for the estimate.
+- `frailty_shape_check.py`: among attacked, pairwise flag ORs are weak/negative (Berkson conditioning) — raw co-occurrence is not a usable frailty diagnostic. `frailty_posterior_check.py` (bool bug fixed): under binary, non-attacked all quiet (post ≈0.04); attacked 61% confidently exposed, 39% ambiguous.
+- Open (from user): frailty acting on costs too (exposed firms facing costlier attacks) — not yet tested.
+- Assumption list for writeup (user draft): 4 channels (phishing split: defended; serious lumped: untested); channels independent given frailty; counts = frailty × (Poisson T/I, NegBin M/S); per-attack iid success gate + lognormal (iid within firm untested); Micro vs Rest (4-way sensitivity not yet rerun under open tail).
+
+**Is "serious" one channel? (`serious_subtypes.py`, 2026-09-25).** Serious = 9 Q53A types (ransomware, other malware, DoS, bank-account hacking, unauthorised access by staff/students/outsiders, VC/IM eavesdropping, web/social/email takeover). 391 serious-flagged firms; 64% flag only one subtype; pairwise co-flag shares low (≤0.19). Cost profile among firms whose MOST DISRUPTIVE attack was that subtype (n=21–36 each):
+- **Ransomware is different:** P(no cost) 0.03 vs 0.27–0.44 for other subtypes; 31% of its costly incidents ≥£10k vs 3–14%; geometric-mean costly worst incident ~£1.4k vs £240–700. Chi² homogeneity across the 5 populated subtypes p=0.006 — driven by ransomware.
+- Malware, DoS, bank hacking, takeover look alike and resemble impersonation (P(no cost) ~0.3–0.4, geo £240–700). Staff/outsider access, eavesdropping, students: too few disrupta firms to profile (0–8).
+- Ransomware = 21% of serious-flagged firms, weighted prevalence 2.6%.
+- **Why it matters:** one lognormal fitted to a ransomware + "other" mixture gets an inflated σ — and the open-tail mean exp(μ+σ²/2) is very sensitive to σ. The serious σ≈3.1–3.6 that drove the open-tail result may partly be this mixing. Candidate test: 5-channel model with ransomware split out (flag type1, disrupta code 1).
+- Caveats: disrupta profiles are worst-incident, not per-attack; small n per subtype; ransomware's low no-cost rate may partly be reporting (only noticed if it bit).
+
+**Ransomware split (`joint_five_channel.py`, 2026-09-25).** 5 channels (T, M, I, R=ransomware, S=other serious), binary frailty, pooled weighted, open tail. Same data, two fits: *free* (R own p/μ/σ, 29 params) vs *tied* (R shares S cost params, 26).
+- −loglik free 7348.50 vs tied 7350.87 → LR 4.7, df 3, **p=0.19: tying not rejected.**
+- But the estimate moves: **tied £738/firm, free £981/firm** (R £145 → £476). Free: pR 0.60, μ 6.48, σ 2.76, E[C|succ] £29k, E[K_R] 0.027 (Poisson-like). Tied: E[K_R] 0.127 (r=0.03), E[C|succ] £3.8k. Count-vs-cost tradeoff for R is weakly identified — only 30 firms with disrupta=ransomware.
+- Other-serious σ 2.13 (free) vs lumped serious 2.35 — the "mixing inflates σ" hypothesis is minor in the pooled fit (the σ≈3.1–3.6 figures were size-split Rest params).
+- Verdict so far: lumping is statistically tolerable but not innocent (~30% swing in pooled £/firm, unresolved). Next candidate: check whether the tied fit reproduces ransomware's near-zero P(no cost | disrupta=R) (obs 0.03).
+- User note: "only noticed when it does damage" is not a concern — detected cost is what the estimate needs.
+
+**Ransomware split + ransomware count (`joint_five_channel.py ... rcount`, 2026-09-26).** Added `Cybercrime_ranssum` (35 of 82 ransomware firms; 25 report 1; one reports 100, one 24; coverage 73% for disrupta=R vs 25% otherwise — depends on observables, so MAR-in-likelihood like the phishing count). Regression check: without count, likelihood reproduces earlier optima exactly.
+- Count **fixes the frequency identification**: E[K_R] 0.094 (free) vs 0.096 (tied); before it was 0.027 vs 0.127. rR ≈ 0.03 (heavily overdispersed — the 100/24 reports).
+- Remaining free-vs-tied gap is **purely ransomware's cost tail**: medians ~£220 vs ~£260 (μ 5.38 vs 5.57), but σ 2.93 vs 2.36 → E[C|succ] £15.9k vs £4.3k. p 0.38 vs 0.32.
+- −loglik free 7417.80 vs tied 7419.88 → LR 4.2, df 3, **p=0.24** — data can't resolve ransomware σ (~30 worst-band obs).
+- £/firm: **tied 753, free 1,062** (R £131 vs £558). ~40% of pooled cost/firm hinges on ransomware tail width.
+- Read: splitting is warranted on sense + descriptives; the split's consequence is a tail question the survey can't answer. Under minimax-overestimate, free fit is the defensible upper end. Next when returning to size groups: share R cost params across sizes, let R rate vary.
+
+**Is ransomware lognormal? (`ransomware_fit_check.py`, 2026-09-26).** User's framing: lognormal is the working assumption everywhere; free fit is simply the estimate if the data is consistent with it. Checked:
+- **Fit check fails.** Worst band | disrupta=R (n=28), obs vs free-fit sim: no cost 3% vs 15%; £1–500 46% vs 31%; **£500–5k 11% vs 28%; £5k–20k 28% vs 14%**; £20k–500k 13% vs 12%. X²≈17 on ~5 df (rough, sparse); tied fit worse (X²≈37). Observed is **bimodal** (cheap <£500 cluster + costly £5k+ cluster, gap between) — plausibly "blocked/minor" vs "real encryption event". A lognormal spans both only by inflating σ → the fat tail is a misfit artefact. Also P(disrupta=R | R flag) obs 0.40 vs sim 0.62.
+- **σ_R barely identified even under lognormal:** partial-profile 95% interval σ ∈ [2.2, 4.2] → R £/firm £158 to £17,000 (flat likelihood; raising σ lowers median, explodes mean; empty >£500k bands push back weakly).
+- Conclusion: lognormal is not an acceptable assumption for ransomware cost. Candidate: two-component ransomware cost (minor + costly-event lognormal), or a sharper success gate defining success as the costly event. n=28 → bimodality suggestive, not proven.
+
+**CORRECTION + per-channel checks (`channel_cost_checks.py`, 2026-09-26).** The "ransomware not lognormal, X²≈17" result above was a bug: it compared RAW counts with a survey-WEIGHTED fit (raw over-represents large, costlier firms). Redone with weighted shares scaled by Kish n_eff, worst band | disrupta=channel vs sim from the free+rcount 5-channel fit:
+- phishing p=0.73 (n_eff 355), impersonation p=0.58 (109), **ransomware p=0.25 (n_eff 13)**, other serious p=0.99 (65). **Lognormal not rejected anywhere.** Ransomware bimodality is visible but not significant at n_eff≈13.
+- ⇒ Per user's logic, the free ransomware fit IS the estimate (σ_R 2.93); the wide σ interval [2.2, 4.2] is sampling uncertainty, not misspecification. Split ransomware out; carry its σ uncertainty.
+- **Cost-frailty screen** (# other channel groups flagged, high £5k+ vs low £1–5k worst band from channel L; obs gap vs model gap, model has frailty on counts only): phishing −0.14 vs +0.05; **impersonation +0.48 vs +0.04 (Micro +0.68, Rest +0.32)**; ransomware +1.17 (only 2 low-cost firms — uninformative); other serious +0.33 (Micro +0.61, Rest −0.30). Only impersonation shows a consistent hint that costs share the firm-level factor. Suggestive, not decisive.
+
+**Which parameters vary by size? (`joint_size_model.py`, 2026-09-26).** 5-channel binary-frailty model with ransomware count, all firms, size groups Micro/Small/Medium/Large; Micro base + additive shifts. Weights normalised to mean 1 WITHIN each size group (model conditions on size; national = Σ N_g·E[cost|g]). Weighted pseudo-LR (approximate):
+- rates+π vary vs pooled: ΔNLL 165, 18 df, p≈1e-59 → **attack rates and exposed share must vary** (π 0.35/0.41/0.58/0.65 Micro→Large).
+- + success gates vary: ΔNLL 3.8, 15 df, p=0.94 → share gates.
+- + cost μ varies: ΔNLL 10.2, 15 df, p=0.16 → share cost distributions.
+- separate full fits per size vs rates-only: ΔNLL 41.5, 69 df, p=0.12 → full separation not supported; and it's harmful for tails (Medium ransomware σ hit bound 5 → £6.5M/firm).
+- **Chosen structure: size shifts rates + π; gates, cost lognormals, NegBin shapes, frailty deltas shared.** Replaces micro-vs-rest separate fits; also solves ransomware sparsity (6–9 disrupta=R firms per size).
+- Rates-only model: £/firm Micro 1,411 / Small 2,649 / Medium 2,642 / Large 14,002 → national £2.42bn (not headline-ready). Ransomware ~half of Micro, ~70% of Large; σ_R ≈ 3.0 remains the dominant quantitative uncertainty. Shared σ: T 2.54, I 2.48, S 2.49.
+- Caveat: L-BFGS-B starts differ by ~4 NLL on the bigger models (imperfect convergence; doesn't change conclusions).
+
+**Agreed plan (user, 2026-09-26).** Size: go fourfold (only rates + exposure vary by size, so cheap). Hard model choices to settle first: (4) number of frailty tiers, (5) frailty on costs — being fitted now (`joint_size_frailty.py`: K∈{2,3} × cost-frailty on/off, in the size model). Then, in order: (6) costs independent across attacks within a firm; (2) freq→count measurement model; (3) phishing-count coverage check vs assembled model (only matters if wildly inconsistent); then (1) ransomware tail and (7) weighting scheme.
+
+**Frailty-on-costs from the data directly? (2026-09-26).** No clean model-free test exists: only the worst incident per firm is observed, so "heavily attacked ↔ costly worst incident" arises mechanically (max of more draws); conditioning on disrupta adds selection. Per-type ANNUAL cost variables (cyber crime module: ranscost/hackcost/viruscost/doscost/tkvrcost_bands) would avoid this but are too sparse: 11–47 reports per type among 1,132 attacked, and only **5 firms** report >£0 on 2+ types (`channel_cost_checks.py coverage`). (Already known: these are also a different cost concept — direct losses only — see line ~263.) Options: one LR fit; treat as unidentified (counts-only frailty likely biases total DOWN if real); or sensitivity bound. Frailty-tier question: user undecided. Fit-launching halted at user request — discuss before launching fits.
+
+**Frailty structure straight from the flags (`frailty_flag_structure.py`, 2026-09-26).** All firms (incl. non-attacked → no Berkson selection), flags P/I/R/S, survey-weighted, pooled and within size groups, firm bootstrap.
+- Strong heterogeneity visible directly: all-four pattern 53× independence (pooled), none-hit 1.24× (up to 3.3× in Large), single-channel patterns under-represented. Holds within every size group.
+- **Tetrad test of one exposure dial** (under 2 classes with within-class independence the off-diagonal flag covariance is exactly rank 1 → tetrads 0): PI·RS−PR·IS rel +0.45, PI·RS−PS·IR +0.50 (CIs exclude 0), PR·IS−PS·IR +0.08 (≈0). Same in Micro (+0.48/+0.54/+0.12), Rest (+0.39/+0.39/+0.01), Medium, Large; Small alone too noisy.
+- Signature = **two blocks**: {phishing, impersonation} and {ransomware, other serious} co-occur beyond one dial; cross-block associations consistent with one general factor. → heterogeneity ≥2-dimensional (general exposure + social-engineering vs technical tilt). Binary frailty rejected model-free. Likely why 3-class beat binary AND the 1-D lognormal: extra class supplied a second profile. **The tier question is really a dimensionality question.**
+- Alternative not excluded: category overlap within one incident (spoofed email ticked as phishing AND impersonation; ransomware also ticked as malware) → within-firm channel dependence, not a firm-level second factor. Different model implications.
+
+**Framing (user): three questions — (i) covariance structure of attacks, (ii) is latent frailty needed, (iii) do they interact.** My take: (i) is the observed fact; (ii)+(iii) = decomposing it into size, firm-level latent heterogeneity (shared frailty; NegBin = channel-private frailty), and incident-level co-labelling.
+
+**Once-only co-flagging sanity check (`frailty_flag_structure.py once|oncecounts`, 2026-09-26).** User expected one incident → one channel. Data: attacked firms answering freq="once" flag 2+ channels 38% (weighted), about the same as other freq groups (37–44%; daily 59%) — firm-level frailty with independent channels predicts a steep rise. Once-only 2+ patterns: P+I 43, P+I+S 24, P+S 16, I+S 8. "Once" is noisy (of once-only firms with a phishing count, 63% N=1 but 28% N>5), but **37 once-only firms with N=1 still flag another channel** (mostly impersonation) → incident-level co-labelling (or inconsistent answers) is real. Part of the P–I block excess is probably labelling, not a second exposure dimension; share not yet quantified.
+
+**Replacing channel independence — Q1: shape of the covariance (`type_cooccurrence_structure.py`, 2026-09-26).** 10 Q53A types (students-access has 0 firms), all firms, weighted tetrachoric correlations, eigen-spectrum, average-linkage clustering; pooled/Micro/Rest.
+- **One dominant general factor**: eigenvalues 5.61, 1.09, 0.80… (first = 56% pooled, 50% Micro, 63% Rest); loadings near-uniform 0.27–0.36 across all types. Tetrachoric r mostly 0.4–0.7 for every pair. → "everything correlated about equally".
+- 2nd eigenvalue ≈1 (0.94 in Rest), direction differs Micro vs Rest → no stable second dimension.
+- Secondary pairs, weak/unstable: ransomware–malware 0.67/0.68/0.62 (most consistent); phishing–impersonation 0.56/0.50/0.68 (partly co-labelling); access(outsider,staff)+eavesdropping 0.7+ but on 5–12 joint firms (unreliable). Clustering merge order differs Micro vs Rest.
+- Implication (tentative): one shared firm-level exposure factor, roughly equal across channels, captures most of the co-occurrence; block effects second-order. Nothing argues for regrouping serious subtypes. Not bootstrapped. Next (user-gated): Q1b once-only vs frequent per pair (co-labelling vs exposure); Q2 within-cluster frailty.
+
+**Frailty = the general co-occurrence factor (discussion, 2026-09-26).** The "everything together" factor IS shared frailty; flags show it exists and is ~1-dimensional; its SHAPE (tiers vs smooth) is the remaining question and needs intensity data. **Intensity data check (`frailty_intensity_data.py`):** only 84 firms have both phishing and non-phishing counts (notphishsum valid for 120 firms total); they're highly unrepresentative (P(no cost) 0.05 vs 0.30; mean band 5.0 vs 2.7), 18–26 per size. allsum = phish + notphish in 84/84. → No clean two-count view of the shared factor. Shape only inferable through a model (flags + freq + phishing count), and cost/firm was invariant to frailty shape in earlier tests (£729–731 pooled).
+
+**Frailty shape via SVD of frequency answers (`frailty_freq_svd.py`, figure `build/frailty_freq_svd.png`, 2026-09-26).** Correspondence analysis of group × answer table (answers: not attacked, once … several/day); groups = sector within Micro (12), size×sector for Small+Medium+Large (23) and pooled (35); ≥20 firms per group; noise floor from 500 label permutations. Mixture logic: K tiers with fixed answer profiles, groups differing only in tier mix → ≤K−1 dimensions above noise.
+- Rest and pooled: **only dimension 1 above noise** (0.33 vs null 95% 0.24 / 0.19); dim 2 inside band. Micro: dims 1–2 above noise (0.24 vs 0.19; 0.19 vs 0.15), but dim 2 is carried almost entirely by the "several/day" answer (coord ~1.0) and 1–2 small sectors.
+- Dim 1 ≈ "not attacked" vs attacked: groups differ mainly in HOW MANY firms get hit, much less in how often the hit firms are hit. Consistent with quiet/exposed mixtures varying in exposed share.
+- Caveat: rank is a LOWER bound on K−1 — it counts independent directions in which groups' tier mixes vary. If sectors vary only in exposed share, 3 tiers would also show 1 dimension. So: consistent with binary, cannot exclude more tiers. Low power (30–190 firms per group).
+
+**Is NegBin still needed in the size model? (2026-09-26).** Stored fits: NegBin shapes in size model 'rates' — mass r=0.21, ransomware r=0.04 (driven by counts 24/100), other serious r=0.67 → size + binary frailty did not absorb mass/ransomware channel-private spread. Tested other serious as Poisson (`joint_size_model.py rates_Spois`, warm start from 'rates'; unrefit hit +31 NLL): refit −loglik 9088.89 vs 9087.40 → ΔNLL 1.5, 1 df, **p=0.08** (AIC slightly prefers NegBin, BIC Poisson). Frailty absorbs nearly all of it. Cost: S £/firm Micro 360→420 … Large 2,173→1,755; national £2.42bn → £2.55bn (not headline). Recommendation: Poisson for T, I, S (spread = shared exposure); NegBin for M, R (channel-private flooding). User to decide.
+
+**Assumptions section — channel arguments (2026-09-26).** User drafting writeup (Model / Assumptions / Inference / Estimate). Channel-split evidence assembled in chat (impersonation: distinct profile, degenerate 2-cluster test, lognormal p=0.58, no count var; ransomware: distinct profile, own count, lognormal p=0.25 low power; other serious: homogeneity + sparsity; targeted/mass phishing: flat P(no cost|N), SVD rank-2, ΔAIC 172). **Gap filled — other-serious homogeneity WITHOUT ransomware (`serious_subtypes.py homog`):** malware / DoS / bank hacking / takeover (n=36/27/21/31 disrupta firms), worst band 5 bins: unweighted X²=13.5, 12 df, permutation p=0.33; weighted (Kish deff 1.75) p=0.996. 3 bins: p=0.34 / 0.94. **Homogeneous** — the earlier p=0.006 rejection was entirely ransomware. Access/eavesdropping subtypes: 0–8 disrupta firms each → lumped by sparsity.
+
+**Costs iid across attacks — part 1 (cost independent of attack count) (`iid_cost_check.py`, 2026-09-26).** Posterior-predictive vs size model 'rates' (population-representative sim; sim firms 'report' N with observed rate by worst band). iid split: (1) cost independent of count — testable; (2) no firm-level cost factor — ≈ cost frailty, untestable; (3) within-firm independence — indistinguishable from (2) with one worst cost.
+- **Phishing-only by exact N** (n=14–55 per bucket): obs P(no cost) 0.49/0.68/0.51/0.65/0.38 vs model 0.59/0.46/0.56/0.60/0.53; no trend either side; within noise → **part 1 supported for phishing** (given T/M split). N=1 misfit (old 0.71 vs 0.49) now 0.59.
+- **Impersonation-only / serious-only by freq**: contaminated by freq-mapping misfit (model 'once' share 0.34 vs obs 0.58 for imp-only). Hint: imp-only P(no cost) RISES with freq (0.50 once → 0.79 <monthly/monthly, n=38 each, ~2 SE) — anti-iid, same signature that forced targeted/mass phishing split → possible bulk-vs-targeted impersonation. Conflicts mildly with earlier degenerate 2-cluster test; weak. Serious-only too thin.
+
+**Writeup: counts argument — built from data patterns, not null + epicycles (user, 2026-09-26).**
+- **Step 1 (established, agnostic):** one-dimensional shared firm-level factor acting on OCCURRENCE of all attack types, ~equal loadings, within every size band (`type_cooccurrence_structure.py`; raw co-occurrence 53× for all four). To spell out in writeup: the P–I and ransomware–malware couplings, with the once-only-but-multiple-flags exhibit (`frailty_flag_structure.py once|oncecounts`).
+- **Step 2 (`latent_on_counts.py`):** the latent also scales INTENSITY. Phishing count quantiles (25/50/75/90) by # OTHER channels hit, survey-weighted, ratios vs 0-other: 2+ other → Micro ×3.0/3.0/2.8/7.1, Rest ×2.0/2.0/2.5/2.8, pooled ×2/2/2.8/2.8 (median shift 90% boot ×1.2–×4). Roughly uniform across quantiles → multiplicative (Micro tail stronger — consistent with mass phishing loading most). Robust to IPW for reporting by worst band (reporting 0.37 → 0.78 across groups). **1 other channel: no shift**; split: +impersonation only ×1.0/1.0/0.7/0.7, +ransomware/serious only ×1.0/1.25/0.9/2.0 → single P+I pairs carry no exposure signal, consistent with co-labelling. Caveats: crude read-out, count heaping, T/M mix.
+
+**Step 3 — shape of the latent from flags only (`frailty_shape_flags.py`, 2026-09-26).** Agnostic about intra-channel count distributions: flags depend only on P(hit ≥1 | latent) (free per type). 10 survey types (A) and co-labelling pairs merged (B: phish+imp, ransom+malware); within Micro and within Small+Medium+Large; LCA K=1..5 vs 1-D latent trait (normal score, logistic 2PL); weighted pseudo-likelihood, BIC with raw n.
+- **Continuous trait wins everywhere, with fewer params:** BIC Micro-A trait 3381 vs best LCA (K=2) 3393; Micro-B 2610 vs 2616; Rest-A 4999 vs LCA3 5081; Rest-B 3697 vs LCA3 3763. AIC agrees.
+- Best discrete fits are ORDERED classes (hit prob rises with class for every type: 1.00, 0.88 in Rest-B) → rungs of one continuum. Rest LCA3: 67% / 30% / 4% (top class hit by most types).
+- Merging co-labelling pairs doesn't change verdict. Micro is closest call (Δ BIC 6–13). Both model types under-predict firms hit by 6+ types in Rest (1.6% obs vs ~0.4–0.5%) → thin extra-heavy tail. Rare-type pair residuals (access types, eavesdropping) on handful of firms.
+- **Reverses earlier pooled "3-class beats lognormal"** (that was size-confounded + free per-class channel profiles). Implication: binary frailty = approximation; continuous (e.g. gamma) frailty is the data-favoured shape. Estimate earlier insensitive to shape. Decision deferred to model assembly.
+- **Plain effect size (user asked; `frailty_shape_flags.py share`):** share of departure from independence captured, (LL−LL_indep)/(LL_ceiling−LL_indep), ceilings = saturated table / 5-class LCA. Micro: 2 classes 73–86%, 3 classes 78–92%, continuous 74–87%. Rest: 2 classes 69–83%, **3 classes 85–96%, continuous 84–96%**, 4 classes 86–99%. → **Continuous ≈ equivalent discrete; the BIC "win" was parsimony, not explanatory power. Micro: 2 levels suffice; larger sizes need a 3rd level (~4% very exposed firms, +~15 pts).** User not yet taking a position on discrete vs continuous.
+
+**Step 4 attempt — count shape with the latent factored out (`counts_within_tier.py`, 2026-09-26).** Tiers from Step-3 flag LCA (K=3, within size), leave-one-out (phishing analysis excludes phishing+impersonation flags; ransomware excludes ransomware+malware). **Inconclusive:** remaining flags are rare, so LCA puts 90–94% of firms in the low tier — tiers barely separate firms, factoring-out removes ~nothing. Within tiers phishing counts hugely overdispersed (var/mean 140–613; truncated-NB r → 0), higher tiers have higher counts (mean 17–24 low vs 49–79 mid/high), but spread can't be attributed to channel vs unremoved latent. Ransomware 2–10 firms per tier. ⇒ Channel-private spread cannot be shown model-free with this data; Step 4 must rest on the joint model (NegBin needed for M, R after latent + size: r≈0.2 / 0.04; T, I, S Poisson by assumption, S tested p=0.08, I untested). Count assumptions list for writeup: per-channel law; size scales base rate + tier shares only (multipliers and NegBin shape size-independent); multipliers channel-specific; channels independent given latent+size except co-labelling; measurement layer separate.
+- **Step 4 done properly (`counts_within_tier.py poisson`):** tiers from the Step-3 LCA on ALL 10 flags (within size); under Poisson-within-tier, the tier's hit probability pins the mean, λ = −ln(1−p) → zero-truncated Poisson prediction with nothing fitted to counts. Co-labelling biases the low tier toward fewer high counts (against finding overdispersion). **Phishing low tier** (83% Micro / 67% Rest, p≈0.22, λ≈0.26): predicted P(N=1)=0.88, P(N>10)=0, mean 1.1; observed Micro P(1)=0.36, P(>10)=0.31, mean 21 (n=80); Rest 0.34 / 0.29 / 15 (n=85). Upper tiers same (Rest mid P(>10) 0.29 vs 0). Micro mid saturated (p=1). **Ransomware** Rest mid (n=12): P(1) 0.46 vs 0.98 predicted, P(>10) 0.31. ⇒ Poisson-within-tier decisively rejected for phishing; residual cannot be missed shared exposure (3 tiers capture ~90% of cross-type structure) → channel-private spread → NegBin for mass phishing (flood) and ransomware. T, I, S Poisson by assumption. Caveats: flag vs count from different survey questions; count reporting ~50%, costlier firms more.
+- **Step 4 claim-by-claim (`counts_within_tier.py tests24v2`; v1 versions were flawed and superseded):** v1 Test 2 wrongly treated freq≥2 as K≥2 (firms with N=1 answer "once" only ~37%); v1 Test 4 fitted truncated counts without pinning zero mass → degenerate, implied hit rates contradicting flags.
+  - **Test 2 (Poisson for I, S), corrected:** single-channel firms' freq answers vs Poisson(λ=−ln(1−p_tier)) pushed through calibrated count→answer map F. Imp-only p=0.056 (Micro, n=29; deviation toward MORE "once") / 0.41 (Rest, n=51); serious-only 0.068 / 0.61 (n=18 each); phishing-only reference p<0.001 both → test has power; **Poisson for I and S corroborated** (coarse). T not separately testable.
+  - **Test 4 (NegBin), corrected:** phishing = T Poisson + M NegBin, P(N≥1|tier) pinned to flag p_tier, shape r shared across tiers (Micro r=0.049, Rest 0.072). **Low tier fits** (Micro p=0.59, Rest 0.08); **mid/high rejected** (p≤0.05) with consistent pattern: 2–3 over-predicted (0.33–0.38 vs 0.08–0.19), 4–10 under (0.15–0.20 vs 0.27–0.34) → likely heaping (rounding to 5/10) + targeted component too concentrated. Ransomware 5–12 firms per tier → degenerate, unassessable.
+
+**Costs size-independent — model-free check (`cost_size_agnostic.py`, 2026-09-26).** Single-attack firms (worst incident = the one attack): phishing-only N=1; impersonation-only "once"; other-serious-only "once"; ransomware count 1 & most disruptive. Bins no cost / £1–500 / £500+, Micro vs Rest, weighted X²/deff + permutation.
+- Phishing (28 vs 27): 0.49/0.33/0.18 vs 0.51/0.38/0.11, p=0.90. Impersonation (18 vs 20) p=0.60, no consistent direction. Other serious (10 vs 10): 0.57/0.34/0.09 vs 0.11/0.89/0.00, p=0.31. Ransomware (7 vs 12): £500+ 0.49 vs 0.94, p=0.49.
+- Phishing matched on count (5 buckets): no bucket differs, direction flips; combined p=0.95.
+- ⇒ No detectable size dependence; clear for phishing, weak elsewhere; serious & ransomware LEAN costlier for larger firms (consistent with model hint). Coarse bins can't see tail-size differences. User has further ideas for agnostic tests.
+- **Using iid (+ Poisson from Step 4) to remove the count confounder (`cost_size_agnostic.py all`):** single-channel I / S firms have implied mean attacks given hit 1.03/1.04 (I, Micro/Rest) and 1.01/1.02 (S) → confounder negligible, so ALL single-channel firms usable (no noisy "once" filter). Impersonation (28 vs 50): 0.65/0.26/0.09 vs 0.55/0.41/0.04, p=0.59 → size-independent. Other serious (20 vs 17): 0.64/0.24/0.12 vs **0.21/0.50/0.28**, p=0.29 → not significant but same lean (larger firms costlier) now in 3 places (model free fit, "once" slice, this) + ransomware. Writeup: costs size-independent clearly for phishing & impersonation; serious/ransomware lean costlier for larger firms → shared costs may understate large-firm serious costs (flag, or candidate size shift on serious cost only). Phishing un-maxing by count not done (T/M mix makes per-attack G vary with count); count-matched comparison (p=0.95) is the clean version.
+
+**Writeup evidence collected (2026-09-26): `docs/model_evidence.md`** — model statement + dependency table; A channels (A1–A5), B costs (B1–B3), C counts (C1–C7), D gaps. Pending model changes listed there: 3-level exposure, other serious Poisson, possible micro-vs-rest shift on other-serious costs (user: "we'll see"; 2-param gate+μ shift affordable, 4-way/σ/ransomware-separate too sparse).
