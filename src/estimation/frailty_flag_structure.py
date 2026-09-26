@@ -87,5 +87,55 @@ def main():
         analyse(X[m], ww, f"{lab} (weighted within group)", rng)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def once_only_coflags():
+    """Sanity check: firms reporting breaches only ONCE in the year (freq=1) — how often do they
+    flag 2+ channels? One incident should map to one channel unless categories overlap."""
+    d = f.load_firms()
+    w = d["weight"].fillna(d["weight"].median()).values
+    att = d["att"].values == 1
+    X = d[CH].values.astype(int)
+    k = X.sum(1)
+    names = ["PI", "PR", "PS", "IR", "IS", "RS"]
+    print("\nCO-FLAGGING BY REPORTED FREQUENCY (attacked firms)")
+    print(f"  {'freq':>12s} {'n':>5s} {'P(2+ ch) w':>11s} {'raw 2+':>7s}   " +
+          " ".join(f"{p:>6s}" for p in names) + "   (weighted P(both) among group)")
+    labels = {1: "once", 2: "less monthly", 3: "monthly", 4: "weekly", 5: "daily", 6: "several/day"}
+    for fq in range(1, 7):
+        m = att & (d["freq"].values == fq)
+        if m.sum() == 0:
+            continue
+        pair = [np.average(X[m, a] & X[m, b], weights=w[m]) for a, b in PAIRS]
+        print(f"  {labels[fq]:>12s} {m.sum():5d} {np.average(k[m] >= 2, weights=w[m]):11.3f} {(k[m] >= 2).sum():7d}   " +
+              " ".join(f"{v:6.3f}" for v in pair))
+    m = att & (d["freq"].values == 1) & (k >= 2)
+    print("\n  once-only firms with 2+ channels, pattern counts (P I R S):")
+    pats, cnt = np.unique(X[m], axis=0, return_counts=True)
+    for p_, c in sorted(zip(map(tuple, pats), cnt), key=lambda t: -t[1]):
+        print(f"    {p_}: {c}")
+    n1 = att & (d["N"].values == 1)
+    print(f"\n  phishing count N=1 firms (n={n1.sum()}): share also flagging I {np.average(X[n1, 1], weights=w[n1]):.3f},"
+          f" R {np.average(X[n1, 2], weights=w[n1]):.3f}, S {np.average(X[n1, 3], weights=w[n1]):.3f}")
+
+
+if __name__ == "__main__" and "once" in __import__("sys").argv[1:]:
+    once_only_coflags()
+
+
+def once_only_counts():
+    """Do firms answering freq='once' really have one incident? Their reported phishing counts."""
+    d = f.load_firms()
+    att = d["att"].values == 1
+    k = d[CH].values.sum(1)
+    for lab, m in (("once, any", att & (d["freq"].values == 1)),
+                   ("once, 2+ channels", att & (d["freq"].values == 1) & (k >= 2))):
+        N = d.loc[m, "N"].dropna().astype(int)
+        print(f"  {lab}: n={m.sum()}, with phishing count {len(N)}; N=1 {np.mean(N == 1):.2f}, "
+              f"N=2-5 {np.mean(N.between(2, 5)):.2f}, N>5 {np.mean(N > 5):.2f}; values {sorted(N.tolist())[:40]}")
+
+
+if __name__ == "__main__" and "oncecounts" in __import__("sys").argv:
+    once_only_counts()
