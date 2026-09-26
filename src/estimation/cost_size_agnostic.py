@@ -90,5 +90,40 @@ def main():
     print(f"\n  combined across count buckets: X2/deff = {tot_stat:.1f} on {tot_df} df, p = {chi2.sf(tot_stat, tot_df):.2f}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def all_single_channel():
+    """Under iid costs + Poisson counts (Step 4 test 2), single-channel impersonation / other-serious
+    firms have ~1 attack in every size (lambda ~0.03-0.07), so the size-count confounder is
+    negligible: use ALL single-channel firms, not only those answering 'once'. Reports the implied
+    mean attacks given hit per size from the low-tier hit probability (Step 3 flag model)."""
+    from counts_within_tier import _tiers
+    from type_cooccurrence_structure import load
+    X, wX, size = load()
+    d = f.load_firms()
+    w = d["weight"].fillna(d["weight"].median()).values
+    rng = np.random.default_rng(0)
+    band = d["band"].values
+    big = d["sizeb"].values >= 2
+    fl = {k: d[k].values == 1 for k in ("fP", "fI", "fR", "fS")}
+    ok = ~np.isnan(band)
+    lam = {}
+    for g, sizes in ((0, [1]), (1, [2, 3, 4])):
+        m = np.isin(size, sizes)
+        tier, cert, pi, th = _tiers(X[m], wX[m] / wX[m].mean(), rng)
+        lam[("I", g)] = -np.log(1 - th[0, 1])
+        lam[("S", g)] = -np.log(1 - (1 - np.prod(1 - th[0, 3:])))
+    print("\n" + "=" * 96)
+    print("ALL SINGLE-CHANNEL FIRMS (no 'once' filter): per-attack cost by size")
+    print("=" * 96)
+    for key, lab, m in (("I", "Impersonation-only, all", ok & fl["fI"] & ~fl["fP"] & ~fl["fR"] & ~fl["fS"]),
+                        ("S", "Other-serious-only, all", ok & fl["fS"] & ~fl["fP"] & ~fl["fI"] & ~fl["fR"])):
+        ek = [lam[(key, g)] / (1 - np.exp(-lam[(key, g)])) for g in (0, 1)]
+        compare(band[m], big[m], w[m], f"{lab}  (implied mean attacks given hit: Micro {ek[0]:.3f}, "
+                                        f"Rest {ek[1]:.3f})", rng)
+
+
+if __name__ == "__main__" and "all" in __import__("sys").argv:
+    all_single_channel()
