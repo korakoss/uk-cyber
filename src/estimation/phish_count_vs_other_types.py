@@ -35,3 +35,26 @@ for lab, sizes in (("Micro", [1]), ("Small+Medium+Large", [2, 3, 4]), ("All", [1
     rx, ry = rankdata(N[m]), rankdata(n_other[m])
     print(f"{lab:20s} n={m.sum():4d}  Spearman rho (weighted) = {wcorr(rx, ry, w[m]):.3f}"
           f"   (unweighted) = {np.corrcoef(rx, ry)[0, 1]:.3f}")
+
+
+print("\nlog phishing count by # other types hit (0 / 1 / 2+): weighted mean and SD of ln N")
+print("(multiplicative: mean rises, SD roughly constant; additive: SD shrinks with exposure)")
+g_other = np.minimum(n_other, 2)
+rng = np.random.default_rng(0)
+for lab, sizes in (("Micro", [1]), ("Small+Medium+Large", [2, 3, 4]), ("All", [1, 2, 3, 4])):
+    m = m0 & np.isin(size, sizes)
+    y, gg, ww = np.log(N[m]), g_other[m], w[m]
+    row = []
+    for v in (0, 1, 2):
+        s = gg == v
+        mu = np.average(y[s], weights=ww[s])
+        sd = np.sqrt(np.average((y[s] - mu) ** 2, weights=ww[s]))
+        bs = []
+        idx_s = np.where(s)[0]
+        for _ in range(1000):
+            b = rng.choice(idx_s, len(idx_s))
+            mb = np.average(y[b], weights=ww[b])
+            bs.append(np.sqrt(np.average((y[b] - mb) ** 2, weights=ww[b])))
+        lo, hi = np.percentile(bs, [2.5, 97.5])
+        row.append(f"{['0', '1', '2+'][v]}: n={s.sum():3d} mean {mu:.2f} SD {sd:.2f} [{lo:.2f}, {hi:.2f}]")
+    print(f"{lab:20s} " + "   ".join(row))
