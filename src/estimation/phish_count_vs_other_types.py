@@ -25,3 +25,13 @@ for lab, sizes in (("Micro", [1]), ("Small+Medium+Large", [2, 3, 4]), ("All", [1
     m = m0 & np.isin(size, sizes)
     print(f"{lab:20s} n={m.sum():4d}  Pearson r (weighted) = {wcorr(N[m], n_other[m], w[m]):.3f}"
           f"   (unweighted) = {np.corrcoef(N[m], n_other[m])[0, 1]:.3f}")
+
+
+from scipy.stats import rankdata
+
+print("\nSpearman (Pearson on ranks):")
+for lab, sizes in (("Micro", [1]), ("Small+Medium+Large", [2, 3, 4]), ("All", [1, 2, 3, 4])):
+    m = m0 & np.isin(size, sizes)
+    rx, ry = rankdata(N[m]), rankdata(n_other[m])
+    print(f"{lab:20s} n={m.sum():4d}  Spearman rho (weighted) = {wcorr(rx, ry, w[m]):.3f}"
+          f"   (unweighted) = {np.corrcoef(rx, ry)[0, 1]:.3f}")
