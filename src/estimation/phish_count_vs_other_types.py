@@ -1,0 +1,27 @@
+"""Pearson correlation: phishing count vs number of OTHER survey types hit (phishing-flagged firms with a count).
+
+Run: PYTHONPATH=/home/user/md-clean/src:src/estimation python3 src/estimation/phish_count_vs_other_types.py
+"""
+
+import numpy as np
+
+import joint_five_channel as f
+from type_cooccurrence_structure import load
+
+X, w, size = load()
+d = f.load_firms()
+N = d["N"].values
+m0 = (X[:, 0] == 1) & ~np.isnan(N)
+n_other = X[:, 1:].sum(1)
+
+
+def wcorr(x, y, w):
+    mx, my = np.average(x, weights=w), np.average(y, weights=w)
+    c = np.average((x - mx) * (y - my), weights=w)
+    return c / np.sqrt(np.average((x - mx) ** 2, weights=w) * np.average((y - my) ** 2, weights=w))
+
+
+for lab, sizes in (("Micro", [1]), ("Small+Medium+Large", [2, 3, 4]), ("All", [1, 2, 3, 4])):
+    m = m0 & np.isin(size, sizes)
+    print(f"{lab:20s} n={m.sum():4d}  Pearson r (weighted) = {wcorr(N[m], n_other[m], w[m]):.3f}"
+          f"   (unweighted) = {np.corrcoef(N[m], n_other[m])[0, 1]:.3f}")
