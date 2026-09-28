@@ -168,3 +168,45 @@ def negbin_campaigns(shapes=(0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 5.0, np.inf)):
 
 if __name__ == "__main__" and "negbin" in __import__("sys").argv:
     negbin_campaigns()
+
+
+def one_campaign_test():
+    """'One campaign per hit firm' for low and mid tiers: are positive targeted counts of each mid / high cell drawn
+    from the same distribution as the pooled low-tier positives? Two-sample tests: permutation test on the binned X2
+    (bins BINS) and on the difference in median log count, 10000 permutations; plus Mann-Whitney p."""
+    from scipy.stats import mannwhitneyu
+    X, w, size = load()
+    tier = tier_posteriors().argmax(1)
+    t = pd.to_numeric(aligned_raw()["phishcon"], errors="coerce").values
+    t = np.where(X[:, 0] == 1, np.where(t >= 0, t, np.nan), 0.0)
+    known = ~np.isnan(t)
+    rng = np.random.default_rng(0)
+    B = t[(tier == 0) & known & (t >= 1)]
+
+    def chi(a, b):
+        o = np.array([[((x >= lo) & (x <= hi)).sum() for lo, hi in BINS] for x in (a, b)], float)
+        e = o.sum(1, keepdims=True) * o.sum(0, keepdims=True) / o.sum()
+        m = e > 0
+        return ((o[m] - e[m]) ** 2 / e[m]).sum()
+
+    print(f"low-tier positives (pooled sizes) n={len(B)}, quartiles " + "/".join(f"{v:g}" for v in np.percentile(B, [25, 50, 75])))
+    for g, gm in (("Micro", size == 1), ("Small+", size >= 2)):
+        for c in (1, 2):
+            pos = t[gm & known & (tier == c) & (t >= 1)]
+            both = np.concatenate([B, pos])
+            x0 = chi(B, pos)
+            d0 = abs(np.median(np.log(pos)) - np.median(np.log(B)))
+            px = pd_ = 0
+            for _ in range(10000):
+                perm = rng.permutation(both)
+                a, b = perm[:len(B)], perm[len(B):]
+                px += chi(a, b) >= x0
+                pd_ += abs(np.median(np.log(b)) - np.median(np.log(a))) >= d0
+            q = np.percentile(pos, [25, 50, 75])
+            print(f"  {g:6s} {TIER[c]:4s} n={len(pos):3d} quartiles {q[0]:g}/{q[1]:g}/{q[2]:g}   "
+                  f"binned X2 perm p {px / 10000:.3f}   median perm p {pd_ / 10000:.3f}   "
+                  f"Mann-Whitney p {mannwhitneyu(pos, B).pvalue:.3f}")
+
+
+if __name__ == "__main__" and "onecamp" in __import__("sys").argv:
+    one_campaign_test()
