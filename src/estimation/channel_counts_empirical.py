@@ -345,3 +345,90 @@ def cybercrime_sums():
 
 if __name__ == "__main__" and "sums" in __import__("sys").argv:
     cybercrime_sums()
+
+
+def other_serious_pool():
+    """Other-serious count pool: per firm, sum of the available derived counts Cybercrime_hacksum + virussum + dossum
+    (firms with at least one present; all present values are >= 1). Fits: log-series, Zipf, one-inflated
+    log-series (bootstrap X2 p, refit, 1000 reps), discretised lognormal (MLE with mu >= -40; AIC only, it can
+    degenerate to the power-law limit). Also the same with each firm-type value as a separate observation."""
+    from scipy.optimize import minimize, minimize_scalar
+    from scipy.stats import logser, norm, zipf
+    r = aligned_raw()
+    cols = ["Cybercrime_hacksum", "Cybercrime_virussum", "Cybercrime_dossum"]
+    V = np.column_stack([pd.to_numeric(r[c], errors="coerce").where(lambda s: s >= 1).values for c in cols])
+    have = ~np.isnan(V)
+    print(f"firms with any: {have.any(1).sum()}; with 2+ of the three: {(have.sum(1) >= 2).sum()}")
+    per_firm = np.nansum(V[have.any(1)], 1).astype(np.int64)
+    per_obs = V[have].astype(np.int64)
+    tf = lambda u: 1 / (1 + np.exp(-u))
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10), (11, 10**6)]
+
+    def fit(name, x):
+        if name == "zipf":
+            a = minimize_scalar(lambda a: -zipf.logpmf(x, a).sum(), bounds=(1.01, 10), method="bounded").x
+            return (a,), zipf.logpmf(x, a).sum()
+        if name == "logser":
+            u = minimize_scalar(lambda u: -logser.logpmf(x, tf(u)).sum(), bounds=(-10, 15), method="bounded").x
+            return (tf(u),), logser.logpmf(x, tf(u)).sum()
+        f = lambda z: -np.log(np.where(x == 1, tf(z[0]) + (1 - tf(z[0])) * logser.pmf(x, tf(z[1])),
+                                       (1 - tf(z[0])) * logser.pmf(x, tf(z[1])))).sum()
+        o = minimize(f, [0.0, 2.0], method="Nelder-Mead")
+        return (tf(o.x[0]), tf(o.x[1])), -o.fun
+
+    def cdf(name, k, p):
+        if k >= 10**6:
+            return 1.0
+        if name == "zipf":
+            return zipf.cdf(k, *p)
+        if name == "logser":
+            return logser.cdf(k, *p)
+        return p[0] + (1 - p[0]) * logser.cdf(k, p[1]) if k >= 1 else 0.0
+
+    def rvs(name, p, n, rng):
+        if name == "zipf":
+            return zipf.rvs(*p, size=n, random_state=rng)
+        if name == "logser":
+            return logser.rvs(*p, size=n, random_state=rng)
+        return np.where(rng.random(n) < p[0], 1, logser.rvs(p[1], size=n, random_state=rng))
+
+    def eo(name, p, x):
+        e = np.array([len(x) * (cdf(name, b, p) - cdf(name, a - 1, p)) for a, b in bins])
+        return e, np.array([((x >= a) & (x <= b)).sum() for a, b in bins])
+
+    def dln(x):
+        def lp(mu, s):
+            lo = (np.log(np.maximum(x - 0.5, 0.5)) - mu) / s
+            hi = (np.log(x + 0.5) - mu) / s
+            a, b = norm.logsf(lo), norm.logsf(hi)
+            return (a + np.log(np.maximum(-np.expm1(b - a), 1e-300)) - norm.logsf((np.log(0.5) - mu) / s)).sum()
+        best = None
+        for m0 in (1.0, 0.0, -3.0, -10.0, -30.0):
+            o = minimize(lambda z: -lp(max(z[0], -40), np.exp(z[1])), [m0, 0.5], method="Nelder-Mead")
+            if best is None or o.fun < best.fun:
+                best = o
+        return max(best.x[0], -40), np.exp(best.x[1]), -best.fun
+
+    rng = np.random.default_rng(0)
+    for lab, x in (("per firm (sum)", per_firm), ("per firm-type obs", per_obs)):
+        print(f"\n{lab}: n={len(x)}, values " + "  ".join(f"{int(v)}:{int((x == v).sum())}" for v in np.unique(x)))
+        print(f"  {'obs':>44s} " + " ".join(f"{o:5d}" for o in eo('zipf', (2.0,), x)[1]) + "   (1 / 2 / 3-4 / 5-10 / 11+)")
+        for name, k in (("logser", 1), ("zipf", 1), ("oils", 2)):
+            p, ll = fit(name, x)
+            e, o = eo(name, p, x)
+            x2 = ((o - e) ** 2 / e).sum()
+            sx, sm = [], []
+            for _ in range(1000):
+                s = rvs(name, p, len(x), rng)
+                es, os_ = eo(name, fit(name, s)[0], s)
+                sx.append(((os_ - es) ** 2 / es).sum())
+                sm.append(s.max())
+            par = ",".join(f"{v:.3f}" for v in p)
+            print(f"  {name:6s} ({par:>11s}) AIC {2 * k - 2 * ll:6.1f} p {np.mean(np.array(sx) >= x2):.3f} "
+                  f"P(max>={x.max()}) {np.mean(np.array(sm) >= x.max()):.2f}  " + " ".join(f"{v:5.1f}" for v in e))
+        mu, s, ll = dln(x)
+        print(f"  dlnorm (mu {mu:.2f}, sigma {s:.2f}) AIC {4 - 2 * ll:6.1f}" + ("  [at mu bound: power-law limit]" if mu <= -39.9 else ""))
+
+
+if __name__ == "__main__" and "ospool" in __import__("sys").argv:
+    other_serious_pool()
