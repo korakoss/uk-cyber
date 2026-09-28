@@ -50,5 +50,26 @@ def main():
         print(f"  {g:7s} n={m.sum():3d}  " + "  ".join(f"{lab[k]}:{int((fq[m] == k).sum())}" for k in range(1, 7)))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def ransomware_sum_vs_soft():
+    """Is Cybercrime_ranssum the positive part of ranssoft? Firm-by-firm match among ransomware-flagged firms."""
+    X, w, size = load()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    hit = X[:, SHORT.index("Ransm")] == 1
+    soft = num("ranssoft").where(lambda s: (s >= 0) & (s < 997)).values
+    rsum = num("Cybercrime_ranssum").where(lambda s: s >= 0).values
+    print(f"flagged {hit.sum()}; ranssoft answered {int((hit & ~np.isnan(soft)).sum())}, >0 {int((hit & (soft > 0)).sum())}; "
+          f"ranssum present {int((hit & ~np.isnan(rsum)).sum())}, >0 {int((hit & (rsum > 0)).sum())}")
+    both = hit & ~np.isnan(soft) & ~np.isnan(rsum)
+    print(f"both present {both.sum()}, equal {int((soft[both] == rsum[both]).sum())}")
+    print(f"ranssoft>0 without ranssum {int((hit & (soft > 0) & np.isnan(rsum)).sum())}; "
+          f"ranssum without ranssoft>0 {int((hit & ~np.isnan(rsum) & ~(soft > 0)).sum())}")
+    print(f"ranssum present among NON-flagged firms: {int((~hit & ~np.isnan(rsum)).sum())}")
+
+
+if __name__ == "__main__" and "ranssum" in __import__("sys").argv:
+    ransomware_sum_vs_soft()

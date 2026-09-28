@@ -1369,3 +1369,4 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
   (tkvrcount, 73/76; mode 1, 52 NON-flagged firms report >0 -> likely counts attempts, check codebook),
   hacking (hackcount, 75/136 for BankH/AcOut/AcStf; mode 1). All: mode at 1, sparse long tail (100/500/999-ish).
   Impersonation: no count question; imp-only freq answer mostly once/<monthly (80 firms).
+- Cybercrime_ranssum == ranssoft restricted to >0, exactly (35 firms, all equal). 37 flagged firms answer ranssoft=0; 10 missing.
