@@ -486,9 +486,11 @@ def dlognorm_check():
     B_DLN = int(__import__("os").environ.get("B_DLN", 300))
 
     def lp(x, mu, s):
-        lo = np.where(x == 1, -np.inf, (np.log(np.maximum(x - 0.5, 1e-12)) - mu) / s)
-        num = norm.cdf((np.log(x + 0.5) - mu) / s) - norm.cdf(lo)
-        return np.log(np.maximum(num, 1e-300)) - np.log(norm.sf((np.log(0.5) - mu) / s))
+        # log-space to avoid underflow when mu is far below 0: P(k) = [sf(lo) - sf(hi)] / sf(ln .5)
+        lo = (np.log(np.maximum(x - 0.5, 0.5)) - mu) / s
+        hi = (np.log(x + 0.5) - mu) / s
+        a, b = norm.logsf(lo), norm.logsf(hi)
+        return a + np.log(np.maximum(-np.expm1(b - a), 1e-300)) - norm.logsf((np.log(0.5) - mu) / s)
 
     def fit(x):
         lx = np.log(x)
