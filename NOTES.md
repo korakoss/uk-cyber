@@ -1361,3 +1361,6 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
 - Targeted phishing empirical counts (targeted_count_law.py `empirical`, exact phishcon only): heavy heaping at
   12 (monthly), 24, 52, 100, 200, 300, 365, 500, 999 (cap/"lots"). Given t>=1, median ~4-5 in low/mid tiers
   (both sizes), 7.5 micro-high, 25 rest-high. Low tier: ~50 hit firms per size group of ~700-800.
+- Tier meaning (targeted_count_law.py `tiers`): Micro high = malware-defined (malw 0.83, phish 0.87), NOT a
+  more-phished mid; so micro "high" isn't clearly higher frailty for targeted phishing. Rest high = genuine
+  broad-hit group (5.7 types avg, 4% share, n=62). Log-series misfit in high tiers rests on these small groups.

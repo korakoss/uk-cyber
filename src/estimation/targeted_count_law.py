@@ -261,3 +261,28 @@ def empirical():
 
 if __name__ == "__main__" and "empirical" in __import__("sys").argv:
     empirical()
+
+
+def tier_profiles():
+    """What the tiers are: 3-class flag model per size group; class share, firms assigned (most likely tier),
+    per-type hit probability, and mean # types hit among assigned firms."""
+    from type_cooccurrence_structure import SHORT
+    X, w, size = load()
+    rng = np.random.default_rng(0)
+    for glab, gm in (("Micro", size == 1), ("Small+Medium+Large", size >= 2)):
+        Xg, ww = X[gm], w[gm] / w[gm].mean()
+        P, c = patterns(Xg, ww)
+        _, pi, th = lca(P, c, 3, rng, starts=30)
+        order = np.argsort(th.mean(1))
+        pi, th = pi[order], th[order]
+        tier, _, _ = tiers_for(Xg, ww, np.random.default_rng(0))
+        print(f"\n{glab}")
+        print(f"  {'tier':>5s} {'share':>6s} {'n':>5s} {'mean#types':>10s}  " + " ".join(f"{s:>6s}" for s in SHORT))
+        for k in range(3):
+            m = tier == k
+            print(f"  {TIER[k]:>5s} {pi[k]:6.2f} {m.sum():5d} {np.average(Xg[m].sum(1), weights=ww[m]):10.2f}  "
+                  + " ".join(f"{v:6.2f}" for v in th[k]))
+
+
+if __name__ == "__main__" and "tiers" in __import__("sys").argv:
+    tier_profiles()
