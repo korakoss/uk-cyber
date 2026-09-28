@@ -1364,3 +1364,8 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
 - Tier meaning (targeted_count_law.py `tiers`): Micro high = malware-defined (malw 0.83, phish 0.87), NOT a
   more-phished mid; so micro "high" isn't clearly higher frailty for targeted phishing. Rest high = genuine
   broad-hit group (5.7 types avg, 4% share, n=62). Log-series misfit in high tiers rests on these small groups.
+- Non-phishing count data (channel_counts_empirical.py): per-type exact counts exist for ransomware (ranssoft,
+  72/82 flagged; 37 zeros, 25 ones, 10 >1), DoS (doscount, 65/76; mode 1 (27), tail to 500), takeover
+  (tkvrcount, 73/76; mode 1, 52 NON-flagged firms report >0 -> likely counts attempts, check codebook),
+  hacking (hackcount, 75/136 for BankH/AcOut/AcStf; mode 1). All: mode at 1, sparse long tail (100/500/999-ish).
+  Impersonation: no count question; imp-only freq answer mostly once/<monthly (80 firms).
