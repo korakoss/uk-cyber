@@ -472,3 +472,81 @@ def zipf_body_extrapolate(cap=16):
 if __name__ == "__main__" and "zipfextrap" in __import__("sys").argv:
     zipf_body_extrapolate(16)
     zipf_body_extrapolate(32)
+
+
+def dlognorm_check():
+    """Discretised lognormal for the positive targeted count (exact answers, unweighted):
+    k = round(X), X ~ lognormal(mu, sigma), conditioned on k >= 1:
+    P(k) = [Phi((ln(k+.5)-mu)/s) - Phi((ln(k-.5)-mu)/s)] / [1 - Phi((ln .5 - mu)/s)].
+    Per size group (all tiers) and size x tier: MLE, obs vs expected per doubling bin to 1024, AIC vs log-series,
+    parametric bootstrap X2 p (refit, 300 reps), fitted vs empirical mean given t >= 1."""
+    from scipy.optimize import minimize, minimize_scalar
+    from scipy.stats import logser, norm
+    DB = [(1, 1), (2, 2), (3, 4), (5, 8), (9, 16), (17, 32), (33, 64), (65, 128), (129, 256), (257, 10**6)]
+
+    def lp(x, mu, s):
+        lo = np.where(x == 1, -np.inf, (np.log(np.maximum(x - 0.5, 1e-12)) - mu) / s)
+        num = norm.cdf((np.log(x + 0.5) - mu) / s) - norm.cdf(lo)
+        return np.log(np.maximum(num, 1e-300)) - np.log(norm.sf((np.log(0.5) - mu) / s))
+
+    def fit(x):
+        lx = np.log(x)
+        o = minimize(lambda z: -lp(x, z[0], np.exp(z[1])).sum(), [lx.mean(), np.log(lx.std() + 0.3)],
+                     method="Nelder-Mead")
+        return o.x[0], np.exp(o.x[1]), -o.fun
+
+    def binprob(mu, s):
+        c = lambda k: norm.cdf((np.log(k + 0.5) - mu) / s)
+        z = norm.sf((np.log(0.5) - mu) / s)
+        return np.array([((c(b) if b < 10**6 else 1.0) - (c(a - 1) if a > 1 else norm.cdf((np.log(0.5) - mu) / s))) / z
+                         for a, b in DB])
+
+    def rvs(mu, s, n, rng):
+        out = np.empty(0, int)
+        while len(out) < n:
+            k = np.rint(np.exp(rng.normal(mu, s, 4 * n))).astype(np.int64)
+            out = np.concatenate([out, k[k >= 1]])
+        return out[:n]
+
+    def x2(o, e):
+        m = e > 0
+        return ((o[m] - e[m]) ** 2 / e[m]).sum()
+
+    X, w, size = load()
+    r = aligned_raw()
+    con = pd.to_numeric(r["phishcon"], errors="coerce").where(lambda s: s >= 0).values
+    t = np.where(X[:, 0] == 1, con, 0.0)
+    rng = np.random.default_rng(0)
+    print("bins: " + " ".join(f"{a}" if a == b else (f"{a}-{b}" if b < 10**6 else f"{a}+") for a, b in DB))
+    for glab, gm, tk in (("Micro all", size == 1, None), ("Small+ all", size >= 2, None),
+                         ("Micro low", size == 1, 0), ("Micro mid", size == 1, 1), ("Micro high", size == 1, 2),
+                         ("Small+ low", size >= 2, 0), ("Small+ mid", size >= 2, 1), ("Small+ high", size >= 2, 2)):
+        x = t[gm]
+        if tk is not None:
+            tier, _, _ = tiers_for(X[gm], w[gm] / w[gm].mean(), np.random.default_rng(0))
+            x = x[tier == tk]
+        x = x[x >= 1].astype(np.int64)
+        n = len(x)
+        mu, s, ll = fit(x)
+        o = np.array([((x >= a) & (x <= b)).sum() for a, b in DB])
+        e = n * binprob(mu, s)
+        stat = x2(o, e)
+        sx = []
+        for _ in range(300):
+            y = rvs(mu, s, n, rng)
+            m2, s2, _ = fit(y)
+            sx.append(x2(np.array([((y >= a) & (y <= b)).sum() for a, b in DB]), n * binprob(m2, s2)))
+        th = minimize_scalar(lambda u: -logser.logpmf(x, 1 / (1 + np.exp(-u))).sum(), bounds=(-10, 15),
+                             method="bounded").x
+        ll_ls = logser.logpmf(x, 1 / (1 + np.exp(-th))).sum()
+        ks = np.arange(1, 200001)
+        pk = np.exp(lp(ks, mu, s))
+        print(f"\n  {glab:11s} n={n:3d}  mu {mu:5.2f} sigma {s:4.2f}  AIC dlnorm {4 - 2 * ll:7.1f} vs logser "
+              f"{2 - 2 * ll_ls:7.1f}  p {np.mean(np.array(sx) >= stat):.3f}   mean|t>=1: fit {(ks * pk).sum():6.1f} "
+              f"(to 1e3: {(ks[:1000] * pk[:1000]).sum() / pk[:1000].sum():5.1f})  emp {x.mean():6.1f}")
+        print("     obs " + " ".join(f"{v:5d}" for v in o))
+        print("     exp " + " ".join(f"{v:5.1f}" for v in e))
+
+
+if __name__ == "__main__" and "dlnorm" in __import__("sys").argv:
+    dlognorm_check()
