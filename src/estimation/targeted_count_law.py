@@ -188,3 +188,43 @@ def positive_part():
 
 if __name__ == "__main__" and "positive" in __import__("sys").argv:
     positive_part()
+
+
+def logseries_part():
+    """Positive part as a logarithmic-series law (the r -> 0 limit of zero-truncated NegBin):
+    P(k) = -theta^k / (k ln(1 - theta)), k >= 1. theta per tier; GOF on coarse bins; fitted mean
+    and the observed weighted mean (the log-series mean is -theta / ((1 - theta) ln(1 - theta)))."""
+    from scipy.stats import logser
+    X, w, size = load()
+    r = aligned_raw()
+    con = pd.to_numeric(r["phishcon"], errors="coerce").where(lambda s: s >= 0)
+    band = pd.to_numeric(r["phishcon_bands"], errors="coerce").where(lambda s: s.between(1, 9))
+    t = np.where(X[:, 0] == 1, con.fillna(band.map(DK_MID)).values, 0.0)
+    rng = np.random.default_rng(0)
+    Kp = np.arange(1, 5001)
+    print("\n" + "=" * 104)
+    print("POSITIVE PART as logarithmic series, theta per tier")
+    print("=" * 104)
+    for glab, gm in (("Micro", size == 1), ("Small+Medium+Large", size >= 2)):
+        ww = w[gm] / w[gm].mean()
+        tier, _, _ = tiers_for(X[gm], ww, rng)
+        tt = t[gm]
+        print(f"\n  {glab}")
+        for k in range(3):
+            m = (tier == k) & (tt >= 1)
+            x, wx = np.round(tt[m]).astype(int), ww[m]
+            res = minimize_scalar(lambda z: -(wx * logser.logpmf(x, 1 / (1 + np.exp(-z)))).sum(),
+                                  bounds=(-5, 15), method="bounded")
+            th = 1 / (1 + np.exp(-res.x))
+            pk = np.r_[0.0, logser.pmf(Kp, th)]
+            obs = np.array([np.average((x >= a) & (x <= b), weights=wx) for a, b in BINS])
+            exp = binned(pk)
+            n_eff = wx.sum() ** 2 / (wx ** 2).sum()
+            x2 = n_eff * ((obs - exp) ** 2 / np.maximum(exp, 1e-9)).sum()
+            fmean = -th / ((1 - th) * np.log(1 - th))
+            print(f"    {TIER[k]:>5s} n={len(x):3d} theta {th:.4f} fitted mean {fmean:7.1f} (obs {np.average(x, weights=wx):6.1f})  " +
+                  " ".join(f"{o:.2f}/{e:.2f}" for o, e in zip(obs, exp)) + f"   GOF p = {chi2.sf(x2, len(BINS) - 2):.2f}")
+
+
+if __name__ == "__main__" and "logser" in __import__("sys").argv:
+    logseries_part()
