@@ -240,3 +240,62 @@ def ranssum_zipf_oils(drop=()):
 if __name__ == "__main__" and "ranszipf" in __import__("sys").argv:
     ranssum_zipf_oils(())
     ranssum_zipf_oils((100,))
+
+
+def ranssum_dlnorm(drop=()):
+    """Discretised lognormal (k = round(X), X lognormal, k >= 1; log-space likelihood) for Cybercrime_ranssum,
+    sizes pooled. MLE, obs vs expected per bin, AIC (compare Zipf / one-inflated log-series from ranszipf),
+    bootstrap X2 p (refit, 1000 reps), P(max >= observed max)."""
+    from scipy.optimize import minimize
+    from scipy.stats import norm
+
+    def lp(x, mu, s):
+        lo = (np.log(np.maximum(x - 0.5, 0.5)) - mu) / s
+        hi = (np.log(x + 0.5) - mu) / s
+        a, b = norm.logsf(lo), norm.logsf(hi)
+        return a + np.log(np.maximum(-np.expm1(b - a), 1e-300)) - norm.logsf((np.log(0.5) - mu) / s)
+
+    def fit(x):
+        o = minimize(lambda z: -lp(x, z[0], np.exp(z[1])).sum(), [np.log(x).mean(), 0.0], method="Nelder-Mead")
+        return o.x[0], np.exp(o.x[1]), -o.fun
+
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10), (11, 10**6)]
+
+    def expected(mu, s, n):
+        c = lambda k: norm.cdf((np.log(k + 0.5) - mu) / s)
+        z = norm.sf((np.log(0.5) - mu) / s)
+        c0 = norm.cdf((np.log(0.5) - mu) / s)
+        return np.array([n * ((c(b) if b < 10**6 else 1.0) - (c(a - 1) if a > 1 else c0)) / z for a, b in bins])
+
+    def rvs(mu, s, n, rng):
+        out = np.empty(0, np.int64)
+        while len(out) < n:
+            k = np.rint(np.minimum(np.exp(rng.normal(mu, s, 20 * n)), 1e9)).astype(np.int64)
+            out = np.concatenate([out, k[k >= 1]])
+        return out[:n]
+
+    r = aligned_raw()
+    v = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 1).dropna().values.astype(np.int64)
+    v = v[~np.isin(v, drop)]
+    n = len(v)
+    mu, s, ll = fit(v)
+    obs = np.array([((v >= a) & (v <= b)).sum() for a, b in bins])
+    e = expected(mu, s, n)
+    x2 = ((obs - e) ** 2 / e).sum()
+    rng = np.random.default_rng(0)
+    sx, sm = [], []
+    for _ in range(1000):
+        y = rvs(mu, s, n, rng)
+        m2, s2, _ = fit(y)
+        es = expected(m2, s2, n)
+        sx.append(((np.array([((y >= a) & (y <= b)).sum() for a, b in bins]) - es) ** 2 / es).sum())
+        sm.append(y.max())
+    print(f"\ndropped {drop}: n={n}  mu {mu:.2f} sigma {s:.2f} (median {np.exp(mu):.2f})  AIC {4 - 2 * ll:.2f}  "
+          f"X2 {x2:.1f} p {np.mean(np.array(sx) >= x2):.3f}  P(max>={v.max()}) {np.mean(np.array(sm) >= v.max()):.3f}")
+    print("  obs " + " ".join(f"{o:5d}" for o in obs) + "   (1 / 2 / 3-4 / 5-10 / 11+)")
+    print("  exp " + " ".join(f"{x:5.1f}" for x in e))
+
+
+if __name__ == "__main__" and "ransdlnorm" in __import__("sys").argv:
+    ranssum_dlnorm(())
+    ranssum_dlnorm((100,))
