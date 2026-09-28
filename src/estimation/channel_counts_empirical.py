@@ -325,3 +325,23 @@ def ranssum_dlnorm_profile():
 
 if __name__ == "__main__" and "ransprofile" in __import__("sys").argv:
     ranssum_dlnorm_profile()
+
+
+def cybercrime_sums():
+    """Derived Cybercrime_*sum counts (virus, hack, dos; rans for reference): coverage among firms flagged with
+    the matching type(s), among non-flagged firms, and the value distribution (>= 1)."""
+    X, w, size = load()
+    r = aligned_raw()
+    spec = [("Cybercrime_ranssum", ["Ransm"]), ("Cybercrime_virussum", ["Malwr"]), ("Cybercrime_dossum", ["DoS"]),
+            ("Cybercrime_hacksum", ["BankH", "AcOut", "AcStf", "Takov"])]
+    for col, types in spec:
+        v = pd.to_numeric(r[col], errors="coerce").where(lambda s: s >= 0).values
+        hit = X[:, [SHORT.index(t) for t in types]].max(1) == 1
+        pos = v[hit & (v >= 1)]
+        print(f"\n{col} (flag {'/'.join(types)}: {hit.sum()} firms): present {int((hit & ~np.isnan(v)).sum())}, "
+              f">=1 {len(pos)}, zeros {int((hit & (v == 0)).sum())}; non-flagged with value {int((~hit & ~np.isnan(v)).sum())}")
+        print("  " + "  ".join(f"{int(x)}:{int((pos == x).sum())}" for x in np.unique(pos)))
+
+
+if __name__ == "__main__" and "sums" in __import__("sys").argv:
+    cybercrime_sums()
