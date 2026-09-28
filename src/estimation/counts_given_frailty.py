@@ -99,16 +99,17 @@ def fit(k, post, name):
     return best.x, -best.fun
 
 
-def report(label, k, post):
+def report(label, k, post, bins=None):
+    bins = bins or BINS
     k = k.astype(np.int64)
-    obs = np.array([((k >= a) & (k <= b)).sum() for a, b in BINS])
+    obs = np.array([((k >= a) & (k <= b)).sum() for a, b in bins])
     print(f"\n{label}: n={len(k)}; tier posterior mass low/mid/high "
           + " / ".join(f"{v:.1f}" for v in post.sum(0)) + "   values "
           + "  ".join(f"{int(v)}:{int((k == v).sum())}" for v in np.unique(k)))
-    print(f"  {'obs':>52s} " + " ".join(f"{o:5d}" for o in obs) + "   (1 / 2 / 3-4 / 5-10 / 11+)")
+    print(f"  {'obs':>52s} " + " ".join(f"{o:5d}" for o in obs) + "   (" + " / ".join(f"{a}" if a == b else (f"{a}-{b}" if b < 10**6 else f"{a}+") for a, b in bins) + ")")
     for name, (npar, _, _, binf) in MODELS.items():
         z, ll = fit(k, post, name)
-        e = np.array([(post * binf(a, b, z)[None]).sum() for a, b in BINS])
+        e = np.array([(post * binf(a, b, z)[None]).sum() for a, b in bins])
         if name == "zipf":
             par = f"alpha {1 + np.exp(z[0]):.2f}"
         elif name == "ztpois":
@@ -148,3 +149,19 @@ def rans_by_tier():
 
 if __name__ == "__main__" and "ranstier" in sys.argv:
     rans_by_tier()
+
+
+def targeted():
+    """Targeted phishing (exact phishcon >= 1, phishing-flagged firms), per size group, with tier posteriors."""
+    X, w, size = load()
+    post = tier_posteriors()
+    v = pd.to_numeric(aligned_raw()["phishcon"], errors="coerce").values
+    v = np.where(X[:, 0] == 1, v, np.nan)
+    db = [(1, 1), (2, 2), (3, 4), (5, 8), (9, 16), (17, 32), (33, 64), (65, 128), (129, 10**6)]
+    for g, gm in (("Micro", size == 1), ("Small+", size >= 2)):
+        m = gm & (v >= 1)
+        report(f"Targeted phishing, {g}", v[m], post[m], db)
+
+
+if __name__ == "__main__" and "targeted" in sys.argv:
+    targeted()
