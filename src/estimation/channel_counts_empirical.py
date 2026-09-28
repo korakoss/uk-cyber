@@ -163,3 +163,80 @@ def ranssum_logseries_check(drop=()):
 if __name__ == "__main__" and "ranslogser" in __import__("sys").argv:
     ranssum_logseries_check(())
     ranssum_logseries_check((100,))
+
+
+def ranssum_zipf_oils(drop=()):
+    """Zipf P(k) = k^-a / zeta(a) and one-inflated log-series P(1) = pi + (1-pi) LS(1), P(k>1) = (1-pi) LS(k),
+    for Cybercrime_ranssum (>= 1), sizes pooled. MLE; obs vs expected per bin; log-lik and AIC (log-series
+    included for reference); parametric-bootstrap p for Pearson X2 (parameters refitted per replicate) and
+    for the max count."""
+    from scipy.optimize import minimize, minimize_scalar
+    from scipy.stats import logser, zipf
+    r = aligned_raw()
+    v = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 1).dropna().values.astype(int)
+    v = v[~np.isin(v, drop)]
+    n = len(v)
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10), (11, 10**6)]
+    tf = lambda t: 1 / (1 + np.exp(-t))
+
+    def fit_zipf(x):
+        a = minimize_scalar(lambda a: -zipf.logpmf(x, a).sum(), bounds=(1.01, 10), method="bounded").x
+        return (a,), zipf.logpmf(x, a).sum()
+
+    def fit_ls(x):
+        t = minimize_scalar(lambda u: -logser.logpmf(x, tf(u)).sum(), bounds=(-10, 15), method="bounded").x
+        return (tf(t),), logser.logpmf(x, tf(t)).sum()
+
+    def oils_logpmf(x, pi, th):
+        ls = logser.pmf(x, th)
+        return np.log(np.where(x == 1, pi + (1 - pi) * ls, (1 - pi) * ls))
+
+    def fit_oils(x):
+        o = minimize(lambda z: -oils_logpmf(x, tf(z[0]), tf(z[1])).sum(), [0.0, 2.0], method="Nelder-Mead")
+        return (tf(o.x[0]), tf(o.x[1])), -o.fun
+
+    def cdf(model, k, p):
+        if model == "zipf":
+            return zipf.cdf(k, *p)
+        if model == "logser":
+            return logser.cdf(k, *p)
+        pi, th = p
+        return np.where(k >= 1, pi + (1 - pi) * logser.cdf(k, th), 0.0)
+
+    def rvs(model, p, size, rng):
+        if model == "zipf":
+            return zipf.rvs(*p, size=size, random_state=rng)
+        if model == "logser":
+            return logser.rvs(*p, size=size, random_state=rng)
+        pi, th = p
+        s = logser.rvs(th, size=size, random_state=rng)
+        return np.where(rng.random(size) < pi, 1, s)
+
+    def expected(model, p, m):
+        return np.array([m * (cdf(model, b, p) - cdf(model, a - 1, p)) for a, b in bins])
+
+    obs = np.array([((v >= a) & (v <= b)).sum() for a, b in bins])
+    rng = np.random.default_rng(0)
+    print(f"\ndropped {drop}: n={n}")
+    for name, fit, k in (("logser", fit_ls, 1), ("zipf", fit_zipf, 1), ("oils", fit_oils, 2)):
+        p, ll = fit(v)
+        e = expected(name, p, n)
+        x2 = ((obs - e) ** 2 / e).sum()
+        sx, sm = [], []
+        for _ in range(2000):
+            s = rvs(name, p, n, rng)
+            ps, _ = fit(s)
+            es = expected(name, ps, n)
+            os_ = np.array([((s >= a) & (s <= b)).sum() for a, b in bins])
+            sx.append(((os_ - es) ** 2 / es).sum())
+            sm.append(s.max())
+        par = ", ".join(f"{x:.3f}" for x in p)
+        print(f"  {name:6s} params ({par})  loglik {ll:7.2f}  AIC {2 * k - 2 * ll:6.2f}  "
+              f"X2 {x2:5.1f} p {np.mean(np.array(sx) >= x2):.3f}  P(max>={v.max()}) {np.mean(np.array(sm) >= v.max()):.3f}")
+        print("         obs " + " ".join(f"{o:5d}" for o in obs) + "   (1 / 2 / 3-4 / 5-10 / 11+)")
+        print("         exp " + " ".join(f"{x:5.1f}" for x in e))
+
+
+if __name__ == "__main__" and "ranszipf" in __import__("sys").argv:
+    ranssum_zipf_oils(())
+    ranssum_zipf_oils((100,))
