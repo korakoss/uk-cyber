@@ -432,3 +432,37 @@ def other_serious_pool():
 
 if __name__ == "__main__" and "ospool" in __import__("sys").argv:
     other_serious_pool()
+
+
+def mass_only_firms():
+    """Mass-phishing-only candidates: phishing-flagged firms reporting 0 targeted (phishcon == 0, or band 'None' when
+    no exact answer). Counts overall and by size; among those hit by phishing only (no other type): the global freq
+    answer, which then refers to untargeted phishing alone. Compare with phishing-only firms with >= 1 targeted."""
+    X, w, size = load()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    con = num("phishcon").where(lambda s: s >= 0).values
+    band = num("phishcon_bands").where(lambda s: s.between(1, 9)).values
+    t0 = np.where(~np.isnan(con), con == 0, band == 1)
+    t1 = np.where(~np.isnan(con), con >= 1, band >= 2)
+    unk = np.isnan(con) & np.isnan(band)
+    ph = X[:, 0] == 1
+    only = ph & (X.sum(1) == 1)
+    d = f.load_firms()
+    fq = d["freq"].values
+    print(f"phishing-flagged {ph.sum()}: targeted 0 -> {int((ph & t0).sum())}, targeted >=1 -> {int((ph & t1).sum())}, "
+          f"unknown {int((ph & unk).sum())}")
+    for s, lab in zip(range(1, 5), ["Micro", "Small", "Medium", "Large"]):
+        m = ph & (size == s)
+        print(f"  {lab:6s} phishing {m.sum():4d}: targeted 0 {int((m & t0).sum()):4d}  >=1 {int((m & t1).sum()):4d}")
+    lab = {1: "once", 2: "<monthly", 3: "monthly", 4: "weekly", 5: "daily", 6: "sev/day"}
+    for nm, m in (("phishing-only, targeted 0 (mass only)", only & t0), ("phishing-only, targeted >=1", only & t1)):
+        mm = m & ~np.isnan(fq)
+        print(f"\n{nm}: {m.sum()} firms, with freq {mm.sum()}")
+        for g, gm in (("Micro", size == 1), ("Small+", size >= 2)):
+            q = mm & gm
+            print(f"  {g:7s} n={q.sum():3d}  " + "  ".join(f"{lab[k]}:{int((fq[q] == k).sum())}" for k in range(1, 7)))
+
+
+if __name__ == "__main__" and "massonly" in __import__("sys").argv:
+    mass_only_firms()
