@@ -1400,3 +1400,16 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
   Observation: mid-tier positive quartiles (2/4.5/12, 2/5/13.5) ~= low-tier B quartiles (median 4) -> mid-tier hit firms look like ONE campaign, same as low tier. Low vs mid differ in occurrence only; only the high tier has higher conditional counts.
 - ONE-CAMPAIGN TEST (campaign_convolution.py onecamp; mid/high positives vs pooled low-tier positives, permutation tests): Micro mid p 0.50/0.80 (binned/median), Small+ mid p 0.84/0.61 -> indistinguishable from low tier. Micro high p 0.05/0.22 (borderline, n=20). Small+ high p 0.001/0.000 -> clearly heavier (median 25 vs 4). Targeted phishing: count given hit = one law for low+mid (and ~micro high); only Small+ high differs.
 - Tier count comparison (campaign_convolution.py tiercmp, sizes pooled): Ransomware mid vs high same (share 1: 0.75/0.69; perm p 0.41, MW 0.61); low n=2. Other serious: low/mid same (share 1 0.88/0.66, p 0.69/0.21); high heavier (share 1 0.45, median 2, tail 100/500/999; MW p 0.03 vs mid/low, binned p 0.10-0.12). Same pattern as targeted phishing: count given hit tier-invariant except (weakly) top tier. Impersonation/mass: no counts; freq of multi-type firms is max-contaminated -> cannot test.
+
+## CLEAN COUNT MODEL (consolidated, supersedes earlier count-law epicycles: log-series/hurdle/Zipf-vs-lognormal/NegBin campaigns)
+Per firm, per channel c:  K_c = 0 with prob 1 - p_c(size, frailty);  otherwise K_c ~ G_c (positive-count law).
+- Frailty (3 tiers from flags; stand-in for a shared exposure) acts on OCCURRENCE p_c. G_c is the same in low and mid tiers
+  (targeted: mid vs low p 0.50-0.84; other serious p 0.69; ransomware mid vs high p 0.41).
+- Top tier: G shifted up for targeted phishing (Small+ high, median 25 vs 4, p<0.001), weakly for other serious (p~0.03-0.10);
+  not detectable for ransomware (n=13). Handle as a separate G_c^high (or multiplier) where data allow.
+- G_c = empirical positive counts (no parametric family needed): targeted = low+mid positives (median ~4-5, long tail to 999);
+  ransomware = ranssum (71% at 1); other serious = hacksum+virussum+dossum (~60% at 1, tail to 999).
+- Impersonation, mass phishing: no counts; G from single-channel firms' freq bands (imp: ~1-2/yr, Zipf-like; mass: lognormal
+  median 5-15/yr, sigma 2.3-3.3) - untestable across tiers, assumed tier-invariant.
+- Measurement: rounding (10/12/52/100/365), 999 top-code, freq = max over types.
+- Open: tail of G (top-codes) drives E[K]; top-tier shift for serious/ransomware under-powered.
