@@ -73,3 +73,20 @@ def ransomware_sum_vs_soft():
 
 if __name__ == "__main__" and "ranssum" in __import__("sys").argv:
     ransomware_sum_vs_soft()
+
+
+def ranssum_by_size():
+    """Cybercrime_ranssum values by size band (1 Micro .. 4 Large), unweighted firm counts."""
+    X, w, size = load()
+    r = aligned_raw()
+    rsum = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 0).values
+    hit = X[:, SHORT.index("Ransm")] == 1
+    for s, lab in zip(range(1, 5), ["Micro", "Small", "Medium", "Large"]):
+        m = (size == s) & ~np.isnan(rsum)
+        v = rsum[m]
+        print(f"{lab:6s} flagged {int((hit & (size == s)).sum()):3d}  with ranssum {m.sum():3d}   "
+              + "  ".join(f"{int(x)}:{int((v == x).sum())}" for x in np.unique(v)))
+
+
+if __name__ == "__main__" and "ranssize" in __import__("sys").argv:
+    ranssum_by_size()
