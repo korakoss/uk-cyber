@@ -1370,3 +1370,4 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
   hacking (hackcount, 75/136 for BankH/AcOut/AcStf; mode 1). All: mode at 1, sparse long tail (100/500/999-ish).
   Impersonation: no count question; imp-only freq answer mostly once/<monthly (80 firms).
 - Cybercrime_ranssum == ranssoft restricted to >0, exactly (35 firms, all equal). 37 flagged firms answer ranssoft=0; 10 missing.
+- ranssum Poisson check (channel_counts_empirical.py ranspois): zero-truncated Poisson rejected even dropping 100 (X2 p<1e-4) and dropping 100+24 (p=0.003): too many 1s AND a tail (7,10). Same shape as targeted phishing: spike at 1 + long tail.

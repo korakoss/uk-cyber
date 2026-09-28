@@ -90,3 +90,41 @@ def ranssum_by_size():
 
 if __name__ == "__main__" and "ranssize" in __import__("sys").argv:
     ranssum_by_size()
+
+
+def ranssum_poisson_check(drop=(100,)):
+    """Zero-truncated Poisson for Cybercrime_ranssum (all firms have >= 1), sizes pooled, dropping given values.
+    MLE lambda; expected vs observed per value bin; parametric-bootstrap p for (a) Pearson X2, (b) max count."""
+    from scipy.optimize import brentq
+    from scipy.stats import poisson
+    r = aligned_raw()
+    v = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 1).dropna().values
+    v = v[~np.isin(v, drop)]
+    n, mean = len(v), v.mean()
+    lam = brentq(lambda l: l / (1 - np.exp(-l)) - mean, 1e-6, 100)
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10**6)]
+
+    def pk(a, b):
+        return (poisson.cdf(b, lam) - poisson.cdf(a - 1, lam)) / (1 - np.exp(-lam))
+
+    exp = np.array([n * pk(a, b) for a, b in bins])
+    obs = np.array([((v >= a) & (v <= b)).sum() for a, b in bins])
+    x2 = ((obs - exp) ** 2 / exp).sum()
+    rng = np.random.default_rng(0)
+    sims_x2, sims_max = [], []
+    for _ in range(20000):
+        s = rng.poisson(lam, 5 * n)
+        s = s[s > 0][:n]
+        o = np.array([((s >= a) & (s <= b)).sum() for a, b in bins])
+        sims_x2.append(((o - exp) ** 2 / exp).sum())
+        sims_max.append(s.max())
+    print(f"dropped {drop}: n={n}, mean {mean:.2f}, var {v.var(ddof=1):.2f}, ZT-Poisson lambda {lam:.2f}")
+    for (a, b), o, e in zip(bins, obs, exp):
+        print(f"  {str(a) if a == b else (f'{a}-{b}' if b < 10**6 else f'{a}+'):>5s}  obs {o:3d}  exp {e:6.2f}")
+    print(f"  X2 {x2:.1f}, bootstrap p {np.mean(np.array(sims_x2) >= x2):.4f};  "
+          f"max {v.max():g}, P(max >= obs) {np.mean(np.array(sims_max) >= v.max()):.5f}")
+
+
+if __name__ == "__main__" and "ranspois" in __import__("sys").argv:
+    ranssum_poisson_check((100,))
+    ranssum_poisson_check((100, 24))
