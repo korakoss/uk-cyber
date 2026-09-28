@@ -286,3 +286,79 @@ def tier_profiles():
 
 if __name__ == "__main__" and "tiers" in __import__("sys").argv:
     tier_profiles()
+
+
+def zipf_check():
+    """Positive part of the targeted count (t >= 1, exact phishcon answers only), unweighted: log-series vs
+    Zipf vs one-inflated log-series, per size group (all tiers pooled) and per size group x tier.
+    MLE; obs vs expected on BINS; AIC; parametric bootstrap p for Pearson X2 (refit per replicate, 300 reps)."""
+    from scipy.optimize import minimize, minimize_scalar
+    from scipy.stats import logser, zipf
+    tf = lambda u: 1 / (1 + np.exp(-u))
+
+    def fit(name, x):
+        if name == "zipf":
+            a = minimize_scalar(lambda a: -zipf.logpmf(x, a).sum(), bounds=(1.01, 10), method="bounded").x
+            return (a,), zipf.logpmf(x, a).sum()
+        if name == "logser":
+            u = minimize_scalar(lambda u: -logser.logpmf(x, tf(u)).sum(), bounds=(-10, 15), method="bounded").x
+            return (tf(u),), logser.logpmf(x, tf(u)).sum()
+        f = lambda z: -np.log(np.where(x == 1, tf(z[0]) + (1 - tf(z[0])) * logser.pmf(x, tf(z[1])),
+                                       (1 - tf(z[0])) * logser.pmf(x, tf(z[1])))).sum()
+        o = minimize(f, [0.0, 4.0], method="Nelder-Mead")
+        return (tf(o.x[0]), tf(o.x[1])), -o.fun
+
+    def cdf(name, k, p):
+        if name == "zipf":
+            return zipf.cdf(k, *p)
+        if name == "logser":
+            return logser.cdf(k, *p)
+        return p[0] + (1 - p[0]) * logser.cdf(k, p[1]) if k >= 1 else 0.0
+
+    def rvs(name, p, n, rng):
+        if name == "zipf":
+            return zipf.rvs(*p, size=n, random_state=rng)
+        if name == "logser":
+            return logser.rvs(*p, size=n, random_state=rng)
+        return np.where(rng.random(n) < p[0], 1, logser.rvs(p[1], size=n, random_state=rng))
+
+    def exp_obs(name, p, x):
+        e = np.array([len(x) * (cdf(name, b, p) - cdf(name, a - 1, p)) for a, b in BINS])
+        o = np.array([((x >= a) & (x <= b)).sum() for a, b in BINS])
+        return e, o
+
+    def report(label, x, rng):
+        print(f"\n  {label}: n(t>=1)={len(x)}, median {np.median(x):g}, max {x.max():g}")
+        print(f"    {'obs':>34s} " + " ".join(f"{o:6d}" for o in exp_obs('zipf', (2.0,), x)[1])
+              + "   (1 / 2-3 / 4-10 / 11-50 / 51+)")
+        for name, k in (("logser", 1), ("zipf", 1), ("oils", 2)):
+            p, ll = fit(name, x)
+            e, o = exp_obs(name, p, x)
+            x2 = ((o - e) ** 2 / e).sum()
+            sx = []
+            for _ in range(300):
+                s = rvs(name, p, len(x), rng)
+                ps, _ = fit(name, s)
+                es, os_ = exp_obs(name, ps, s)
+                sx.append(((os_ - es) ** 2 / es).sum())
+            par = ",".join(f"{v:.3f}" for v in p)
+            print(f"    {name:6s} ({par:>11s}) AIC {2 * k - 2 * ll:7.1f} p {np.mean(np.array(sx) >= x2):.3f} "
+                  + " ".join(f"{v:6.1f}" for v in e))
+
+    X, w, size = load()
+    r = aligned_raw()
+    con = pd.to_numeric(r["phishcon"], errors="coerce").where(lambda s: s >= 0).values
+    t = np.where(X[:, 0] == 1, con, 0.0)
+    rng = np.random.default_rng(0)
+    for glab, gm in (("Micro", size == 1), ("Small+Medium+Large", size >= 2)):
+        tier, _, _ = tiers_for(X[gm], w[gm] / w[gm].mean(), np.random.default_rng(0))
+        tt = t[gm]
+        print("\n" + "=" * 100 + f"\n{glab}\n" + "=" * 100)
+        report("all tiers", tt[tt >= 1].astype(int), rng)
+        for k in range(3):
+            x = tt[(tier == k) & (tt >= 1)].astype(int)
+            report(f"tier {TIER[k]}", x, rng)
+
+
+if __name__ == "__main__" and "zipf" in __import__("sys").argv:
+    zipf_check()
