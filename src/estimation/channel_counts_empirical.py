@@ -466,3 +466,76 @@ def mass_only_firms():
 
 if __name__ == "__main__" and "massonly" in __import__("sys").argv:
     mass_only_firms()
+
+
+FREQ_EDGES = {  # lower count edge of each freq band 1..6 (once, <monthly, monthly, weekly, daily, several/day)
+    "A literal": [1, 2, 12, 52, 365, 730],
+    "B centred": [1, 2, 9, 31, 151, 501],
+    "C loose":   [1, 2, 7, 26, 101, 301],
+}
+
+
+def single_channel_band_fits():
+    """Count law from the global freq answer of single-channel firms (freq then refers to that channel only):
+    impersonation-only firms, and mass-phishing-only firms (phishing only, 0 targeted). Band = interval of counts
+    (edges per scenario FREQ_EDGES). Multinomial MLE of (a) discretised lognormal on k >= 1 (log-space),
+    (b) right-truncated Zipf on 1..2000. G2 vs saturated with chi2 p (df = 5 - #params; rough), fitted band shares.
+    Unweighted, sizes pooled (mass also by Micro / Small+)."""
+    from scipy.optimize import minimize
+    from scipy.stats import chi2, norm
+    X, w, size = load()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    con = num("phishcon").where(lambda s: s >= 0).values
+    band = num("phishcon_bands").where(lambda s: s.between(1, 9)).values
+    t0 = np.where(~np.isnan(con), con == 0, band == 1)
+    fq = f.load_firms()["freq"].values
+    one = X.sum(1) == 1
+    imp_only = one & (X[:, SHORT.index("Imper")] == 1) & ~np.isnan(fq)
+    mass_only = one & (X[:, 0] == 1) & t0 & ~np.isnan(fq)
+    KMAX = 2000
+    ks = np.arange(1, KMAX + 1)
+
+    def band_probs_ln(mu, s, lo):
+        def lsf(k):  # log P(X_cont >= k - 0.5), i.e. rounded value >= k
+            return norm.logsf((np.log(k - 0.5) - mu) / s) if k > 1 else norm.logsf((np.log(0.5) - mu) / s)
+        z = lsf(1)
+        tops = [np.exp(lsf(a) - z) for a in lo] + [0.0]
+        return np.array([tops[i] - tops[i + 1] for i in range(6)])
+
+    def band_probs_zipf(a, lo):
+        p = ks ** -a
+        p /= p.sum()
+        cum = np.concatenate([[0], np.cumsum(p)])
+        hi = lo[1:] + [KMAX + 1]
+        return np.array([cum[min(h, KMAX + 1) - 1] - cum[l - 1] for l, h in zip(lo, hi)])
+
+    def g2(o, p):
+        e = o.sum() * p
+        m = o > 0
+        return 2 * (o[m] * np.log(o[m] / np.maximum(e[m], 1e-300))).sum()
+
+    groups = [("Impersonation-only", imp_only), ("Mass-only (all)", mass_only),
+              ("Mass-only Micro", mass_only & (size == 1)), ("Mass-only Small+", mass_only & (size >= 2))]
+    for gl, gm in groups:
+        o = np.array([(fq[gm] == k).sum() for k in range(1, 7)], float)
+        print(f"\n{gl}: n={int(o.sum())}  obs shares " + " ".join(f"{v:.2f}" for v in o / o.sum()))
+        for sc, lo in FREQ_EDGES.items():
+            nll = lambda z: -(o * np.log(np.maximum(band_probs_ln(z[0], np.exp(z[1]), lo), 1e-300))).sum()
+            best = min((minimize(nll, [m0, 0.5], method="Nelder-Mead") for m0 in (2.0, 0.0, -3.0, -10.0)),
+                       key=lambda q: q.fun)
+            mu, s = best.x[0], np.exp(best.x[1])
+            pl = band_probs_ln(mu, s, lo)
+            gl2 = g2(o, pl)
+            nz = lambda a: -(o * np.log(np.maximum(band_probs_zipf(a[0], lo), 1e-300))).sum()
+            bz = min((minimize(nz, [a0], method="Nelder-Mead") for a0 in (0.5, 1.0, 2.0)), key=lambda q: q.fun)
+            pz = band_probs_zipf(bz.x[0], lo)
+            gz = g2(o, pz)
+            print(f"  [{sc:9s}] dlnorm mu {mu:6.2f} sigma {s:5.2f} (median {np.exp(mu):8.2f})  G2 {gl2:5.1f} "
+                  f"p {chi2.sf(gl2, 3):.3f}  fit " + " ".join(f"{v:.2f}" for v in pl))
+            print(f"  {'':11s} zipf   a {bz.x[0]:5.2f} (cap {KMAX})                      G2 {gz:5.1f} "
+                  f"p {chi2.sf(gz, 4):.3f}  fit " + " ".join(f"{v:.2f}" for v in pz))
+
+
+if __name__ == "__main__" and "bandfits" in __import__("sys").argv:
+    single_channel_band_fits()
