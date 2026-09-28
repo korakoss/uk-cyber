@@ -86,5 +86,85 @@ def main():
                 check(f"{g} {TIER[c]}", B, t[mc] >= 1, t[mc & (t >= 1)].astype(np.int64), rng)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def ztnb(r, mu, n, rng):
+    """Zero-truncated NegBin(mean mu, shape r) draws; r = inf -> Poisson."""
+    draw = (lambda k: rng.poisson(mu, k)) if np.isinf(r) else (lambda k: rng.negative_binomial(r, r / (r + mu), k))
+    out = np.empty(0, np.int64)
+    while len(out) < n:
+        x = draw(4 * n + 50)
+        out = np.concatenate([out, x[x >= 1]])
+    return out[:n]
+
+
+def nb_mean(p, r):
+    """Mean of NegBin(r) with P(N >= 1) = p."""
+    return -np.log(1 - p) if np.isinf(r) else r * ((1 - p) ** (-1 / r) - 1)
+
+
+def simulate_nb(B, r, mu, n, rng):
+    N = np.minimum(ztnb(r, mu, n, rng), 10**5)
+    idx = rng.integers(0, len(B), N.sum())
+    return np.add.reduceat(B[idx], np.concatenate([[0], np.cumsum(N)[:-1]]))
+
+
+def negbin_campaigns(shapes=(0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 5.0, np.inf)):
+    """Campaign count N ~ NegBin (overdispersed campaign rate within tier) instead of Poisson; shape r shared by all
+    cells, mean per cell from its hit share. B = pooled low-tier positive counts. X2 per mid/high cell and total over
+    a grid of r; bootstrap p (incl. B uncertainty) per cell at the best r and at r = 1 (geometric)."""
+    X, w, size = load()
+    tier = tier_posteriors().argmax(1)
+    t = pd.to_numeric(aligned_raw()["phishcon"], errors="coerce").values
+    t = np.where(X[:, 0] == 1, np.where(t >= 0, t, np.nan), 0.0)
+    known = ~np.isnan(t)
+    rng = np.random.default_rng(0)
+    B = t[(tier == 0) & known & (t >= 1)].astype(np.int64)
+    cells = []
+    for g, gm in (("Micro", size == 1), ("Small+", size >= 2)):
+        for c in (1, 2):
+            mc = gm & known & (tier == c)
+            cells.append((f"{g} {TIER[c]}", (t[mc] >= 1).mean(), t[mc & (t >= 1)].astype(np.int64)))
+
+    def x2(pos, pred):
+        e, o = binshare(pred) * len(pos), binshare(pos) * len(pos)
+        m = e > 0
+        return ((o[m] - e[m]) ** 2 / e[m]).sum()
+
+    print(f"B: pooled low-tier positives n={len(B)}, median {np.median(B):g}")
+    print(f"\n{'shape r':>8s} " + " ".join(f"{lab:>13s}" for lab, _, _ in cells) + "   total X2   (per cell: X2 | mean campaigns among hit)")
+    tot = {}
+    for r in shapes:
+        row, s = [], 0.0
+        for lab, p, pos in cells:
+            mu = nb_mean(p, r)
+            pred = simulate_nb(B, r, mu, 100000, rng)
+            v = x2(pos, pred)
+            s += v
+            en = mu / p
+            row.append(f"{v:6.1f}|{en:6.1f}")
+        tot[r] = s
+        print(f"{r:8.1f} " + " ".join(f"{x:>13s}" for x in row) + f"   {s:7.1f}")
+    best = min(tot, key=tot.get)
+    for r in sorted({best, 1.0}):
+        print(f"\nshape r = {r}: per-cell quartiles and bootstrap p (1000 reps, B resampled)")
+        for lab, p, pos in cells:
+            mu = nb_mean(p, r)
+            pred = simulate_nb(B, r, mu, 200000, rng)
+            obs_x2 = x2(pos, pred)
+            sims = []
+            for _ in range(1000):
+                Bb = rng.choice(B, len(B))
+                eb = simulate_nb(Bb, r, mu, 20000, rng)
+                sims.append(x2(simulate_nb(Bb, r, mu, len(pos), rng), eb))
+            qo, qp = np.percentile(pos, [25, 50, 75]), np.percentile(pred, [25, 50, 75])
+            print(f"  {lab:12s} obs {qo[0]:g}/{qo[1]:g}/{qo[2]:g}  pred {qp[0]:g}/{qp[1]:g}/{qp[2]:g}  "
+                  f"X2 {obs_x2:5.1f} p {np.mean(np.array(sims) >= obs_x2):.3f}")
+            print("    obs  " + " ".join(f"{v:5.1f}" for v in binshare(pos) * len(pos)) + f"   ({LAB})")
+            print("    pred " + " ".join(f"{v:5.1f}" for v in binshare(pred) * len(pos)))
+
+
+if __name__ == "__main__" and "negbin" in __import__("sys").argv:
+    negbin_campaigns()
