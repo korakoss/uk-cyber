@@ -1357,3 +1357,7 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
 - **NegBin with P(t≥1) pinned per tier, shared shape: rejected** — exposed tiers have many zeros (P(any) 0.48–0.79) AND very heavy positive counts; pinning forces absurd means (1e6+).
 - **Hurdle fits:** occurrence per tier separately; positive part zero-truncated NB → r→0 limit = **logarithmic series** P(k)∝θ^k/k. θ per tier: GOF p 0.47/0.27/0.02 (Micro low/mid/high), 0.52/0.05/0.14 (Rest); misfit = excess at 4–10 (heaping at 5/10). Positive-part mean rises with tier: 25→47→62 (Micro), 19→23→99 (Rest).
 - Caveats: "targeted" = message contained recipient's personal details (hundreds may include personalised bulk); heaping; tiers include the phishing flag.
+
+- Targeted phishing empirical counts (targeted_count_law.py `empirical`, exact phishcon only): heavy heaping at
+  12 (monthly), 24, 52, 100, 200, 300, 365, 500, 999 (cap/"lots"). Given t>=1, median ~4-5 in low/mid tiers
+  (both sizes), 7.5 micro-high, 25 rest-high. Low tier: ~50 hit firms per size group of ~700-800.

@@ -228,3 +228,36 @@ def logseries_part():
 
 if __name__ == "__main__" and "logser" in __import__("sys").argv:
     logseries_part()
+
+
+def empirical():
+    """Raw empirical distribution of the targeted count, per size group x tier: exact values of t
+    (exact phishcon answers only, no band midpoints), counts of firms and weighted shares; plus quantiles."""
+    X, w, size = load()
+    r = aligned_raw()
+    con = pd.to_numeric(r["phishcon"], errors="coerce").where(lambda s: s >= 0).values
+    phish = X[:, 0] == 1
+    t = np.where(phish, con, 0.0)
+    rng = np.random.default_rng(0)
+    for glab, gm in (("Micro", size == 1), ("Small+Medium+Large", size >= 2)):
+        ww = w[gm] / w[gm].mean()
+        tier, _, _ = tiers_for(X[gm], ww, rng)
+        tt = t[gm]
+        print("\n" + "=" * 90)
+        print(f"{glab}  (exact answers only; 'dk band' firms excluded: {int((phish[gm] & np.isnan(tt)).sum())})")
+        print("=" * 90)
+        for k in range(3):
+            m = (tier == k) & ~np.isnan(tt)
+            v, wv = tt[m], ww[m]
+            print(f"\n  tier {TIER[k]}: n={m.sum()}, zeros {int((v == 0).sum())} (w-share {wv[v == 0].sum() / wv.sum():.2f})")
+            vals = np.unique(v[v > 0])
+            pos = v > 0
+            line = [f"{int(x)}:{int((v == x).sum())}" for x in vals]
+            print("    value:#firms  " + "  ".join(line))
+            if pos.sum():
+                q = np.percentile(v[pos], [10, 25, 50, 75, 90])
+                print(f"    t>=1 quantiles p10/25/50/75/90: " + " / ".join(f"{x:g}" for x in q) + f"   max {v.max():g}")
+
+
+if __name__ == "__main__" and "empirical" in __import__("sys").argv:
+    empirical()
