@@ -210,3 +210,43 @@ def one_campaign_test():
 
 if __name__ == "__main__" and "onecamp" in __import__("sys").argv:
     one_campaign_test()
+
+
+def tier_count_comparison():
+    """Same question as one_campaign_test for ransomware (Cybercrime_ranssum) and other serious (per-firm sum of
+    hacksum + virussum + dossum): positive counts by most-likely tier (sizes pooled), pairwise permutation tests
+    (binned X2 on 1 / 2 / 3-4 / 5+, 10000 permutations) and Mann-Whitney."""
+    from scipy.stats import mannwhitneyu
+    tier = tier_posteriors().argmax(1)
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    V = np.column_stack([num(c) for c in ("Cybercrime_hacksum", "Cybercrime_virussum", "Cybercrime_dossum")])
+    V = np.where(V >= 1, V, np.nan)
+    os_ = np.where(np.isnan(V).all(1), np.nan, np.nansum(V, 1))
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10**9)]
+    rng = np.random.default_rng(0)
+
+    def chi(a, b):
+        o = np.array([[((x >= lo) & (x <= hi)).sum() for lo, hi in bins] for x in (a, b)], float)
+        e = o.sum(1, keepdims=True) * o.sum(0, keepdims=True) / o.sum()
+        m = e > 0
+        return ((o[m] - e[m]) ** 2 / e[m]).sum()
+
+    for name, v in (("Ransomware", num("Cybercrime_ranssum")), ("Other serious", os_)):
+        print(f"\n{name}")
+        grp = {TIER[c]: v[(tier == c) & (v >= 1)] for c in range(3)}
+        for k, x in grp.items():
+            print(f"  {k:4s} n={len(x):3d}  share 1: {np.mean(x == 1) if len(x) else float('nan'):.2f}  "
+                  f"quartiles " + ("/".join(f"{q:g}" for q in np.percentile(x, [25, 50, 75])) if len(x) else "-")
+                  + "   values " + " ".join(str(int(y)) for y in np.sort(x)))
+        for a, b in (("low", "mid"), ("mid", "high"), ("low", "high")):
+            xa, xb = grp[a], grp[b]
+            if len(xa) < 3 or len(xb) < 3:
+                continue
+            both, x0 = np.concatenate([xa, xb]), chi(xa, xb)
+            pp = np.mean([chi(*np.split(rng.permutation(both), [len(xa)])) >= x0 for _ in range(10000)])
+            print(f"  {a} vs {b}: binned perm p {pp:.3f}   Mann-Whitney p {mannwhitneyu(xa, xb).pvalue:.3f}")
+
+
+if __name__ == "__main__" and "tiercmp" in __import__("sys").argv:
+    tier_count_comparison()
