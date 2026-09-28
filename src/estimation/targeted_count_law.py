@@ -362,3 +362,34 @@ def zipf_check():
 
 if __name__ == "__main__" and "zipf" in __import__("sys").argv:
     zipf_check()
+
+
+def log_shape():
+    """Detailed shape of the positive targeted count (exact answers, unweighted): firms per doubling bin
+    [1], [2], [3-4], [5-8], ... and firms per unit of k in each bin (density on the count scale), per size group
+    (all tiers) and Small+ mid tier; plus share of answers at round values."""
+    X, w, size = load()
+    r = aligned_raw()
+    con = pd.to_numeric(r["phishcon"], errors="coerce").where(lambda s: s >= 0).values
+    t = np.where(X[:, 0] == 1, con, 0.0)
+    edges = [1, 2, 3, 5, 9, 17, 33, 65, 129, 257, 513, 1025]
+    for glab, gm, tk in (("Micro all tiers", size == 1, None), ("Small+ all tiers", size >= 2, None),
+                         ("Small+ mid tier", size >= 2, 1)):
+        x = t[gm]
+        if tk is not None:
+            tier, _, _ = tiers_for(X[gm], w[gm] / w[gm].mean(), np.random.default_rng(0))
+            x = x[tier == tk]
+        x = x[x >= 1]
+        print(f"\n{glab}: n={len(x)}")
+        print(f"  {'bin':>9s} {'firms':>5s} {'share':>6s} {'per unit k':>10s}")
+        for a, b in zip(edges[:-1], edges[1:]):
+            m = (x >= a) & (x < b)
+            print(f"  {f'{a}-{b - 1}' if b - 1 > a else str(a):>9s} {m.sum():5d} {m.mean():6.2f} {m.sum() / (b - a):10.2f}")
+        rnd = np.isin(x % 10, [0]) | np.isin(x, [5, 12, 15, 24, 25, 52, 365])
+        print(f"  round answers (x10, 5, 12, 15, 24, 25, 52, 365): {rnd.mean():.2f}; "
+              f"most common values: " + ", ".join(f"{int(v)}:{c}" for v, c in
+                                                   sorted(zip(*np.unique(x, return_counts=True)), key=lambda z: -z[1])[:10]))
+
+
+if __name__ == "__main__" and "logshape" in __import__("sys").argv:
+    log_shape()
