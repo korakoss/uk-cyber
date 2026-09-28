@@ -393,3 +393,47 @@ def log_shape():
 
 if __name__ == "__main__" and "logshape" in __import__("sys").argv:
     log_shape()
+
+
+def zipf_body(caps=(16, 32)):
+    """Zipf fitted to the body only: right-truncated Zipf P(k) = k^-a / sum_{j<=cap} j^-a on firms with
+    1 <= t <= cap (exact answers, unweighted). Obs vs expected per doubling bin, bootstrap X2 p (refit, 1000 reps),
+    and share of hit firms beyond the cap."""
+    from scipy.optimize import minimize_scalar
+    X, w, size = load()
+    r = aligned_raw()
+    con = pd.to_numeric(r["phishcon"], errors="coerce").where(lambda s: s >= 0).values
+    t = np.where(X[:, 0] == 1, con, 0.0)
+    rng = np.random.default_rng(0)
+    for cap in caps:
+        ks = np.arange(1, cap + 1)
+        bins = [(a, min(b, cap)) for a, b in [(1, 1), (2, 2), (3, 4), (5, 8), (9, 16), (17, 32)] if a <= cap]
+        pmf = lambda a: ks ** -a / (ks ** -a).sum()
+        fit = lambda x: minimize_scalar(lambda a: -(np.log(pmf(a))[x - 1]).sum(), bounds=(0.01, 6), method="bounded").x
+        e_o = lambda a, x: (np.array([len(x) * pmf(a)[lo - 1:hi].sum() for lo, hi in bins]),
+                            np.array([((x >= lo) & (x <= hi)).sum() for lo, hi in bins]))
+        print(f"\n===== cap {cap} =====")
+        for glab, gm, tk in (("Micro all", size == 1, None), ("Small+ all", size >= 2, None),
+                             ("Micro low", size == 1, 0), ("Micro mid", size == 1, 1), ("Micro high", size == 1, 2),
+                             ("Small+ low", size >= 2, 0), ("Small+ mid", size >= 2, 1), ("Small+ high", size >= 2, 2)):
+            x = t[gm]
+            if tk is not None:
+                tier, _, _ = tiers_for(X[gm], w[gm] / w[gm].mean(), np.random.default_rng(0))
+                x = x[tier == tk]
+            pos = x[x >= 1].astype(int)
+            xb = pos[pos <= cap]
+            a = fit(xb)
+            e, o = e_o(a, xb)
+            x2 = ((o - e) ** 2 / e).sum()
+            sx = []
+            for _ in range(1000):
+                s = rng.choice(ks, len(xb), p=pmf(a))
+                es, os_ = e_o(fit(s), s)
+                sx.append(((os_ - es) ** 2 / es).sum())
+            print(f"  {glab:11s} n body {len(xb):3d} (beyond cap {np.mean(pos > cap):.2f})  alpha {a:.2f}  "
+                  f"p {np.mean(np.array(sx) >= x2):.3f}   obs " + " ".join(f"{v:3d}" for v in o)
+                  + "   exp " + " ".join(f"{v:5.1f}" for v in e))
+
+
+if __name__ == "__main__" and "zipfbody" in __import__("sys").argv:
+    zipf_body()
