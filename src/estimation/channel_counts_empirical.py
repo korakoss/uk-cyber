@@ -299,3 +299,29 @@ def ranssum_dlnorm(drop=()):
 if __name__ == "__main__" and "ransdlnorm" in __import__("sys").argv:
     ranssum_dlnorm(())
     ranssum_dlnorm((100,))
+
+
+def ranssum_dlnorm_profile():
+    """The unconstrained ransdlnorm MLE runs off to mu -> -inf (bootstrap then never finishes). Profile likelihood:
+    for fixed mu, best sigma and -loglik, all 35 and dropping 100. Compare Zipf -loglik (53.91 all, 43.62 drop 100)."""
+    from scipy.optimize import minimize
+    from scipy.stats import norm
+
+    def lp(x, mu, s):
+        lo = (np.log(np.maximum(x - 0.5, 0.5)) - mu) / s
+        hi = (np.log(x + 0.5) - mu) / s
+        a, b = norm.logsf(lo), norm.logsf(hi)
+        return a + np.log(np.maximum(-np.expm1(b - a), 1e-300)) - norm.logsf((np.log(0.5) - mu) / s)
+
+    v0 = pd.to_numeric(aligned_raw()["Cybercrime_ranssum"], errors="coerce").dropna().values.astype(np.int64)
+    v0 = v0[v0 >= 1]
+    for drop in ((), (100,)):
+        v = v0[~np.isin(v0, drop)]
+        print(f"\ndropped {drop}: n={len(v)}")
+        for mu in (2, 1, 0, -1, -2, -5, -10, -20, -40, -80):
+            o = minimize(lambda z: -lp(v, mu, np.exp(z[0])).sum(), [1.0], method="Nelder-Mead")
+            print(f"  mu {mu:4d}  best sigma {np.exp(o.x[0]):5.2f}  -loglik {o.fun:6.2f}")
+
+
+if __name__ == "__main__" and "ransprofile" in __import__("sys").argv:
+    ranssum_dlnorm_profile()
