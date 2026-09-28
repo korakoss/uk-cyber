@@ -1392,3 +1392,7 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
   Simple reading: attacks arrive in CAMPAIGNS. K = sum of N campaign sizes, N ~ Poisson(frailty-driven rate), size ~ channel-specific law.
   Low-tier positives ~ one campaign -> the campaign-size law directly (targeted: median 3-4, IQR 1-15; ransomware / other serious: ~1).
   Higher tiers = more campaigns -> counts add up (Small+ high median 25). Explains 'occurrence x13, counts x1.6' without epicycles.
+- CAMPAIGN CONVOLUTION (campaign_convolution.py): B = low-tier positive targeted counts (pooled sizes, n=99, median 4, mean 29); lambda per cell from hit share only; predicted K|K>=1 by Poisson(lambda) sums of B, bootstrap p incl. B uncertainty.
+  Mid tiers PASS (pooled B): Micro p 0.28, Small+ p 0.29 (own-size B: 0.14 / 0.009). Median slightly over-predicted (8-9 vs 4.5-5).
+  High tiers FAIL: Small+ high p 0.016, tail heavier than predicted (129+: 7 obs vs 2.5; median 25 vs 13); Micro high p 0.04 (malware-profile tier).
+  => campaign model with frailty on campaign rate only fits the bulk of the population with nothing fitted but the hit share; the top tier has more intensity than extra campaigns explain (bigger campaigns or heterogeneous rate at the top).
