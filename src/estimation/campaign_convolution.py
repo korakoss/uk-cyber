@@ -106,7 +106,7 @@ def nb_mean(p, r):
 
 
 def simulate_nb(B, r, mu, n, rng):
-    N = np.minimum(ztnb(r, mu, n, rng), 10**5)
+    N = np.minimum(ztnb(r, mu, n, rng), 130)   # N >= 130 puts K in the top bin (129+) anyway; caps memory
     idx = rng.integers(0, len(B), N.sum())
     return np.add.reduceat(B[idx], np.concatenate([[0], np.cumsum(N)[:-1]]))
 
