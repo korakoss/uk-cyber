@@ -323,7 +323,7 @@ def zipf_check():
         return np.where(rng.random(n) < p[0], 1, logser.rvs(p[1], size=n, random_state=rng))
 
     def exp_obs(name, p, x):
-        e = np.array([len(x) * (cdf(name, b, p) - cdf(name, a - 1, p)) for a, b in BINS])
+        e = np.array([len(x) * ((cdf(name, b, p) if b < 10**6 else 1.0) - cdf(name, a - 1, p)) for a, b in BINS])
         o = np.array([((x >= a) & (x <= b)).sum() for a, b in BINS])
         return e, o
 
