@@ -128,3 +128,38 @@ def ranssum_poisson_check(drop=(100,)):
 if __name__ == "__main__" and "ranspois" in __import__("sys").argv:
     ranssum_poisson_check((100,))
     ranssum_poisson_check((100, 24))
+
+
+def ranssum_logseries_check(drop=()):
+    """Log-series law for Cybercrime_ranssum (>= 1), sizes pooled. MLE theta (mean equation); obs vs expected per
+    bin; parametric-bootstrap p for Pearson X2 and for the max count."""
+    from scipy.optimize import brentq
+    from scipy.stats import logser
+    r = aligned_raw()
+    v = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 1).dropna().values
+    v = v[~np.isin(v, drop)]
+    n, mean = len(v), v.mean()
+    th = brentq(lambda t: -t / ((1 - t) * np.log(1 - t)) - mean, 1e-9, 1 - 1e-12)
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10), (11, 10**6)]
+    pk = lambda a, b: logser.cdf(b, th) - logser.cdf(a - 1, th)
+    exp = np.array([n * pk(a, b) for a, b in bins])
+    obs = np.array([((v >= a) & (v <= b)).sum() for a, b in bins])
+    x2 = ((obs - exp) ** 2 / exp).sum()
+    rng = np.random.default_rng(0)
+    sx, sm = [], []
+    for _ in range(20000):
+        s = logser.rvs(th, size=n, random_state=rng)
+        o = np.array([((s >= a) & (s <= b)).sum() for a, b in bins])
+        sx.append(((o - exp) ** 2 / exp).sum())
+        sm.append(s.max())
+    print(f"dropped {drop}: n={n}, mean {mean:.2f}, log-series theta {th:.3f}")
+    for (a, b), o, e in zip(bins, obs, exp):
+        lab = str(a) if a == b else (f"{a}-{b}" if b < 10**6 else f"{a}+")
+        print(f"  {lab:>5s}  obs {o:3d}  exp {e:6.2f}")
+    print(f"  X2 {x2:.1f}, bootstrap p {np.mean(np.array(sx) >= x2):.3f};  max {v.max():g}, "
+          f"P(max >= obs) {np.mean(np.array(sm) >= v.max()):.3f}")
+
+
+if __name__ == "__main__" and "ranslogser" in __import__("sys").argv:
+    ranssum_logseries_check(())
+    ranssum_logseries_check((100,))

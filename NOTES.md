@@ -1371,3 +1371,4 @@ Compare: capped £0.97bn, first-order uncapped £3.9bn. The open-tail refit land
   Impersonation: no count question; imp-only freq answer mostly once/<monthly (80 firms).
 - Cybercrime_ranssum == ranssoft restricted to >0, exactly (35 firms, all equal). 37 flagged firms answer ranssoft=0; 10 missing.
 - ranssum Poisson check (channel_counts_empirical.py ranspois): zero-truncated Poisson rejected even dropping 100 (X2 p<1e-4) and dropping 100+24 (p=0.003): too many 1s AND a tail (7,10). Same shape as targeted phishing: spike at 1 + long tail.
+- ranssum log-series (ranslogser): all 35: theta 0.935, X2 p<0.001 (P(max>=100) 0.002). Drop 100: theta 0.80, p=0.08, P(max>=24)=0.02. Under-predicts 1s (25 obs vs 17) in both. Log-series too flat: data have more 1s than even the r->0 limit gives -> spike at 1 beyond any NegBin.
