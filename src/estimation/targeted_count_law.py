@@ -483,6 +483,7 @@ def dlognorm_check():
     from scipy.optimize import minimize, minimize_scalar
     from scipy.stats import logser, norm
     DB = [(1, 1), (2, 2), (3, 4), (5, 8), (9, 16), (17, 32), (33, 64), (65, 128), (129, 256), (257, 10**6)]
+    B_DLN = int(__import__("os").environ.get("B_DLN", 300))
 
     def lp(x, mu, s):
         lo = np.where(x == 1, -np.inf, (np.log(np.maximum(x - 0.5, 1e-12)) - mu) / s)
@@ -504,7 +505,7 @@ def dlognorm_check():
     def rvs(mu, s, n, rng):
         out = np.empty(0, int)
         while len(out) < n:
-            k = np.rint(np.exp(rng.normal(mu, s, 4 * n))).astype(np.int64)
+            k = np.rint(np.minimum(np.exp(rng.normal(mu, s, 4 * n)), 1e9)).astype(np.int64)
             out = np.concatenate([out, k[k >= 1]])
         return out[:n]
 
@@ -517,22 +518,24 @@ def dlognorm_check():
     con = pd.to_numeric(r["phishcon"], errors="coerce").where(lambda s: s >= 0).values
     t = np.where(X[:, 0] == 1, con, 0.0)
     rng = np.random.default_rng(0)
+    tiers = {g: tiers_for(X[m], w[m] / w[m].mean(), np.random.default_rng(0))[0]
+             for g, m in (("Micro", size == 1), ("Small+", size >= 2))}
     print("bins: " + " ".join(f"{a}" if a == b else (f"{a}-{b}" if b < 10**6 else f"{a}+") for a, b in DB))
     for glab, gm, tk in (("Micro all", size == 1, None), ("Small+ all", size >= 2, None),
                          ("Micro low", size == 1, 0), ("Micro mid", size == 1, 1), ("Micro high", size == 1, 2),
                          ("Small+ low", size >= 2, 0), ("Small+ mid", size >= 2, 1), ("Small+ high", size >= 2, 2)):
         x = t[gm]
         if tk is not None:
-            tier, _, _ = tiers_for(X[gm], w[gm] / w[gm].mean(), np.random.default_rng(0))
-            x = x[tier == tk]
+            x = x[tiers[glab.split()[0]] == tk]
         x = x[x >= 1].astype(np.int64)
         n = len(x)
         mu, s, ll = fit(x)
         o = np.array([((x >= a) & (x <= b)).sum() for a, b in DB])
         e = n * binprob(mu, s)
         stat = x2(o, e)
+        print(f"  [{glab}] fit mu {mu:.2f} s {s:.2f}", flush=True)
         sx = []
-        for _ in range(300):
+        for _ in range(B_DLN):
             y = rvs(mu, s, n, rng)
             m2, s2, _ = fit(y)
             sx.append(x2(np.array([((y >= a) & (y <= b)).sum() for a, b in DB]), n * binprob(m2, s2)))
