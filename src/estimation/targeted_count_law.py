@@ -437,3 +437,38 @@ def zipf_body(caps=(16, 32)):
 
 if __name__ == "__main__" and "zipfbody" in __import__("sys").argv:
     zipf_body()
+
+
+def zipf_body_extrapolate(cap=16):
+    """Extrapolate the body-fitted Zipf (right-truncated at cap, fitted on 1 <= t <= cap) past the cap with the
+    body's normalisation: expected firms at k = n_body * k^-a / sum_{j<=cap} j^-a. Compare with observed firms
+    per doubling bin beyond cap, up to 1024 (exact answers, unweighted)."""
+    from scipy.optimize import minimize_scalar
+    X, w, size = load()
+    r = aligned_raw()
+    con = pd.to_numeric(r["phishcon"], errors="coerce").where(lambda s: s >= 0).values
+    t = np.where(X[:, 0] == 1, con, 0.0)
+    ks = np.arange(1, cap + 1)
+    tail_bins = [(a, 2 * a - 2) for a in (17, 33, 65, 129, 257, 513) if a > cap]
+    print(f"\ncap {cap}; tail bins " + " ".join(f"{a}-{b}" for a, b in tail_bins) + " | total beyond cap")
+    for glab, gm, tk in (("Micro all", size == 1, None), ("Small+ all", size >= 2, None),
+                         ("Micro low", size == 1, 0), ("Micro mid", size == 1, 1), ("Micro high", size == 1, 2),
+                         ("Small+ low", size >= 2, 0), ("Small+ mid", size >= 2, 1), ("Small+ high", size >= 2, 2)):
+        x = t[gm]
+        if tk is not None:
+            tier, _, _ = tiers_for(X[gm], w[gm] / w[gm].mean(), np.random.default_rng(0))
+            x = x[tier == tk]
+        pos = x[x >= 1].astype(int)
+        xb = pos[pos <= cap]
+        a = minimize_scalar(lambda a: -(np.log(ks ** -a / (ks ** -a).sum())[xb - 1]).sum(),
+                            bounds=(0.01, 6), method="bounded").x
+        z = (ks ** -a).sum()
+        ex = [len(xb) * (np.arange(lo, hi + 1) ** -a).sum() / z for lo, hi in tail_bins]
+        ob = [int(((pos >= lo) & (pos <= hi)).sum()) for lo, hi in tail_bins]
+        print(f"  {glab:11s} a {a:.2f}  obs " + " ".join(f"{v:5d}" for v in ob) + f" | {sum(ob):4d}"
+              + "    extrap " + " ".join(f"{v:5.1f}" for v in ex) + f" | {sum(ex):6.1f}")
+
+
+if __name__ == "__main__" and "zipfextrap" in __import__("sys").argv:
+    zipf_body_extrapolate(16)
+    zipf_body_extrapolate(32)
