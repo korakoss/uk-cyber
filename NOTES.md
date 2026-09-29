@@ -1413,3 +1413,5 @@ Per firm, per channel c:  K_c = 0 with prob 1 - p_c(size, frailty);  otherwise K
   median 5-15/yr, sigma 2.3-3.3) - untestable across tiers, assumed tier-invariant.
 - Measurement: rounding (10/12/52/100/365), 999 top-code, freq = max over types.
 - Open: tail of G (top-codes) drives E[K]; top-tier shift for serious/ransomware under-powered.
+- 999 CHECK (channel_counts_empirical.py c999, SPSS metadata): 999 is NOT a missing code (missing = negative codes only: -99 refused, -97 DK, -9/-1 not asked). All 999 answers carry band 9 (100+) -> valid answer, but almost certainly the entry cap ("999 or more"/"lots"): treat as right-censored >=999... or as a vague 'very many' (sensitivity). Occurrences: phishcon 6, hackcount 1, tkvrcount 3, doscount 2, hacksum 1.
+  Side findings: Cybercrime_phishsum has values 1000, 1049 (> 999) -> it is a SUM over several questions, not phishcon itself (re-check 'phishsum = targeted'). hackcount label = 'tried to access' -> attempts, not successes (same likely for doscount/tkvrcount).

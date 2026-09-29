@@ -539,3 +539,35 @@ def single_channel_band_fits():
 
 if __name__ == "__main__" and "bandfits" in __import__("sys").argv:
     single_channel_band_fits()
+
+
+def check_999():
+    """Is 999 a special code in the scale count variables? Value frequencies at/near 997-999 and >= 900, SPSS value
+    labels / missing-value metadata if available, and cross-check against the banded version (band 9 = 100+)."""
+    import glob
+    r = aligned_raw()
+    X, w, size = load()
+    for col, bcol in (("phishcon", "phishcon_bands"), ("Cybercrime_phishsum", None), ("Cybercrime_hacksum", None),
+                      ("hackcount", "hackcount_bands"), ("ranssoft", "ranssoft_bands"), ("tkvrcount", "tkvrcount_bands"),
+                      ("doscount", "doscount_bands")):
+        v = pd.to_numeric(r[col], errors="coerce")
+        big = v[v >= 300].value_counts().sort_index()
+        line = f"{col:22s} >=300: " + ", ".join(f"{int(k)}:{c}" for k, c in big.items())
+        if bcol:
+            b = pd.to_numeric(r[bcol], errors="coerce")
+            line += f"   | bands of 999-firms: {b[v == 999].value_counts().to_dict()}"
+        print(line)
+    try:
+        import pyreadstat
+        sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+        _, meta = pyreadstat.read_sav(sav, metadataonly=True, user_missing=True)
+        for col in ("phishcon", "Cybercrime_phishsum", "Cybercrime_hacksum", "hackcount"):
+            print(f"\n{col}: label {meta.column_names_to_labels.get(col)!r}")
+            print(f"  value labels: {meta.variable_value_labels.get(col)}")
+            print(f"  missing ranges: {meta.missing_ranges.get(col)}  user missing: {meta.missing_user_values.get(col)}")
+    except Exception as e:
+        print("metadata read failed:", e)
+
+
+if __name__ == "__main__" and "c999" in __import__("sys").argv:
+    check_999()
