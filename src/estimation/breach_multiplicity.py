@@ -120,3 +120,40 @@ def corrected():
 
 if __name__ == "__main__" and "fix" in __import__("sys").argv:
     corrected()
+
+
+def engaged_counts():
+    """phisheng (Q89C, # phishing attacks someone engaged with) among phishing-flagged firms: coverage, share 0,
+    positive values; by size group and most-likely tier; and vs the targeted count (phishcon)."""
+    X, _, size = load()
+    r = aligned_raw()
+    tier = tier_posteriors().argmax(1)
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    e, t = num("phisheng"), num("phishcon")
+    e = np.where(e >= 0, e, np.nan)
+    t = np.where(t >= 0, t, np.nan)
+    ph = X[:, 0] == 1
+    print(f"phishing firms {ph.sum()}; phisheng answered {int((ph & ~np.isnan(e)).sum())}")
+
+    def show(lab, m):
+        v = e[m & ~np.isnan(e)]
+        pos = v[v >= 1]
+        print(f"  {lab:16s} n {len(v):4d}  P(eng>=1) {np.mean(v >= 1):.3f}  n+ {len(pos):3d}  "
+              f"share1|+ {np.mean(pos == 1) if len(pos) else float('nan'):.2f}  "
+              + ("quartiles|+ " + "/".join(f"{q:g}" for q in np.percentile(pos, [25, 50, 75])) if len(pos) else ""))
+
+    show("all", ph)
+    for g, gm in (("Micro", size == 1), ("Small+", size >= 2)):
+        show(g, ph & gm)
+        for c in range(3):
+            show(f"  {g} {TIER[c]}", ph & gm & (tier == c))
+    v = e[ph & (e >= 1)]
+    print("\npositive values: " + "  ".join(f"{int(x)}:{int((v == x).sum())}" for x in np.unique(v)))
+    both = ph & ~np.isnan(e) & ~np.isnan(t)
+    print(f"\nvs targeted (both known, n {both.sum()}): P(eng>=1 | targeted 0) {np.mean(e[both & (t == 0)] >= 1):.3f}, "
+          f"| targeted>=1 {np.mean(e[both & (t >= 1)] >= 1):.3f};  corr(log1p) {np.corrcoef(np.log1p(e[both]), np.log1p(t[both]))[0, 1]:.2f}; "
+          f"eng > targeted in {int((e[both] > t[both]).sum())} firms")
+
+
+if __name__ == "__main__" and "eng" in __import__("sys").argv:
+    engaged_counts()

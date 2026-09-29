@@ -1433,3 +1433,7 @@ Per firm, per channel c:  K_c = 0 with prob 1 - p_c(size, frailty);  otherwise K
       Costly >= £100: low 0/13, mid 0/42, HIGH 12/32 (25%). >= £500: low 0/10, mid 0/29, high 11/26 (26%).
       Sum/max of per-type costs: low/mid 1.00, high 1.17; all 1.02.
   => multiple breaches exist and are concentrated in the high-frailty tier: breach rate scales with frailty. Low/mid: ~one breach; high tier: sum ~1.17x max. Population factor ~1.02 (small high-tier share) but it is a rate, not a cap.
+- ENGAGED PHISHING COUNTS (breach_multiplicity.py eng; phisheng among 919 phishing firms): 20.5% engaged >= 1; positives 1:120 2:33 3:11 5:10 ... 100:2 (64% at 1, quartiles 1/1/2). Micro 12.6% (82% at 1); Small+ 25% (58% at 1).
+  By tier: P(eng>=1) Micro 0.09/0.18/0.19, Small+ 0.11/0.30/0.48; share at 1 given engaged falls only in Small+ high (0.40, quartiles 1/2/5).
+  Engaged much likelier with targeted attacks (18% vs 6%). Breach (engagement) counts: mostly 1, thin tail; frailty raises occurrence and, at the top, multiplicity - same structure as attack counts, but compressed (tail to 100 vs 999).
+  Also earlier: phishing-only firms, no-cost share 0.72 (0 eng) / 0.46 (1) / 0.08 (2-3): costs accumulate per engaged attack -> engaged attacks = per-event breaches.
