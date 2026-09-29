@@ -571,3 +571,79 @@ def check_999():
 
 if __name__ == "__main__" and "c999" in __import__("sys").argv:
     check_999()
+
+
+def phishsum_components():
+    """What does Cybercrime_phishsum add up? List phishing-related scale variables (labels from SPSS metadata),
+    then test candidate sums against phishsum firm by firm (exact match share), and dump discordant firms."""
+    import glob
+    import itertools
+    import pyreadstat
+    r = aligned_raw()
+    sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+    _, meta = pyreadstat.read_sav(sav, metadataonly=True)
+    lab = meta.column_names_to_labels
+    cands = [c for c in r.columns if c.lower().startswith(("phish", "cybercrime_phish", "fraud")) and not c.endswith(("_bands", "_comb", "_comb1", "_comb2"))]
+    for c in cands + ["Cybercrime_phish", "Cybercrime_allsum", "Cybercrime_notphishsum"]:
+        if c in r.columns:
+            v = pd.to_numeric(r[c], errors="coerce")
+            print(f"{c:26s} n>=0 {int((v >= 0).sum()):4d}  max {v.max():g}  | {str(lab.get(c))[:150]}")
+    ps = pd.to_numeric(r["Cybercrime_phishsum"], errors="coerce")
+    ok = ps >= 0
+    num = {c: pd.to_numeric(r[c], errors="coerce").where(lambda s: s >= 0) for c in cands if c != "Cybercrime_phishsum"}
+    num = {c: v for c, v in num.items() if (v.notna() & ok).sum() > 20}
+    print(f"\nphishsum present: {int(ok.sum())}")
+    res = []
+    for k in (1, 2, 3):
+        for combo in itertools.combinations(num, k):
+            s = sum(num[c].fillna(0) for c in combo)
+            anyv = pd.concat([num[c].notna() for c in combo], axis=1).any(axis=1)
+            m = ok & anyv
+            res.append((np.mean(s[m] == ps[m]) if m.sum() else 0, int(m.sum()), combo))
+    for share, n, combo in sorted(res, reverse=True)[:8]:
+        print(f"  {' + '.join(combo):60s} exact match {share:.3f} on {n}")
+    best = sorted(res, reverse=True)[0][2]
+    s = sum(num[c].fillna(0) for c in best)
+    bad = ok & (s != ps)
+    print(f"\nbest combo {best}: discordant {int(bad.sum())}; first 15:")
+    cols = ["Cybercrime_phishsum"] + list(num)
+    print(pd.DataFrame({c: pd.to_numeric(r[c], errors="coerce") for c in cols})[bad].head(15).to_string())
+
+
+if __name__ == "__main__" and "phishsum" in __import__("sys").argv:
+    phishsum_components()
+
+
+def phishsum_rule():
+    """Verify phishsum = phisheng + (phishcon, or phishcondk band mapped to a fixed value). Infer the band -> value
+    map from firms with phisheng known and phishcon missing; then exact-match share over all phishsum firms.
+    Also: phishcondk / phishconyes value labels, and how phisheng / phishcon relate (routing)."""
+    import glob
+    import pyreadstat
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    ps, eng, con, dk, yes = (num(c) for c in ("Cybercrime_phishsum", "phisheng", "phishcon", "phishcondk", "phishconyes"))
+    sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+    _, meta = pyreadstat.read_sav(sav, metadataonly=True)
+    for c in ("phishcondk", "phishconyes"):
+        print(f"{c} labels: {meta.variable_value_labels.get(c)}")
+    m = (ps >= 0) & con.isna() & dk.between(1, 20)
+    implied = (ps - eng.where(eng >= 0).fillna(0))[m]
+    print("\nimplied value per phishcondk code (phishsum - phisheng, phishcon missing):")
+    mp = {}
+    for code in sorted(dk[m].unique()):
+        vals = implied[dk[m] == code].value_counts()
+        mp[code] = vals.index[0]
+        print(f"  code {int(code)}: {dict(vals)}")
+    tgt = con.where(con >= 0).fillna(dk.map(mp))
+    pred = eng.where(eng >= 0).fillna(0) + tgt.fillna(0)
+    ok = ps >= 0
+    print(f"\nphishsum firms {int(ok.sum())}: exact match of engaged + targeted {np.mean(pred[ok] == ps[ok]):.3f}")
+    bad = ok & (pred != ps)
+    print(pd.DataFrame({"phishsum": ps, "phisheng": eng, "phishcon": con, "phishcondk": dk, "phishconyes": yes})[bad].head(12).to_string())
+    print(f"\nrouting: phishconyes value counts among phishing firms: {yes.value_counts().to_dict()}")
+    print(f"firms with phishcon answered, by phishconyes: {yes[con >= 0].value_counts(dropna=False).to_dict()}")
+
+
+if __name__ == "__main__" and "phishrule" in __import__("sys").argv:
+    phishsum_rule()
