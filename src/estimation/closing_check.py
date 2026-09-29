@@ -127,3 +127,44 @@ def mass_only():
 
 if __name__ == "__main__" and "mass" in __import__("sys").argv:
     mass_only()
+
+
+def nonzero_by_freq():
+    """Among firms with a NONZERO worst-incident cost: does the size of the worst cost rise with attack frequency?
+    Single-channel groups; worst band (2..10) by freq answer: weighted mean band, shares <£500 / £500-5k / £5k+,
+    Spearman(freq, band) with permutation p."""
+    from scipy.stats import spearmanr
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    band, fq = d["band"].values, d["freq"].values
+    w = d["weight"].fillna(d["weight"].median()).values
+    con, cb, eng = num("phishcon"), num("phishcon_bands"), num("phisheng")
+    t0 = np.where(con >= 0, con == 0, cb == 1)
+    only = X.sum(1) == 1
+    groups = {
+        "impersonation-only": only & (X[:, SHORT.index("Imper")] == 1),
+        "phishing-only, 0 engaged": only & (X[:, 0] == 1) & (eng == 0),
+        "mass-only phishing": only & (X[:, 0] == 1) & t0 & (eng == 0),
+        "phishing-only, all": only & (X[:, 0] == 1),
+    }
+    rng = np.random.default_rng(0)
+    for lab, g in groups.items():
+        m = g & (band >= 2) & (fq >= 1)
+        print(f"\n{lab}: nonzero-cost firms {m.sum()}")
+        for k in range(1, 7):
+            mk = m & (fq == k)
+            if mk.sum() == 0:
+                continue
+            b, ww = band[mk], w[mk]
+            sh = [np.average((b >= a) & (b <= c), weights=ww) for a, c in ((2, 3), (4, 5), (6, 13))]
+            print(f"  freq {k} ({'once' if k == 1 else FLAB[k]:8s}) n {mk.sum():3d}  mean band {np.average(b, weights=ww):4.2f}  "
+                  "<£500 / £500-5k / £5k+  " + " ".join(f"{v:4.2f}" for v in sh))
+        rho = spearmanr(fq[m], band[m]).statistic
+        perm = np.mean([abs(spearmanr(rng.permutation(fq[m]), band[m]).statistic) >= abs(rho) for _ in range(5000)])
+        print(f"  Spearman(freq, band) {rho:+.3f}  perm p {perm:.3f}")
+
+
+if __name__ == "__main__" and "nonzero" in __import__("sys").argv:
+    nonzero_by_freq()
