@@ -1437,3 +1437,8 @@ Per firm, per channel c:  K_c = 0 with prob 1 - p_c(size, frailty);  otherwise K
   By tier: P(eng>=1) Micro 0.09/0.18/0.19, Small+ 0.11/0.30/0.48; share at 1 given engaged falls only in Small+ high (0.40, quartiles 1/2/5).
   Engaged much likelier with targeted attacks (18% vs 6%). Breach (engagement) counts: mostly 1, thin tail; frailty raises occurrence and, at the top, multiplicity - same structure as attack counts, but compressed (tail to 100 vs 999).
   Also earlier: phishing-only firms, no-cost share 0.72 (0 eng) / 0.46 (1) / 0.08 (2-3): costs accumulate per engaged attack -> engaged attacks = per-event breaches.
+- ATTEMPT vs SUCCESS PAIRS (breach_multiplicity.py pairs; labels checked): real success counts = phisheng (engaged), tkvrsuc (Q86C successful takeovers), dossoft (Q87E successful DoS), virussoft (Q84E successful malware; no attempt count). hacksiv = 'deliberate' (NOT success; corr 0.93 with attempts) and dossiv = deliberate-among-successful -> not usable as breach counts.
+  Phishing (338 firms): P(success>=1) 0.18; by attempts 1 / 2-5 / 6-20 / 21-100 / 100+: 0.06/0.14/0.19/0.33/0.38 (sublinear: x100 attempts -> x6); tier 0.07/0.20/0.33. Successes mostly 1 (40 of 62).
+  Takeover (111): P 0.21; by attempts 0.25/0.16/0.12/0/0 (FLAT/falling); tier 0.20/0.21/0.21 (flat); successes 1:20 2:2 12:1.
+  DoS (59): P 0.22; by attempts 0.27/0.15/0.38/0/0 (flat); successes 1:7 2:3 5,6,10.
+  => common across 3 streams: successes mostly single; P(success) far from proportional to attempts (sublinear to flat) -> breaches are NOT binomial thinning of attempts. Frailty on P(success|hit): phishing yes, takeover no, DoS unclear.

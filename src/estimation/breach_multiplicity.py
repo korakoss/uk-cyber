@@ -157,3 +157,48 @@ def engaged_counts():
 
 if __name__ == "__main__" and "eng" in __import__("sys").argv:
     engaged_counts()
+
+
+def attempt_success_pairs():
+    """Attempts vs successes per channel. Prints SPSS labels of the candidate variables, then for each pair among
+    firms with both answered: P(success >= 1), positive success values, P(success >= 1) by attempt band, log-corr,
+    and P(success >= 1) / share of successes at 1 by most-likely tier. Unweighted."""
+    import glob
+    import pyreadstat
+    sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+    _, meta = pyreadstat.read_sav(sav, metadataonly=True)
+    names = ["hackcount", "hacksiv", "hackextcount", "doscount", "dossoft", "dossiv", "dosextcount",
+             "tkvrcount", "tkvrsuc", "tkvrextcount", "ranschk", "ranssoft", "virussoft"]
+    for c in names:
+        print(f"{c:13s} {str(meta.column_names_to_labels.get(c))[:230]}")
+    X, _, size = load()
+    r = aligned_raw()
+    tier = tier_posteriors().argmax(1)
+    num = lambda c: np.where(pd.to_numeric(r[c], errors="coerce").values >= 0, pd.to_numeric(r[c], errors="coerce").values, np.nan)
+    pairs = [("phishing", "phishcon", "phisheng"), ("takeover", "tkvrcount", "tkvrsuc"),
+             ("hacking", "hackcount", "hacksiv"), ("DoS", "doscount", "dossiv"), ("DoS (soft)", "doscount", "dossoft")]
+    for lab, a, s in pairs:
+        A, S = num(a), num(s)
+        m = ~np.isnan(A) & ~np.isnan(S) & (A >= 1)
+        if m.sum() == 0:
+            print(f"\n{lab}: no firms with both")
+            continue
+        sp = S[m & (S >= 1)]
+        print(f"\n{lab}: {a} (attempts) vs {s} (successes), firms with attempts>=1 and both answered: {m.sum()}")
+        print(f"  P(success>=1) {np.mean(S[m] >= 1):.3f}; successes>=1: " + "  ".join(f"{int(x)}:{int((sp == x).sum())}" for x in np.unique(sp)))
+        print(f"  success > attempts in {int((S[m] > A[m]).sum())} firms;  corr(log1p A, log1p S) {np.corrcoef(np.log1p(A[m]), np.log1p(S[m]))[0, 1]:.2f}")
+        for lo, hi in ((1, 1), (2, 5), (6, 20), (21, 100), (101, 10**6)):
+            mm = m & (A >= lo) & (A <= hi)
+            if mm.sum():
+                print(f"    attempts {lo:>3}-{hi if hi < 10**6 else '+':<4} n {mm.sum():3d}  P(success>=1) {np.mean(S[mm] >= 1):.2f}  "
+                      f"mean successes|>=1 {S[mm & (S >= 1)].mean() if (mm & (S >= 1)).any() else float('nan'):.1f}")
+        for c in range(3):
+            mm = m & (tier == c)
+            if mm.sum():
+                pos = S[mm & (S >= 1)]
+                print(f"    tier {TIER[c]:4s} n {mm.sum():3d}  P(success>=1) {np.mean(S[mm] >= 1):.2f}  share 1|+ "
+                      f"{np.mean(pos == 1) if len(pos) else float('nan'):.2f}")
+
+
+if __name__ == "__main__" and "pairs" in __import__("sys").argv:
+    attempt_success_pairs()
