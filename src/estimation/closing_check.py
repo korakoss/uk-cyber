@@ -105,5 +105,25 @@ def main():
          wshare(grp(band[multi]), w[multi]), multi.sum(), predict(gs, ws, rs[multi].astype(int), w[multi], rng))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def mass_only():
+    """Same check restricted to MASS-ONLY phishing firms: phishing-only, 0 targeted (phishcon 0, or band 'None'
+    when no exact answer), 0 engaged. G from those answering freq 'once'."""
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    band, fq = d["band"].values, d["freq"].values
+    w = d["weight"].fillna(d["weight"].median()).values
+    con, cb, eng = num("phishcon"), num("phishcon_bands"), num("phisheng")
+    t0 = np.where(con >= 0, con == 0, cb == 1)
+    base = ~np.isnan(band) & (X.sum(1) == 1) & (X[:, 0] == 1) & t0 & (eng == 0)
+    print(f"shares: {GLAB}")
+    band_channel("MASS-ONLY PHISHING FIRMS (0 targeted, 0 engaged)", band, w, fq, base, np.random.default_rng(0))
+
+
+if __name__ == "__main__" and "mass" in __import__("sys").argv:
+    mass_only()
