@@ -1467,3 +1467,8 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
   P(breach>=1 | hit): phishing 0.21 (eng), takeover 0.23, DoS 0.23, malware 0.07, ransomware 0.49 (ransom demanded). Breaches mostly 1 (tails: phishing to 100, ransomware to 100).
   SURVEY ROUTING: the per-type annual cost questions (tkvr/dos/virus/ranscost) are asked ONLY of firms with >=1 success -> they are directly 'annual cost of breaches in channel c'. Answered: takeover 15, DoS 11, malware 16, ransomware 33 (phishing has none).
   Breach -> worst cost: worst band higher with breach >=1 in every channel (phishing-only none 0.72 -> 0.41 -> 0.11 for 0/1/2+; malware £5k+ 0.15 -> 0.42; ransomware 0.37 -> 0.52). 2+ breaches costlier for phishing; not for ransomware (2+ cheaper), others n<=6.
+- BREACH RATES BY SIZE x TIER (breach_layer.py rates; P(breach>=1 | hit), logistic LR tests):
+  Phishing (919): size Micro .13 Small .15 Medium .25 Large .47; tier .10/.27/.32; both significant (p<0.001). Micro x tier .09/.18/.19; Small+ .11/.30/.48.
+  Takeover (65), DoS (62), malware (216): flat, no size or tier effect (p 0.12-0.87); rates .23 / .23 / .07.
+  Ransomware (72): tier effect REVERSED (mid .69, high .32; p 0.001), no size effect -> high-tier firms tick ransomware with fewer actual ransom demands (attempts vs real attacks mixed in the flag).
+  => only phishing's breach rate scales with size and frailty; the serious channels have constant breach rates given hit.

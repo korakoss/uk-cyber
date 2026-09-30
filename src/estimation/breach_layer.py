@@ -57,5 +57,52 @@ def main():
                 print(f"    {ll:8s} n {m.sum():4d}  " + " ".join(f"{np.mean((b >= a) & (b <= c_)) if len(b) else float('nan'):.2f}" for a, c_ in WG))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def rates_by_size_tier():
+    """P(breach >= 1 | hit, success answered) per channel by size band, by tier, and by size group x tier.
+    Plus likelihood-ratio tests from logistic regressions: size (4 bands) and tier (3), each added to the other."""
+    from scipy.optimize import minimize
+    from scipy.stats import chi2
+    from counts_given_frailty import tier_posteriors, TIER
+    X, _, size = load()
+    r = aligned_raw()
+    tier = tier_posteriors().argmax(1)
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    SL = {1: "Micro", 2: "Small", 3: "Medium", 4: "Large"}
+
+    def fit(y, cols):
+        Z = np.column_stack([np.ones(len(y))] + cols) if cols else np.ones((len(y), 1))
+        def nll(b):
+            eta = Z @ b
+            return -(y * eta - np.logaddexp(0, eta)).sum()
+        return -minimize(nll, np.zeros(Z.shape[1]), method="BFGS").fun
+
+    for lab, flag, sv, _ in CH:
+        s = num(sv)
+        m = (X[:, SHORT.index(flag)] == 1) & (s >= 0) & (s < 997)
+        y = (s[m] >= 1).astype(float)
+        print(f"\n{lab.upper()}: n {m.sum()}, P(breach>=1) {y.mean():.3f}")
+        print("  by size:  " + "   ".join(f"{SL[k]} {np.mean(y[size[m] == k]):.2f} (n {int((size[m] == k).sum())})"
+                                         for k in range(1, 5) if (size[m] == k).any()))
+        print("  by tier:  " + "   ".join(f"{TIER[c]} {np.mean(y[tier[m] == c]):.2f} (n {int((tier[m] == c).sum())})"
+                                         for c in range(3) if (tier[m] == c).any()))
+        for g, gm in (("Micro", size[m] == 1), ("Small+", size[m] >= 2)):
+            print(f"  {g:6s} x tier: " + "   ".join(
+                f"{TIER[c]} {np.mean(y[gm & (tier[m] == c)]):.2f} (n {int((gm & (tier[m] == c)).sum())})"
+                for c in range(3) if (gm & (tier[m] == c)).any()))
+        sz = [(size[m] == k).astype(float) for k in (2, 3, 4) if (size[m] == k).sum() > 0]
+        tr = [(tier[m] == c).astype(float) for c in (1, 2) if (tier[m] == c).sum() > 0]
+        try:
+            l_both, l_s, l_t = fit(y, sz + tr), fit(y, sz), fit(y, tr)
+            p_size = chi2.sf(2 * (l_both - l_t), len(sz))
+            p_tier = chi2.sf(2 * (l_both - l_s), len(tr))
+            print(f"  LR tests: size given tier p {p_size:.3f};  tier given size p {p_tier:.3f}")
+        except Exception as e:
+            print("  LR tests failed:", e)
+
+
+if __name__ == "__main__" and "rates" in __import__("sys").argv:
+    rates_by_size_tier()
