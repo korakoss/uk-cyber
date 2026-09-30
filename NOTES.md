@@ -1472,3 +1472,5 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
   Takeover (65), DoS (62), malware (216): flat, no size or tier effect (p 0.12-0.87); rates .23 / .23 / .07.
   Ransomware (72): tier effect REVERSED (mid .69, high .32; p 0.001), no size effect -> high-tier firms tick ransomware with fewer actual ransom demands (attempts vs real attacks mixed in the flag).
   => only phishing's breach rate scales with size and frailty; the serious channels have constant breach rates given hit.
+- COST CONCEPTS (breach_layer.py concepts): per-type breach cost vs worst-incident cost, same firms. When the worst incident IS that channel: type cost > worst only 5-20%, median ratio 0.50-0.60 (takeover 10, DoS 8, malware 6, ransomware 21 firms); several huge gaps (type £50 vs worst £300k / £15k). Sums: ransomware £138k vs £513k; DoS £4.6k vs £325k.
+  => per-type costs are a NARROWER concept (~half typically, and they miss the big tails). Price with the worst-incident concept; use per-type costs only to identify breach events / multiplicity.

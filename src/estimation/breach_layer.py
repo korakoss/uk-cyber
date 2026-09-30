@@ -106,3 +106,41 @@ def rates_by_size_tier():
 
 if __name__ == "__main__" and "rates" in __import__("sys").argv:
     rates_by_size_tier()
+
+
+def cost_concepts():
+    """Per-type breach cost (12-band, asked only of breached firms) vs worst-incident cost (13-band) for the same
+    firms. Labels of the per-type cost components first. Per channel: firms with both; midpoint ratio type/worst,
+    band-level agreement (converted to £ midpoints), split by whether the worst incident (disrupta) was this channel."""
+    import glob
+    import pyreadstat
+    sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+    _, meta = pyreadstat.read_sav(sav, metadataonly=True)
+    for c in ("ranscosta", "ranscostb", "ranscost_bands", "tkvrcosta", "tkvrcostb", "damage_bands"):
+        if c in meta.column_names_to_labels:
+            print(f"{c:15s} {str(meta.column_names_to_labels[c])[:200]}")
+    TM = {1: 50, 2: 175, 3: 375, 4: 750, 5: 1500, 6: 3500, 7: 7500, 8: 15000, 9: 35000, 10: 75000, 11: 175000, 12: 400000}
+    WM = {1: 0, 2: 50, 3: 300, 4: 750, 5: 3000, 6: 7500, 7: 15000, 8: 35000, 9: 75000, 10: 300000}
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band, disr = d["band"].values, d["disrupta"].values
+    DCODE = {"takeover": [11], "DoS": [3], "malware": [2], "ransomware": [1]}
+    for lab, flag, sv, cv in CH[1:]:
+        c = pd.to_numeric(r[cv], errors="coerce").values
+        m = (c >= 1) & (c <= 12) & ~np.isnan(band)
+        tm = np.array([TM[int(x)] for x in c[m]])
+        wm = np.array([WM[int(x)] for x in band[m]])
+        own = np.isin(disr[m], DCODE[lab])
+        print(f"\n{lab.upper()}: firms with both {m.sum()} (worst incident = this channel: {own.sum()})")
+        for nm, sel in (("worst = this channel", own), ("worst = other", ~own)):
+            if sel.sum() == 0:
+                continue
+            ratio = tm[sel] / np.maximum(wm[sel], 25)
+            print(f"  {nm:22s} n {sel.sum():3d}  type-cost > worst {np.mean(tm[sel] > wm[sel]):.2f}  "
+                  f"median ratio {np.median(ratio):.2f}   sum type £{tm[sel].sum():,.0f} vs sum worst £{wm[sel].sum():,.0f}")
+            print("      pairs (type £ / worst £): " + ", ".join(f"{a}/{b}" for a, b in zip(tm[sel], wm[sel])))
+
+
+if __name__ == "__main__" and "concepts" in __import__("sys").argv:
+    cost_concepts()
