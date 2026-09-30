@@ -1463,3 +1463,7 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
 - COST INDEPENDENCE TEST (cost_independence.py): multi-channel worst vs max of independent draws from pure-cell distributions (P n404, I n78, S n37; pure R n2 unusable).
   P+I (196): consistent (P(>=£5k) obs 0.020 vs pred 0.015, p~0.27). P+S (64): consistent (obs lower). I+S (13): obs P(>=£5k) 0.27 vs 0.03 (p<0.001, tiny n). P+I+S (141): obs P(>=£5k) 0.115 vs 0.039 (p 0.009), mean group 1.38 vs 1.07 (p 0.006).
   => two-channel profiles ~independent; broad (3-channel) profiles have a tail ~3x the independent-max prediction. Dependence is real but only at breadth (driven by the S+I combinations). R profiles: R+2 others 28% >= £5k (no pure baseline).
+- BREACH LAYER (breach_layer.py; success count = breach, per channel among hit firms):
+  P(breach>=1 | hit): phishing 0.21 (eng), takeover 0.23, DoS 0.23, malware 0.07, ransomware 0.49 (ransom demanded). Breaches mostly 1 (tails: phishing to 100, ransomware to 100).
+  SURVEY ROUTING: the per-type annual cost questions (tkvr/dos/virus/ranscost) are asked ONLY of firms with >=1 success -> they are directly 'annual cost of breaches in channel c'. Answered: takeover 15, DoS 11, malware 16, ransomware 33 (phishing has none).
+  Breach -> worst cost: worst band higher with breach >=1 in every channel (phishing-only none 0.72 -> 0.41 -> 0.11 for 0/1/2+; malware £5k+ 0.15 -> 0.42; ransomware 0.37 -> 0.52). 2+ breaches costlier for phishing; not for ransomware (2+ cheaper), others n<=6.
