@@ -1457,3 +1457,6 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
    multiplicity (2+ costly types 25% in high tier, crimecost > worst 6%).
 5. Tail: >£100k, empty bands 11-13 as bound.
 6. Assemble: national = sum_size N * E[sum of breach costs + handling], bootstrap uncertainty.
+- BREACH MEASURES (breach_measures.py):
+  fraud: Q88A fraud1-3 answered by ~1000 phishing-hit firms but only 3 impersonation-only firms (routing) -> NOT usable as impersonation's breach count. Q88D attribution: of 123 frauds, phishing 75, hacking 17, takeover 6, others ~9, unattributed 16; no impersonation option. fraud4 (impersonating the org using info from the breach) = consequence, asked of ~45 firms. => impersonation still has no breach measure.
+  subtract: engagement mass-only vs targeted>=1: all 0.059 vs 0.186 -> implied targeted breach prob 0.135 [0.10,0.17]; Micro 0.08, Small+ 0.16. Per tier noisy: mass rate itself rises with tier (Micro 0.02/0.13/0.14, Small+ 0.04/0.11); excess sits in Micro low (0.09), Small+ mid (0.14), Small+ high (0.45, mass cell n=5). Engagements given >=1: mass 1.6, targeted-firms 4.0 (Small+ high 10.8).
