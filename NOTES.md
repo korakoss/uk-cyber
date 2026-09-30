@@ -1442,3 +1442,18 @@ Per firm, per channel c:  K_c = 0 with prob 1 - p_c(size, frailty);  otherwise K
   Takeover (111): P 0.21; by attempts 0.25/0.16/0.12/0/0 (FLAT/falling); tier 0.20/0.21/0.21 (flat); successes 1:20 2:2 12:1.
   DoS (59): P 0.22; by attempts 0.27/0.15/0.38/0/0 (flat); successes 1:7 2:3 5,6,10.
   => common across 3 streams: successes mostly single; P(success) far from proportional to attempts (sublinear to flat) -> breaches are NOT binomial thinning of attempts. Frailty on P(success|hit): phishing yes, takeover no, DoS unclear.
+
+## NEW PLAN (2026-09-30) — replaces "exposure -> attack-count laws -> iid per-attack costs"
+Why: per-attack iid costs fail (worst cost flat in attack volume, even within mass-only phishing); success counts
+(phisheng, tkvrsuc, dossoft) show breaches far from proportional to attempts. Informal attacker-side reading: bulk sources
+= volume with tiny per-target success; crafted sources = few attempts, real success. Formal model stays defender-side,
+does NOT fit the source split. Attack counts leave the money path (evidence only).
+1. Exposure (done): frailty -> which channels hit (flags), by size.
+2. Breach layer (core, next): per channel, given hit, breach count B ~ firm-rate process (multiple allowed), rate nu_c(size, frailty
+   where visible), volume-independent. Data: phisheng, tkvrsuc, dossoft, virussoft, ranssum; impersonation and other gaps via cost side
+   (P(cost >= threshold | single-channel hit), handling-cost correction calibrated on phishing). Check answer coverage/selection.
+3. Cost layer: per-breach cost G_c from single-breach firms; small handling cost on non-breached hits; size effect check (R/S lean).
+4. Validation (replaces failed closing check): simulate firm -> breaches -> costs; compare worst-incident band by channel/tier/frequency,
+   multiplicity (2+ costly types 25% in high tier, crimecost > worst 6%).
+5. Tail: >£100k, empty bands 11-13 as bound.
+6. Assemble: national = sum_size N * E[sum of breach costs + handling], bootstrap uncertainty.
