@@ -1480,3 +1480,6 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
   other serious 1-success (21): mean £9.4k, £1.7k without its 1 top-band firm; Micro £1.1k vs Small+ £35k (£3.5k w/o top).
   impersonation collapsed (78): £525 (Micro £300, Small+ £1.2k), no top band.
   => per-breach means are set by 3 top-band firms (ransomware 2, serious 1). Larger firms costlier in every channel (x2-5 w/o top band). Tail + size are the open cost questions.
+- SIZE EFFECT ON COST PER BREACH (breach_layer.py size; 145 pooled single-breach firms; logistic for zero + interval-censored lognormal for positives, channel mu, common sigma 2.08):
+  P(no cost): Small+ odds x0.69, p 0.41; positive cost: common Small+ shift x1.7 (log +0.51), p 0.39; channel-specific shifts not better (p 0.35): phishing x1.7, ransomware x8.3 (n18), serious x2.6, impersonation x0.5.
+  => size effect on per-breach cost not resolved by the data; carry ONE common factor (~x1.7, wide uncertainty) rather than per-channel cells. Micro medians: phishing £250, ransomware £1.6k, serious £700, impersonation £60 (sigma 2.1 -> means ~9x median).

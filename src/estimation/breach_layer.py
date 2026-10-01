@@ -190,3 +190,81 @@ def cost_per_breach():
 
 if __name__ == "__main__" and "cpb" in __import__("sys").argv:
     cost_per_breach()
+
+
+EDGES = {2: (1, 100), 3: (100, 500), 4: (500, 1000), 5: (1000, 5000), 6: (5000, 10000), 7: (10000, 20000),
+         8: (20000, 50000), 9: (50000, 100000), 10: (100000, 500000), 11: (500000, 1e6), 12: (1e6, 5e6), 13: (5e6, 1e9)}
+
+
+def single_breach_cells():
+    """(channel label, band, weight, small+ flag) for the four single-breach cells of cost_per_breach()."""
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band, D = d["band"].values, d["D"].values
+    w = d["weight"].fillna(d["weight"].median()).values
+    num = lambda c: np.where((pd.to_numeric(r[c], errors="coerce").values >= 0) & (pd.to_numeric(r[c], errors="coerce").values < 997),
+                             pd.to_numeric(r[c], errors="coerce").values, np.nan)
+    only = X.sum(1) == 1
+    succ = np.column_stack([num(c) for c in ("tkvrsuc", "dossoft", "virussoft")])
+    s_os = np.where(np.isnan(succ).all(1), np.nan, np.nansum(succ, 1))
+    cells = [only & (X[:, 0] == 1) & (num("phisheng") == 1), (D == 3) & (num("ranssoft") == 1),
+             (D == 4) & (s_os == 1), only & (X[:, SHORT.index("Imper")] == 1)]
+    ch = np.full(len(X), -1)
+    for k, m in enumerate(cells):
+        ch[m & ~np.isnan(band) & (ch < 0)] = k
+    keep = ch >= 0
+    return ch[keep], band[keep].astype(int), w[keep], (size[keep] >= 2).astype(float)
+
+
+def size_effect():
+    """Is the size effect on cost per breach common across channels? Pooled single-breach firms.
+    Two parts: (a) P(no cost): logistic, channel intercepts + size (common) vs channel x size; (b) positive costs:
+    interval-censored lognormal on the band edges, channel-specific mu, common sigma, + size shift (common) vs
+    channel-specific shifts. Weighted (normalised) pseudo-likelihood; LR tests approximate. Common shift as cost factor."""
+    from scipy.optimize import minimize
+    from scipy.stats import chi2, norm
+    ch, band, w, sm = single_breach_cells()
+    w = w / w.mean()
+    K = 4
+    names = ["phishing", "ransomware", "other serious", "impersonation"]
+    print(f"single-breach firms: {len(ch)}  (" + ", ".join(f"{names[k]} {int((ch == k).sum())}" for k in range(K)) + ")")
+    C = np.eye(K)[ch]
+
+    y0 = (band == 1).astype(float)
+    def logit_ll(Z):
+        o = minimize(lambda b: -(w * (y0 * (Z @ b) - np.logaddexp(0, Z @ b))).sum(), np.zeros(Z.shape[1]), method="BFGS")
+        return -o.fun, o.x
+    keep_z = np.ones(len(ch), bool)
+    lz0, _ = logit_ll(C)
+    lz1, bz1 = logit_ll(np.column_stack([C, sm]))
+    lz2, _ = logit_ll(np.column_stack([C, C * sm[:, None]]))
+    print(f"\n(a) P(no cost): common size log-odds {bz1[-1]:+.2f} (odds x{np.exp(bz1[-1]):.2f});  "
+          f"size p {chi2.sf(2 * (lz1 - lz0), 1):.3f};  separate vs common p {chi2.sf(2 * (lz2 - lz1), K - 1):.3f}")
+
+    pos = band >= 2
+    lo = np.log([EDGES[b][0] for b in band[pos]])
+    hi = np.log([EDGES[b][1] for b in band[pos]])
+    Cp, sp, wp = C[pos], sm[pos], w[pos]
+
+    def ic_ll(mu, s):
+        return (wp * np.log(np.maximum(norm.cdf((hi - mu) / s) - norm.cdf((lo - mu) / s), 1e-300))).sum()
+
+    def fit(design):
+        Z = design
+        o = minimize(lambda p: -ic_ll(Z @ p[:-1], np.exp(p[-1])), np.r_[np.full(Z.shape[1], 6.0) * 0 + 6.0, 0.5],
+                     method="Nelder-Mead", options={"maxiter": 20000, "xatol": 1e-6, "fatol": 1e-8})
+        o = minimize(lambda p: -ic_ll(Z @ p[:-1], np.exp(p[-1])), o.x, method="BFGS")
+        return -o.fun, o.x
+    l0, _ = fit(Cp)
+    l1, p1 = fit(np.column_stack([Cp, sp]))
+    l2, p2 = fit(np.column_stack([Cp, Cp * sp[:, None]]))
+    print(f"(b) positive costs (n {pos.sum()}): common size shift on log cost {p1[K]:+.2f} -> cost factor x{np.exp(p1[K]):.1f}, "
+          f"sigma {np.exp(p1[-1]):.2f};  size p {chi2.sf(2 * (l1 - l0), 1):.4f};  separate vs common p {chi2.sf(2 * (l2 - l1), K - 1):.3f}")
+    print("    per-channel shifts (separate model): " + ", ".join(f"{names[k]} {p2[K + k]:+.2f} (x{np.exp(p2[K + k]):.1f}, n+ {int((ch[pos] == k).sum())})"
+                                                          for k in range(K)))
+    print("    channel medians (Micro, common model): " + ", ".join(f"{names[k]} £{np.exp(p1[k]):,.0f}" for k in range(K)))
+
+
+if __name__ == "__main__" and "size" in __import__("sys").argv:
+    size_effect()
