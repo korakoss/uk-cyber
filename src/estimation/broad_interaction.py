@@ -115,5 +115,75 @@ def main():
     part_b(C, band, D, oa, w, size)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+def combined_check():
+    """Can multiplicity alone explain the broad-firm cost excess? Model: each hit channel c independently yields a
+    material breach with prob q_c (part a); each breach costs 0 with prob z, else lognormal(mu_c + delta*Small+, sigma).
+    Worst = max over the firm's breaches. Conditional on >= 1 material breach:
+        P(worst <= x) = [prod_c (1 - q_c + q_c F_c(x)) - prod_c (1 - q_c)] / [1 - prod_c (1 - q_c)].
+    Fit (mu_c, delta, sigma, z) on material firms hit by 1-2 channels (tightened intervals), predict the worst-cost
+    distribution of 3+ channel material firms, compare with observed. No interaction term."""
+    X, size, band, D, oa, w = data()
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    ok = (oa == 1) & ~np.isnan(band) & (nch >= 1)
+    # q from part (a)
+    fitq = ~np.isnan(oa) & (nch >= 1) & (nch <= 2)
+    yq, Cq, wq = oa[fitq], C[fitq], w[fitq] / w[fitq].mean()
+    zq = minimize(lambda z: -(wq * (yq * np.log(np.maximum(1 - np.exp(Cq @ np.log(1 - 1 / (1 + np.exp(-z)))), 1e-12)) +
+                                    (1 - yq) * (Cq @ np.log(1 - 1 / (1 + np.exp(-z)))))).sum(), np.full(4, -2.0), method="BFGS").x
+    q = 1 / (1 + np.exp(-zq))
+    sm = (size >= 2).astype(float)
+
+    def cdf_worst(x, Ci, smi, p):
+        mu, delta, s, z = p[:4], p[4], np.exp(p[5]), 1 / (1 + np.exp(-p[6]))
+        if x <= 0:
+            F = np.full(4, z)
+        else:
+            F = z + (1 - z) * norm.cdf((np.log(x) - (mu + delta * smi)) / s)
+        prod_all = np.prod(np.where(Ci == 1, 1 - q + q * F, 1.0))
+        prod0 = np.prod(np.where(Ci == 1, 1 - q, 1.0))
+        return (prod_all - prod0) / (1 - prod0)
+
+    def interval_prob(i, p):
+        L, H = lo[i], hi[i]
+        if H == 0:
+            return cdf_worst(0, C[i], sm[i], p)
+        return cdf_worst(H, C[i], sm[i], p) - (cdf_worst(L, C[i], sm[i], p) if L > 0 else cdf_worst(0, C[i], sm[i], p) * 0)
+
+    fit_idx = np.where(ok & (nch <= 2))[0]
+    wf = w[fit_idx] / w[fit_idx].mean()
+
+    def nll(p):
+        return -sum(wf[k] * np.log(max(interval_prob(i, p), 1e-300)) for k, i in enumerate(fit_idx))
+    o = minimize(nll, np.r_[np.full(4, 6.0), 0.3, 0.7, -1.5], method="Nelder-Mead", options={"maxiter": 6000, "xatol": 1e-4, "fatol": 1e-6})
+    p = o.x
+    print(f"fit on {len(fit_idx)} material firms with 1-2 channels: medians " +
+          ", ".join(f"{n} £{np.exp(v):,.0f}" for n, v in zip("PIRS", p[:4])) +
+          f"; size x{np.exp(p[4]):.2f}; sigma {np.exp(p[5]):.2f}; zero share {1 / (1 + np.exp(-p[6])):.2f}")
+    groups = [(0, 0), (1, 500), (500, 5000), (5000, 20000), (20000, 1e9)]
+    labs = "none / <£500 / £500-5k / £5k-20k / £20k+"
+    print(f"\nworst-incident cost of material firms: observed vs predicted ({labs})")
+    for k_lab, sel in (("1-2 channels (fit)", ok & (nch <= 2)), ("3 channels", ok & (nch == 3)), ("4 channels", ok & (nch == 4)),
+                       ("3+ channels", ok & (nch >= 3))):
+        idx = np.where(sel)[0]
+        ww = w[idx]
+        obs, pred = np.zeros(5), np.zeros(5)
+        for i, wi in zip(idx, ww):
+            mid = (lo[i] + hi[i]) / 2
+            g = 0 if hi[i] == 0 else next(j for j, (a, b) in enumerate(groups) if j > 0 and a <= mid < b)
+            obs[g] += wi
+            cs = [cdf_worst(0, C[i], sm[i], p)] + [cdf_worst(b, C[i], sm[i], p) for _, b in groups[1:-1]] + [1.0]
+            pred += wi * np.diff(np.r_[0.0, cs])
+        obs, pred = obs / ww.sum(), pred / ww.sum()
+        print(f"  {k_lab:20s} n {len(idx):3d}  obs  " + " ".join(f"{v:.2f}" for v in obs))
+        print(f"  {'':20s}        pred " + " ".join(f"{v:.2f}" for v in pred) +
+              f"   P(>=£5k) obs {obs[3:].sum():.2f} pred {pred[3:].sum():.2f}")
+
+
+if __name__ == "__main__" and "combined" in __import__("sys").argv:
+    combined_check()
