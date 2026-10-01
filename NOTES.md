@@ -1561,3 +1561,9 @@ Annual firm cost = sum of handling + material costs; observed via the worst inci
 11. Survey weighting/selection: success-count answer coverage, nonresponse to cost questions (74 firms partial components), sole traders excluded.
 USER SCORECARD on open questions: 1 very important (must examine); 2 bugs but noncentral; 3 a bit important; 4 probably doing something stupid -> redo that part; 5 good question, maybe important; 6 very important; 7 must do better; 8 probably sucks, look at; 9 look at; 10 look at; 11 deferred after core work.
 Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst vs annual total) -> 6 (tail) -> 7, 8, 9 -> 10, 3, 5 -> 2, 11.
+- NARROW COST MODEL REBUILT (narrow_cost_model.py; 806 firms hit by 1-2 channels; joint ML on outcome + tightened worst interval; handling and material separate components):
+  q (material breach | hit): P .053, I .046, R .239, S .367.
+  handling: P(zero) P .71 I .64 R .09 S .77; median>0 P £97 I £92 R £171 S £615; sigma 1.95 -> means P £190, I £220, R £1.0k, S £970 (S's costly unflagged incidents absorbed here).
+  material: P(zero) .28; median>0 P £440, I £1.1k, R £1.1k, S £275; sigma 1.88 -> mean per event P £1.8k, I £4.7k, R £4.7k, S £1.2k (narrow only; broad class separate).
+  Fit: no-outcome groups now match incl. low end (P: obs .70/.25/.04 vs pred .71/.23/.05; PI, I similar). Material groups (n 17-25) rougher: PI outcome-1 obs £500-5k .59 vs pred .32; S outcome-1 cheaper than predicted.
+  Odd: size factor x0.75 (Small+ cheaper) vs earlier x1.2-1.7 -> check (weights / confounding with channel mix).
