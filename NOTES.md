@@ -1506,3 +1506,8 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
   Material events (176 firms, 7 top-band): pooled lognormal sigma 2.17, channel shifts, size x1.2 (weak). Mean per material event Micro/Small+: phishing £2.6k/3.0k, impersonation £19k/22k, ransomware £24k/28k, other serious £3.7k/4.3k.
   Fragility: drop the impersonation top-band firm -> imp £10.6k; drop one ransomware top-band firm -> ransomware £13k; drop all 7 -> everything ~halves (ransomware £9.4k, imp £8.5k). Channel-specific sigma: ransomware sigma 2.73 -> £91k (unstable). Pooling narrows ransomware to ~£9k-24k (was £2k-40k) but 7/176 firms still set the means.
   Material-breach rate given hit (single-channel firms): phishing 5.3% (413), impersonation 3.9% (81), other serious 44% (40); ransomware n=2.
+- TOP-BAND FIRM PROFILES (material_breach.py top; 8 firms at £100k-500k, all reported externally):
+  corroborated, narrow (<=4 types): 122 Large ransomware (ext payments £100k+, ICO/NCA), 789 Micro w1.54 imp/bank-hack (money stolen, ext £50-100k, police + Action Fraud), 1431 Micro w1.41 ransomware (restore 1mo+, ext + staff £100k+, NCA), 2166 Small bank-hack fraud (money stolen, ext £100k+, police/bank/Action Fraud).
+  broad compromise (6-7 types): 356 Large, 505 Medium, 1689 Large -> broad-compromise uplift, not channel tails.
+  uncorroborated: 1380 Small (imp+DoS; no outcomes, no impacts, restore none, only staff time £100k-500k) -> flag, sensitivity only.
+  => the two heavy-weight micro firms driving the means (789, 1431) are well corroborated real events: keep them; dropping them is not a justified sensitivity. Large firms weigh 0.05 each nationally.
