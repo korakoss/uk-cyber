@@ -134,3 +134,53 @@ def columns():
 
 if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "columns":
     columns()
+
+
+def outcome_validation():
+    """Q56A 'any outcome' (outcome_any) as a breach marker. Outcomes are firm-level (all breaches in the year), so the
+    cleanest test uses single-channel firms. For channels with a success count: P(any outcome | success >= 1) vs
+    P(any outcome | success = 0), among all hit firms and among single-channel firms. Then cost link: worst-incident
+    band by outcome. Then apply: P(any outcome) among impersonation-only and mass-only phishing firms."""
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band = d["band"].values
+    oa = pd.to_numeric(r["outcome_any"], errors="coerce").values
+    oa = np.where(np.isin(oa, [0, 1]), oa, np.nan)
+    print(f"outcome_any answered {int((~np.isnan(oa)).sum())}, yes {int((oa == 1).sum())}")
+    nch = X.sum(1)
+    chans = [("phishing (engaged)", "Phish", "phisheng"), ("takeover", "Takov", "tkvrsuc"), ("DoS", "DoS", "dossoft"),
+             ("malware", "Malwr", "virussoft"), ("ransomware (demand)", "Ransm", "ranssoft")]
+    print("\nP(any outcome) by success:   [all hit firms]   |   [single-type firms]")
+    for lab, flag, sv in chans:
+        s = num(r, sv)
+        hit = X[:, SHORT.index(flag)] == 1
+        cells = []
+        for base in (hit, hit & (nch == 1)):
+            row = []
+            for nm, lv in (("0", s == 0), (">=1", s >= 1)):
+                m = base & lv & ~np.isnan(oa)
+                row.append(f"succ {nm}: {np.mean(oa[m]) if m.any() else float('nan'):.2f} (n {m.sum()})")
+            cells.append("  ".join(row))
+        print(f"  {lab:20s} {cells[0]}   |   {cells[1]}")
+    print("\nworst-incident band by any outcome (attacked firms): none / <£500 / £500-5k / £5k+")
+    for nm, v in (("no outcome", 0), ("any outcome", 1)):
+        m = (oa == v) & ~np.isnan(band)
+        b = band[m]
+        print(f"  {nm:12s} n {m.sum():4d}  " + " ".join(f"{np.mean((b >= a) & (b <= c)):.2f}" for a, c in ((1, 1), (2, 3), (4, 5), (6, 13))))
+    con, cb, eng = num(r, "phishcon"), pd.to_numeric(r["phishcon_bands"], errors="coerce").values, num(r, "phisheng")
+    t0 = np.where(~np.isnan(con), con == 0, cb == 1)
+    groups = [("impersonation-only", (nch == 1) & (X[:, SHORT.index("Imper")] == 1)),
+              ("phishing-only", (nch == 1) & (X[:, 0] == 1)),
+              ("phishing-only, mass-only (0 targeted)", (nch == 1) & (X[:, 0] == 1) & t0),
+              ("phishing-only, mass-only, 0 engaged", (nch == 1) & (X[:, 0] == 1) & t0 & (eng == 0)),
+              ("phishing-only, 0 engaged", (nch == 1) & (X[:, 0] == 1) & (eng == 0)),
+              ("phishing-only, >=1 engaged", (nch == 1) & (X[:, 0] == 1) & (eng >= 1))]
+    print("\nP(any outcome) in single-channel groups:")
+    for lab, g in groups:
+        m = g & ~np.isnan(oa)
+        print(f"  {lab:40s} n {m.sum():4d}  P {np.mean(oa[m]):.3f}")
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "outcomes":
+    outcome_validation()
