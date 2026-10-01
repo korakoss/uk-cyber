@@ -1489,3 +1489,7 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
   cap £500k: ransomware -25%. Dropping one particular ransomware top-band firm halves ransomware (£6.3k); all 3 top-band dropped: ransomware £5.5k, serious £3.0k.
   sigma from all 993 worst incidents 2.12 (pooled; ~base).
   => phishing/impersonation stable (~£200-500); serious £3-5k; RANSOMWARE £5.5k-40k (x7 range) hinges on its own sigma (18 positive firms) and one firm. Ransomware per-breach cost is the dominant open uncertainty.
+- RANSOMWARE COST (breach_layer.py rans / ransc): adding censored info (B: 11 firms breached but worst = other channel -> upper bounds; C: 3 multi-demand firms) does NOT sharpen it: free fits blow up (sigma 2.5 -> 3.1, size x8-16, Small+ means £20k-£200k).
+  Top-band firms: 505 (Medium, 6 types hit, own ransomware cost <£100) = broad compromise, not ransomware cost -> exclude/reassign to broad uplift. 1431 (Micro, 3 types, no ransomware-cost answer) is the one real driver.
+  Constrained (size x1.7 fixed, 505 out): mean per breach Micro £11k / Small+ £19k; also without 1431: £1.9k / £3.2k. Lognormal forced to median ~£70, sigma 3.2 -> shape is wrong: ransomware costs are bimodal (cheap <£500 cluster 42%, real-event cluster >= £5k 43%).
+  => ransomware per-breach mean ~£2k-11k (Micro), hinging on one micro firm; use empirical bands (no lognormal) + firm-1431 sensitivity as the range.

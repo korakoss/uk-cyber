@@ -361,3 +361,138 @@ def tail_check():
 
 if __name__ == "__main__" and "tail" in __import__("sys").argv:
     tail_check()
+
+
+def ransomware_fit():
+    """Ransomware cost per breach using all ransomware-breach information (ranssoft >= 1 = ransom demanded).
+    Cost per breach X: zero with prob p0, else lognormal(mu + delta*Small+, sigma). Likelihood pieces:
+      A single: worst = ransomware (D 3), 1 demand        -> X in worst band
+      B other : >= 1 demand but worst incident another channel -> X <= upper edge of worst band (censored)
+      C multi : worst = ransomware, k >= 2 demands         -> max of k draws in worst band (k capped at 10)
+    Fits A only, A+B, A+B+C. Mean per breach Micro / Small+. Then: the top-band firms' own ransomware-cost answers,
+    and the A+B+C fit dropping each top-band firm."""
+    from scipy.optimize import minimize
+    from scipy.stats import norm
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band, D = d["band"].values, d["D"].values
+    w = d["weight"].fillna(d["weight"].median()).values
+    k = pd.to_numeric(r["ranssoft"], errors="coerce").values
+    k = np.where((k >= 0) & (k < 997), k, np.nan)
+    rc = pd.to_numeric(r["ranscost_bands"], errors="coerce").values
+    ok = ~np.isnan(band) & (k >= 1)
+    sA, sB, sC = ok & (D == 3) & (k == 1), ok & (D != 3) & ~np.isnan(D), ok & (D == 3) & (k >= 2)
+    sm = (size >= 2).astype(float)
+    print(f"A single {sA.sum()}, B worst-other {sB.sum()}, C multi-demand {sC.sum()}")
+
+    def F(x, mu, s, p0):          # cdf of X at x (x > 0)
+        return p0 + (1 - p0) * norm.cdf((np.log(x) - mu) / s)
+
+    def loglik(p, A, B, C, wn):
+        m0, delta, ls, lp = p
+        s, p0 = np.exp(ls), 1 / (1 + np.exp(-lp))
+        ll = 0.0
+        for sel, kind in ((A, "A"), (B, "B"), (C, "C")):
+            idx = np.where(sel)[0]
+            if len(idx) == 0:
+                continue
+            mu = m0 + delta * sm[idx]
+            b = band[idx].astype(int)
+            hi = np.array([EDGES[x][1] if x >= 2 else 1e-9 for x in b])
+            lo = np.array([EDGES[x][0] if x >= 2 else 1e-9 for x in b])
+            if kind == "A":
+                pr = np.where(b == 1, p0, F(hi, mu, s, p0) - F(lo, mu, s, p0))
+            elif kind == "B":
+                pr = np.where(b == 1, p0, F(hi, mu, s, p0))
+            else:
+                kk = np.minimum(k[idx], 10)
+                pr = np.where(b == 1, p0 ** kk, F(hi, mu, s, p0) ** kk - F(lo, mu, s, p0) ** kk)
+            ll += (wn[idx] * np.log(np.maximum(pr, 1e-300))).sum()
+        return ll
+
+    wn = w / w[ok].mean()
+
+    def fit(A, B, C):
+        o = minimize(lambda p: -loglik(p, A, B, C, wn), [7.0, 0.5, 0.7, -2.0], method="Nelder-Mead",
+                     options={"maxiter": 20000, "xatol": 1e-6, "fatol": 1e-8})
+        m0, delta, ls, lp = o.x
+        s, p0 = np.exp(ls), 1 / (1 + np.exp(-lp))
+        mean = [(1 - p0) * np.exp(m0 + delta * z + s ** 2 / 2) for z in (0, 1)]
+        return m0, delta, s, p0, mean
+
+    for lab, (A, B, C) in (("A only", (sA, sA & False, sA & False)), ("A + B", (sA, sB, sA & False)), ("A + B + C", (sA, sB, sC))):
+        m0, delta, s, p0, mean = fit(A, B, C)
+        print(f"  {lab:10s} median £{np.exp(m0):6,.0f}  size x{np.exp(delta):.1f}  sigma {s:.2f}  p0 {p0:.2f}   "
+              f"mean per breach Micro £{mean[0]:7,.0f}  Small+ £{mean[1]:7,.0f}")
+    top = np.where(ok & (band >= 10))[0]
+    print("\ntop-band ransomware-breach firms: group (A/B/C), worst band, own ransomware cost band (12-band, 1=<£100 ... 10=£50-100k), types hit")
+    for i in top:
+        g = "A" if sA[i] else ("B" if sB[i] else "C")
+        print(f"  firm {i}: {g}  worst {int(band[i])}  ranscost {rc[i] if rc[i] < 997 else 'NA'}  types {int(X[i].sum())}  size {int(size[i])}")
+    for i in top:
+        keep = np.ones(len(X), bool)
+        keep[i] = False
+        m0, delta, s, p0, mean = fit(sA & keep, sB & keep, sC & keep)
+        print(f"  A+B+C without firm {i}: sigma {s:.2f}  mean Micro £{mean[0]:7,.0f}  Small+ £{mean[1]:7,.0f}")
+
+
+if __name__ == "__main__" and "rans" in __import__("sys").argv:
+    ransomware_fit()
+
+
+def ransomware_fit_constrained():
+    """Ransomware A+B+C fit with the size shift fixed at the common factor (x1.7 from size_effect) and firm 505 removed
+    (worst £100k-500k but own ransomware cost < £100, 6 types hit: a broad compromise, not a ransomware cost);
+    with and without firm 1431 (the other top-band firm, micro, 3 types, no ransomware-cost answer)."""
+    from scipy.optimize import minimize
+    from scipy.stats import norm
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band, D = d["band"].values, d["D"].values
+    w = d["weight"].fillna(d["weight"].median()).values
+    k = pd.to_numeric(r["ranssoft"], errors="coerce").values
+    k = np.where((k >= 0) & (k < 997), k, np.nan)
+    ok = ~np.isnan(band) & (k >= 1)
+    sm = (size >= 2).astype(float)
+    delta = np.log(1.7)
+    wn = w / w[ok].mean()
+
+    def F(x, mu, s, p0):
+        return p0 + (1 - p0) * norm.cdf((np.log(x) - mu) / s)
+
+    def run(excl):
+        keep = ok.copy()
+        keep[list(excl)] = False
+        A, B, C = keep & (D == 3) & (k == 1), keep & (D != 3) & ~np.isnan(D), keep & (D == 3) & (k >= 2)
+        def nll(p):
+            m0, ls, lp = p
+            s, p0 = np.exp(ls), 1 / (1 + np.exp(-lp))
+            ll = 0.0
+            for sel, kind in ((A, "A"), (B, "B"), (C, "C")):
+                idx = np.where(sel)[0]
+                mu = m0 + delta * sm[idx]
+                b = band[idx].astype(int)
+                hi = np.array([EDGES[x][1] if x >= 2 else 1e-9 for x in b])
+                lo = np.array([EDGES[x][0] if x >= 2 else 1e-9 for x in b])
+                if kind == "A":
+                    pr = np.where(b == 1, p0, F(hi, mu, s, p0) - F(lo, mu, s, p0))
+                elif kind == "B":
+                    pr = np.where(b == 1, p0, F(hi, mu, s, p0))
+                else:
+                    kk = np.minimum(k[idx], 10)
+                    pr = np.where(b == 1, p0 ** kk, F(hi, mu, s, p0) ** kk - F(lo, mu, s, p0) ** kk)
+                ll += (wn[idx] * np.log(np.maximum(pr, 1e-300))).sum()
+            return -ll
+        o = minimize(nll, [7.0, 0.7, -2.0], method="Nelder-Mead", options={"maxiter": 20000, "xatol": 1e-6, "fatol": 1e-8})
+        m0, s, p0 = o.x[0], np.exp(o.x[1]), 1 / (1 + np.exp(-o.x[2]))
+        return m0, s, p0, [(1 - p0) * np.exp(m0 + delta * z + s ** 2 / 2) for z in (0, 1)]
+
+    for lab, ex in (("all firms", []), ("without 505", [505]), ("without 505 and 1431", [505, 1431])):
+        m0, s, p0, mean = run(ex)
+        print(f"  {lab:22s} median £{np.exp(m0):6,.0f}  sigma {s:.2f}  p0 {p0:.2f}  mean per breach Micro £{mean[0]:7,.0f}  Small+ £{mean[1]:7,.0f}")
+
+
+if __name__ == "__main__" and "ransc" in __import__("sys").argv:
+    ransomware_fit_constrained()
