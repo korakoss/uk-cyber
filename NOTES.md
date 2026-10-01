@@ -1511,3 +1511,11 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
   broad compromise (6-7 types): 356 Large, 505 Medium, 1689 Large -> broad-compromise uplift, not channel tails.
   uncorroborated: 1380 Small (imp+DoS; no outcomes, no impacts, restore none, only staff time £100k-500k) -> flag, sensitivity only.
   => the two heavy-weight micro firms driving the means (789, 1431) are well corroborated real events: keep them; dropping them is not a justified sensitivity. Large firms weigh 0.05 each nationally.
+
+## CURRENT MODEL (clean statement, 2026-10-01)
+Per firm (size s, frailty tier t), per channel c:
+1. Hit: whether c attacks the firm (flags). Frailty acts here (shared across channels); plus the broad-compromise uplift (frailty on cost at the top).
+2. Every hit may carry a small HANDLING cost (staff time, ~£150-300 mean, ~half £0). No gate beyond the hit.
+3. A hit becomes a MATERIAL BREACH (one gate) with prob q_c(s, t); multiple per year possible (Poisson-like rate, rare). Marker = Q56A outcome flags (all channels, incl. impersonation). Survey 'success' counts (engaged, successful, ransom demanded) are a broader, looser gate -> used only as evidence (volume independence, multiplicity), not as a second gate.
+4. Each material breach costs a draw from lognormal G_c: channel-specific median, ONE shared spread sigma (~2.2, from all 176 material firms), common size factor.
+Annual firm cost = sum of handling + material costs; observed via the worst incident (damage_bands, the full-cost concept; per-type cost questions are narrower and not used for pounds).
