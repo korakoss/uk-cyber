@@ -115,4 +115,22 @@ def subtract():
 
 
 if __name__ == "__main__":
-    {"fraud": fraud, "subtract": subtract}[sys.argv[1]]()
+    {"fraud": fraud, "subtract": subtract}.get(sys.argv[1], lambda: None)()
+
+
+def columns():
+    """Inventory of candidate columns for breach / impact information: labels of outcome1-13, impact1-14, and any
+    column mentioning insurance / claim / report / incident / restore / recover, with answered counts."""
+    sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+    _, meta = pyreadstat.read_sav(sav, metadataonly=True)
+    lab = meta.column_names_to_labels
+    r = aligned_raw()
+    keys = ("insur", "claim", "report", "incid", "recover", "outcome", "impact", "notif", "police", "action")
+    for c in meta.column_names:
+        if any(k in c.lower() for k in keys) and not c.lower().endswith(("_comb", "_comb1", "_comb2")):
+            n = int((pd.to_numeric(r[c], errors="coerce") == 1).sum()) if c in r else -1
+            print(f"{c:18s} yes={n:5d}  {str(lab.get(c))[-120:]}")
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "columns":
+    columns()
