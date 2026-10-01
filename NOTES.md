@@ -1474,3 +1474,9 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
   => only phishing's breach rate scales with size and frailty; the serious channels have constant breach rates given hit.
 - COST CONCEPTS (breach_layer.py concepts): per-type breach cost vs worst-incident cost, same firms. When the worst incident IS that channel: type cost > worst only 5-20%, median ratio 0.50-0.60 (takeover 10, DoS 8, malware 6, ransomware 21 firms); several huge gaps (type £50 vs worst £300k / £15k). Sums: ransomware £138k vs £513k; DoS £4.6k vs £325k.
   => per-type costs are a NARROWER concept (~half typically, and they miss the big tails). Price with the worst-incident concept; use per-type costs only to identify breach events / multiplicity.
+- COST PER BREACH (breach_layer.py cpb; worst-incident concept, weighted, midpoints):
+  phishing 1-engaged (27): mean £440 (Micro £350, Small+ £930), no top-band firms.
+  ransomware 1-demand (19): mean £35k, but £6k without the 2 top-band (£100k-500k) firms; never free; Small+ 41% >= £20k.
+  other serious 1-success (21): mean £9.4k, £1.7k without its 1 top-band firm; Micro £1.1k vs Small+ £35k (£3.5k w/o top).
+  impersonation collapsed (78): £525 (Micro £300, Small+ £1.2k), no top band.
+  => per-breach means are set by 3 top-band firms (ransomware 2, serious 1). Larger firms costlier in every channel (x2-5 w/o top band). Tail + size are the open cost questions.

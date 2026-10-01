@@ -144,3 +144,49 @@ def cost_concepts():
 
 if __name__ == "__main__" and "concepts" in __import__("sys").argv:
     cost_concepts()
+
+
+def cost_per_breach():
+    """Cost per breach on the worst-incident concept (damage_bands), per channel, from firms where the worst incident
+    is a single breach of that channel:
+      phishing:      phishing-only firms with exactly 1 engaged attack
+      ransomware:    worst incident ransomware (D 3) and exactly 1 ransom demand (ranssoft)
+      other serious: worst incident other serious (D 4) and exactly 1 success summed over tkvrsuc + dossoft + virussoft
+      impersonation: impersonation-only firms (collapsed: annual cost given hit, zeros included)
+    Survey-weighted band shares, weighted mean at band midpoints (and without the top observed band), Micro vs Small+."""
+    WM = {1: 0, 2: 50, 3: 300, 4: 750, 5: 3000, 6: 7500, 7: 15000, 8: 35000, 9: 75000, 10: 300000}
+    G = [(1, 1), (2, 3), (4, 5), (6, 7), (8, 13)]
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band, D = d["band"].values, d["D"].values
+    w = d["weight"].fillna(d["weight"].median()).values
+    num = lambda c: np.where((pd.to_numeric(r[c], errors="coerce").values >= 0) & (pd.to_numeric(r[c], errors="coerce").values < 997),
+                             pd.to_numeric(r[c], errors="coerce").values, np.nan)
+    only = X.sum(1) == 1
+    succ = np.column_stack([num(c) for c in ("tkvrsuc", "dossoft", "virussoft")])
+    s_os = np.where(np.isnan(succ).all(1), np.nan, np.nansum(succ, 1))
+    cells = {
+        "phishing (1 engaged)": only & (X[:, 0] == 1) & (num("phisheng") == 1),
+        "ransomware (1 demand)": (D == 3) & (num("ranssoft") == 1),
+        "other serious (1 success)": (D == 4) & (s_os == 1),
+        "impersonation (collapsed)": only & (X[:, SHORT.index("Imper")] == 1),
+    }
+    print("worst-incident cost, shares none / <£500 / £500-5k / £5k-20k / £20k+;  weighted mean £ (midpoints) [without top band]")
+    for lab, base in cells.items():
+        base = base & ~np.isnan(band)
+        for g, gm in (("all", np.ones(len(X), bool)), ("Micro", size == 1), ("Small+", size >= 2)):
+            m = base & gm
+            if m.sum() == 0:
+                continue
+            b, ww = band[m], w[m]
+            sh = [np.average((b >= a) & (b <= c), weights=ww) for a, c in G]
+            mid = np.array([WM[int(x)] for x in b])
+            notop = b < 10
+            mean_nt = np.average(mid[notop], weights=ww[notop]) if notop.any() else float("nan")
+            print(f"  {lab:27s} {g:6s} n {m.sum():3d}  " + " ".join(f"{v:4.2f}" for v in sh) +
+                  f"   mean £{np.average(mid, weights=ww):8,.0f} [£{mean_nt:7,.0f}]  top-band firms {int((b == 10).sum())}")
+
+
+if __name__ == "__main__" and "cpb" in __import__("sys").argv:
+    cost_per_breach()
