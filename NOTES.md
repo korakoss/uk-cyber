@@ -1546,3 +1546,16 @@ Annual firm cost = sum of handling + material costs; observed via the worst inci
   => one broad-compromise distribution is what the data support; the open question is its tail (empirical vs lognormal: x1.8).
 - I&S PAIR CHECK (broad_interaction.py ispair; material firms, tightened intervals): P(>=£5k): I&S with 3+ channels .33 (n68, mean £19.7k; middle-heavy: £500-5k .45); broad WITHOUT I&S .38 (n12, mean £46k incl. 1431; bimodal: .62 <£500, 0 in £500-5k, .38 >=£5k; malware-heavy .68); 2 channels without I&S .01 (n47); single channel .10 (n46).
   => breadth (3+) drives the tail rate in both broad subgroups; the subgroups differ in SHAPE: PIS-type spreading compromise = spread-out middle; ransomware/malware broad = bimodal (handled vs disaster), like ransomware itself. Second subgroup too thin (12) for its own distribution -> sensitivity.
+
+## OPEN QUESTIONS (2026-10-01, not yet understood)
+1. Worst incident vs annual total: only the worst is priced; crimecost check weak (narrower concept, n156). Multi-material-breach firms' second incidents unpriced except via the 1.0-1.17 sum/max read on per-type costs.
+2. Two cost questions disagree (per-type ~same or ~half, or floor '<£100'); recall vs itemisation unresolved -> factor ~2 either way.
+3. Handling vs material split: outcome flags mark 'material' imperfectly (other serious non-material incidents cost £4.3k mean); breach definition (success vs outcome) not reconciled across channels.
+4. Narrow-firm cost fit misfits low end (zero share); handling-cost layer has no parametric form yet.
+5. Broad compromises: causality (spread vs co-labelling) unknown; two subtypes by shape (spreading vs ransomware/malware disaster), second has 12 firms.
+6. Tail above observed values: empty >£500k bands as bound only; lognormal extrapolation x1.8 on broad mean; 1-2 corroborated micro firms carry much of the mean.
+7. Impersonation: no success count; collapsed; its material breaches look phishing-like (~4-6%) but per-event cost (~£10-19k) rests on one firm (789).
+8. Mass phishing breach rate vs targeted: subtraction noisy per tier; 'mass engagement same whether targeted' untested.
+9. Ransomware tick includes attempts (reversed tier effect); success = ransom demanded may miss encryption without demand.
+10. Frailty: how it enters the final model (tiers vs continuous) and whether breach rates beyond phishing depend on it - mostly flat but low power.
+11. Survey weighting/selection: success-count answer coverage, nonresponse to cost questions (74 firms partial components), sole traders excluded.
