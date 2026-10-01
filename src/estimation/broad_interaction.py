@@ -298,3 +298,35 @@ def broad_structure():
 
 if __name__ == "__main__" and "bstruct" in __import__("sys").argv:
     broad_structure()
+
+
+def is_pair():
+    """Is the excess tied to the impersonation + other-serious combination rather than breadth per se?
+    Material firms grouped by channel set: I&S present (with or without P / R), broad without I&S (e.g. PRS, PIR),
+    narrow pairs without I&S, single channel. Worst-cost shares on tightened intervals, P(>= £5k), weighted mean midpoint.
+    Also: which 'other serious' subtypes co-occur with I in the I&S group."""
+    X, size, band, D, oa, w = data()
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    m = (oa == 1) & ~np.isnan(band) & (nch >= 1)
+    IS = (C[:, 1] == 1) & (C[:, 3] == 1)
+    groups = {"I&S present, 2 ch (IS)": m & IS & (nch == 2), "I&S present, 3+ ch": m & IS & (nch >= 3),
+              "broad (3+) without I&S": m & ~IS & (nch >= 3), "2 ch without I&S": m & ~IS & (nch == 2),
+              "1 channel": m & (nch == 1)}
+    mid = (lo + hi) / 2
+    print("material firms: n, shares <£500 / £500-5k / £5k-20k / £20k+, P(>=£5k), weighted mean midpoint")
+    for g, mm in groups.items():
+        if mm.sum() == 0:
+            continue
+        sh = [np.average((mid[mm] >= a) & (mid[mm] < b), weights=w[mm]) for a, b in ((0, 500), (500, 5000), (5000, 20000), (20000, 1e9))]
+        print(f"  {g:26s} n {mm.sum():3d}  " + " ".join(f"{v:.2f}" for v in sh) + f"   P(>=£5k) {sh[2] + sh[3]:.2f}   mean £{np.average(mid[mm], weights=w[mm]):,.0f}")
+    sub = ["Malwr", "DoS", "BankH", "Takov", "AcOut", "AcStf", "Eavsd"]
+    for g in ("I&S present, 3+ ch", "broad (3+) without I&S"):
+        mm = groups[g]
+        print(f"\n  {g}: share hit by each serious subtype: " +
+              ", ".join(f"{s} {np.average(X[mm, SHORT.index(s)] == 1, weights=w[mm]):.2f}" for s in sub))
+
+
+if __name__ == "__main__" and "ispair" in __import__("sys").argv:
+    is_pair()
