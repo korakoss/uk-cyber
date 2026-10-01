@@ -1533,3 +1533,9 @@ Annual firm cost = sum of handling + material costs; observed via the worst inci
   P(worst >= £5k): 1-2 ch obs .08 pred .06; 3 ch obs .31 pred .05; 4 ch obs .45 pred .06; 3+ obs .34 pred .06.
   => multiplicity explains almost none of the broad excess. Broad compromises are a distinct, much costlier event class (or co-labelling of big incidents). Also: the wide sigma (~2.1) of earlier pooled fits came from broad firms; narrow firms' material breaches have sigma ~1.2.
   Model implication: treat broad compromise (3+ channels) as its own cost class with its own directly observed distribution (80 material firms), narrow channels with their own (narrow) distributions.
+- BROAD ANATOMY (broad_interaction.py anatomy; NC narrow >=£5k n24, BC broad >=£5k n46, BL broad <£1k n100):
+  BC = full compromise signature: mean material outcomes 3.3 (NC 1.0, BL 0.4); systems corrupted .46 (.03/.03), money stolen .30 (.07/0), data .23, temp access loss .50; restore >= 1 day .70 (NC .48, BL .01); reported to police/AF/NCA/ICO/NCSC .39 (.03/.06); frauds attributed to an attack .44 (.07/.09); phishing-worst cases that led to another attack/fraud .64 (n11; NC .32, BL .47).
+  Multiple successes 2+ channels: BC .25 vs NC .15, BL .06 - most BC firms have <=1 recorded success (success data incomplete).
+  Frequency: BC weekly+ .49 like BL .50 (broad = heavily attacked), once .19.
+  Size: BC not driven by large firms (Micro .56).
+  => costly broad compromises are a distinct event: an intrusion that spreads (entry via phishing/access -> systems corrupted, money stolen, fraud), not several independent breaches. Breadth itself = heavy exposure (BL shows breadth without damage).

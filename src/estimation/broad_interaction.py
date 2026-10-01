@@ -187,3 +187,68 @@ def combined_check():
 
 if __name__ == "__main__" and "combined" in __import__("sys").argv:
     combined_check()
+
+
+def anatomy():
+    """What are costly broad compromises? Attacked firms with a worst-incident band, three groups:
+    NC narrow (1-2 channels) & worst >= £5k;  BC broad (3+ channels) & worst >= £5k;  BL broad & worst < £1k.
+    Rows (weighted shares unless stated): firm size; frequency answer; chains (Q64B: phishing worst incident 'resulted in'
+    ..., asked only when the worst incident was phishing); frauds attributed to a cause (Q88D); number of channels with a
+    recorded success; outcomes / impacts counts; restore >= 1 day; reported to police / Action Fraud / NCA / ICO / NCSC."""
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    C = channels(X)
+    nch = C.sum(1)
+    ok = ~np.isnan(band) & (nch >= 1)
+    groups = {"NC narrow >=£5k": ok & (nch <= 2) & (band >= 6), "BC broad >=£5k": ok & (nch >= 3) & (band >= 6),
+              "BL broad <£1k": ok & (nch >= 3) & (band <= 3)}
+    def wmean(v, m):
+        mm = m & ~np.isnan(v)
+        return np.average(v[mm], weights=w[mm]) if mm.any() else float("nan")
+    rows = []
+    rows.append(("n firms", {g: int(m.sum()) for g, m in groups.items()}))
+    for k, lab in ((1, "size Micro"), (2, "size Small"), (3, "size Medium"), (4, "size Large")):
+        rows.append((lab, {g: wmean((size == k).astype(float), m) for g, m in groups.items()}))
+    fq = num("freq") if "freq" in r else np.full(len(X), np.nan)
+    import joint_five_channel as jf
+    fq = jf.load_firms()["freq"].values
+    for k, lab in ((1, "freq once"), (2, "freq <monthly"), (3, "freq monthly"), (4, "freq weekly+")):
+        v = np.where(np.isnan(fq), np.nan, (fq >= 4) if k == 4 else (fq == k)).astype(float)
+        rows.append((lab, {g: wmean(v, m) for g, m in groups.items()}))
+    ph_worst = D == 1
+    chain_items = {1: "ransomware", 2: "malware", 3: "DoS", 4: "bank hacking", 5: "impersonation", 8: "outsider access",
+                   10: "takeover", 11: "money moved", 13: "fake invoice paid", 14: "other attacks"}
+    anych = np.zeros(len(X))
+    for j in chain_items:
+        anych = np.maximum(anych, (num(f"disruptphish{j}") == 1).astype(float))
+    rows.append(("[worst=phishing] n", {g: int((m & ph_worst).sum()) for g, m in groups.items()}))
+    rows.append(("[worst=phishing] led to another attack/fraud", {g: wmean(np.where(ph_worst, anych, np.nan), m) for g, m in groups.items()}))
+    cont = np.column_stack([num(c) for c in ("fraudconta", "fraudcontb", "fraudcontc", "fraudcontd", "fraudconte",
+                                              "fraudcontf", "fraudcontg", "fraudconth", "fraudconti")])
+    anyfraud = (np.nansum(np.where((cont >= 1) & (cont < 997), cont, 0), 1) >= 1).astype(float)
+    rows.append(("fraud attributed to an attack (Q88D)", {g: wmean(anyfraud, m) for g, m in groups.items()}))
+    succ = np.column_stack([(num(c) >= 1) & (num(c) < 997) for c in ("phisheng", "tkvrsuc", "dossoft", "virussoft", "ranssoft")])
+    nsucc = succ.sum(1).astype(float)
+    for k, lab in ((0, "channels with a success: 0"), (1, "channels with a success: 1"), (2, "channels with a success: 2+")):
+        v = (nsucc >= 2) if k == 2 else (nsucc == k)
+        rows.append((lab, {g: wmean(v.astype(float), m) for g, m in groups.items()}))
+    oc = np.column_stack([num(f"outcome{j}") == 1 for j in (1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13)]).sum(1).astype(float)
+    im = np.column_stack([num(f"impact{j}") == 1 for j in (1, 2, 4, 7, 8, 9, 10, 13, 14)]).sum(1).astype(float)
+    rows.append(("mean # material outcomes", {g: wmean(oc, m) for g, m in groups.items()}))
+    rows.append(("mean # impacts (excl. staff time, new measures)", {g: wmean(im, m) for g, m in groups.items()}))
+    for j, lab in ((1, "outcome: systems corrupted"), (2, "outcome: personal data"), (6, "outcome: money stolen"),
+                   (7, "outcome: services down"), (4, "outcome: temp access loss"), (11, "outcome: paid attackers")):
+        rows.append((lab, {g: wmean((num(f"outcome{j}") == 1).astype(float), m) for g, m in groups.items()}))
+    rest = num("restore")
+    rows.append(("restore >= 1 day", {g: wmean(np.where((rest >= 1) & (rest < 997), (rest >= 3).astype(float), np.nan), m) for g, m in groups.items()}))
+    rep = np.column_stack([num(f"reportb{j}") == 1 for j in (1, 9, 12, 24, 48)]).any(1).astype(float)
+    rows.append(("reported to police/AF/NCA/ICO/NCSC", {g: wmean(rep, m) for g, m in groups.items()}))
+    names = list(groups)
+    print(f"{'':48s}" + "".join(f"{g:>18s}" for g in names))
+    for lab, vals in rows:
+        print(f"{lab:48s}" + "".join(f"{vals[g]:>18.2f}" if isinstance(vals[g], float) else f"{vals[g]:>18d}" for g in names))
+
+
+if __name__ == "__main__" and "anatomy" in __import__("sys").argv:
+    anatomy()
