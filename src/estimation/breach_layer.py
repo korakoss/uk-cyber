@@ -595,3 +595,40 @@ def cost_pairs_pattern():
 
 if __name__ == "__main__" and "pairs2" in __import__("sys").argv:
     cost_pairs_pattern()
+
+
+def floor_vs_fraud():
+    """Are the per-type '<£100' answers next to big worst incidents the fraud carve-out? Firms whose worst incident was
+    takeover / DoS / malware / ransomware and who answered that channel's cost question. Groups: floor-lower (per-type
+    code 1 '<£100', worst band >= 3 i.e. >= £100), other-lower, agree. Fraud indicators: fraud1-3 counts >= 1, outcomes
+    'money stolen' (6) / 'paid attackers' (11), fraud cost > 0 (fraudcost_bands >= 2), and frauds attributed to this
+    channel (Q88D: a ransomware, b malware, c DoS, i takeover)."""
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band, disr = d["band"].values, d["disrupta"].values
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    fr = np.column_stack([num(c) for c in ("fraud1", "fraud2", "fraud3")])
+    anyfraud = np.nansum(np.where((fr >= 1) & (fr < 997), 1, 0), 1) >= 1
+    o6, o11 = num("outcome6") == 1, num("outcome11") == 1
+    fcost = (num("fraudcost_bands") >= 2) & (num("fraudcost_bands") <= 13)
+    rows = []
+    for lab, cv, codes, cont in (("takeover", "tkvrcost_bands", [11], "fraudconti"), ("DoS", "doscost_bands", [3], "fraudcontc"),
+                                 ("malware", "viruscost_bands", [2], "fraudcontb"), ("ransomware", "ranscost_bands", [1], "fraudconta")):
+        c = num(cv)
+        att = num(cont)
+        for i in np.where((c >= 1) & (c <= 12) & ~np.isnan(band) & np.isin(disr, codes))[0]:
+            grp = "floor-lower" if (c[i] == 1 and band[i] >= 3) else ("agree/other" if True else "")
+            rows.append((lab, i, grp, int(c[i]), int(band[i]), anyfraud[i], o6[i], o11[i], fcost[i],
+                         att[i] if 0 < att[i] < 997 else 0))
+    df = pd.DataFrame(rows, columns=["channel", "firm", "group", "type_band", "worst_band", "fraud_q88a", "money_stolen",
+                                     "paid_attackers", "fraud_cost", "frauds_attrib_here"])
+    df["any_fraud_signal"] = df[["fraud_q88a", "money_stolen", "paid_attackers", "fraud_cost"]].any(axis=1) | (df["frauds_attrib_here"] > 0)
+    print(df.groupby("group")[["fraud_q88a", "money_stolen", "paid_attackers", "fraud_cost", "any_fraud_signal"]].mean().round(2).assign(
+        n=df.groupby("group").size()).to_string())
+    print("\nfloor-lower firms:")
+    print(df[df.group == "floor-lower"].to_string(index=False))
+
+
+if __name__ == "__main__" and "floor" in __import__("sys").argv:
+    floor_vs_fraud()
