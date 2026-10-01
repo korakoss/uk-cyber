@@ -252,3 +252,49 @@ def anatomy():
 
 if __name__ == "__main__" and "anatomy" in __import__("sys").argv:
     anatomy()
+
+
+def broad_structure():
+    """Within broad (3+ channel) firms with a material breach: does the cost distribution vary by channel combination,
+    by number of channels, by size? Tightened intervals; zero cost as weighted share; positive part interval-censored
+    lognormal. Base: one mu, one sigma. Added one at a time: ransomware present, 4 channels (vs 3), Small+, worst
+    channel (D) dummies. LR tests (weighted pseudo-likelihood, approximate). Also per-combination tabulation."""
+    X, size, band, D, oa, w = data()
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    m = (oa == 1) & ~np.isnan(band) & (nch >= 3)
+    print(f"broad material firms: {m.sum()};  zero-cost share {np.average(band[m] == 1, weights=w[m]):.2f}")
+    combo = np.array(["".join(c for c, f in zip("PIRS", row) if f) for row in C.astype(int)])
+    print("\nby channel combination: n, weighted shares <£500 / £500-5k / £5k-20k / £20k+, weighted mean of interval midpoints")
+    for cb in sorted(set(combo[m]), key=lambda s: -(combo[m] == s).sum()):
+        mm = m & (combo == cb)
+        mid = (lo[mm] + hi[mm]) / 2
+        sh = [np.average((mid >= a) & (mid < b), weights=w[mm]) for a, b in ((0, 500), (500, 5000), (5000, 20000), (20000, 1e9))]
+        print(f"  {cb:5s} n {mm.sum():3d}  " + " ".join(f"{v:.2f}" for v in sh) + f"   mean £{np.average(mid, weights=w[mm]):,.0f}")
+    pos = m & (band >= 2)
+    L, H = np.log(np.maximum(lo[pos], 1)), np.log(hi[pos])
+    ww = w[pos] / w[pos].mean()
+    covs = {"ransomware present": C[pos, 2], "4 channels": (nch[pos] == 4).astype(float), "Small+": (size[pos] >= 2).astype(float),
+            "worst channel (D) dummies": np.column_stack([(D[pos] == k).astype(float) for k in (2, 3, 4)])}
+
+    def fit(Z):
+        Z = np.column_stack([np.ones(pos.sum())] + ([Z] if Z is not None else []))
+        def nll(p):
+            mu, s = Z @ p[:-1], np.exp(p[-1])
+            return -(ww * np.log(np.maximum(norm.cdf((H - mu) / s) - norm.cdf((L - mu) / s), 1e-300))).sum()
+        o = minimize(nll, np.r_[8.0, np.zeros(Z.shape[1] - 1), 0.5], method="Nelder-Mead", options={"maxiter": 20000, "xatol": 1e-6, "fatol": 1e-8})
+        o = minimize(nll, o.x, method="BFGS")
+        return -o.fun, o.x
+    l0, p0 = fit(None)
+    print(f"\npositive-cost broad breaches n {pos.sum()}: base median £{np.exp(p0[0]):,.0f}, sigma {np.exp(p0[-1]):.2f}, "
+          f"mean (positive part) £{np.exp(p0[0] + np.exp(p0[-1]) ** 2 / 2):,.0f}")
+    for nm, Z in covs.items():
+        l1, p1 = fit(Z)
+        k = 1 if Z.ndim == 1 else Z.shape[1]
+        eff = ", ".join(f"x{np.exp(v):.2f}" for v in p1[1:1 + k])
+        print(f"  + {nm:28s} effect {eff:24s} LR p {chi2.sf(2 * (l1 - l0), k):.3f}   sigma {np.exp(p1[-1]):.2f}")
+
+
+if __name__ == "__main__" and "bstruct" in __import__("sys").argv:
+    broad_structure()

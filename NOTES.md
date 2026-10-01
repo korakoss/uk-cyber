@@ -1539,3 +1539,8 @@ Annual firm cost = sum of handling + material costs; observed via the worst inci
   Frequency: BC weekly+ .49 like BL .50 (broad = heavily attacked), once .19.
   Size: BC not driven by large firms (Micro .56).
   => costly broad compromises are a distinct event: an intrusion that spreads (entry via phishing/access -> systems corrupted, money stolen, fraud), not several independent breaches. Breadth itself = heavy exposure (BL shows breadth without damage).
+- BROAD STRUCTURE (broad_interaction.py bstruct; 80 broad material firms, zero-cost .06):
+  combos: PIS 47 (mean midpoint £19.9k), PIRS 21 (£19.2k), PRS 9 (£5.0k), PIR 3 (£320k, includes 1431).
+  Lognormal on tightened intervals (76 positive): median £2.3k, sigma 2.33 -> lognormal mean £36k vs empirical midpoint mean ~£20k (tail extrapolation x1.8).
+  No detectable heterogeneity: ransomware present x0.79 p .66; 4 vs 3 channels x1.37 p .65; Small+ x1.31 p .64; worst-channel dummies p .064 (impersonation-worst x5 = firm 789).
+  => one broad-compromise distribution is what the data support; the open question is its tail (empirical vs lognormal: x1.8).
