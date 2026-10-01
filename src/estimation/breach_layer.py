@@ -545,3 +545,53 @@ def cost_components():
 
 if __name__ == "__main__" and "comp" in __import__("sys").argv:
     cost_components()
+
+
+def cost_pairs_pattern():
+    """Per-type breach cost vs worst-incident cost, pooled over takeover / DoS / malware / ransomware, for firms whose
+    worst incident was that channel. Lower bound / upper bound of each band; classify each pair as clearly lower
+    (type band entirely below worst band), overlapping, clearly higher. Also vs worst-incident components:
+    external payments (during + after), staff time, disruption: which component does the type cost track?"""
+    TB = {1: (0, 100), 2: (100, 250), 3: (250, 500), 4: (500, 1000), 5: (1000, 2000), 6: (2000, 5000), 7: (5000, 10000),
+          8: (10000, 20000), 9: (20000, 50000), 10: (50000, 100000), 11: (100000, 250000), 12: (250000, 1e9)}
+    WB = {1: (0, 0), 2: (0, 100), 3: (100, 500), 4: (500, 1000), 5: (1000, 5000), 6: (5000, 10000), 7: (10000, 20000),
+          8: (20000, 50000), 9: (50000, 100000), 10: (100000, 500000), 11: (500000, 1e6), 12: (1e6, 5e6), 13: (5e6, 1e9)}
+    MID = {k: (a + b) / 2 if b < 1e9 else a for k, (a, b) in WB.items()}
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band, disr = d["band"].values, d["disrupta"].values
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    comp = {c: num(c) for c in ("damagedirsx_bands", "damagedirlx_bands", "damagestaffx_bands", "damageindx_bands")}
+    rows = []
+    for lab, cv, codes in (("takeover", "tkvrcost_bands", [11]), ("DoS", "doscost_bands", [3]),
+                           ("malware", "viruscost_bands", [2]), ("ransomware", "ranscost_bands", [1])):
+        c = num(cv)
+        for i in np.where((c >= 1) & (c <= 12) & ~np.isnan(band) & np.isin(disr, codes))[0]:
+            cm = {k: (MID[int(v[i])] if 1 <= v[i] <= 13 else np.nan) for k, v in comp.items()}
+            rows.append((lab, TB[int(c[i])], WB[int(band[i])], cm))
+    lower = sum(t[1] <= w[0] and not (t[1] == w[0] == 0) for _, t, w, _ in rows)
+    higher = sum(t[0] >= w[1] and w[1] > 0 for _, t, w, _ in rows)
+    print(f"pairs {len(rows)}: per-type clearly LOWER {lower}, overlapping {len(rows) - lower - higher}, clearly HIGHER {higher}")
+    for lab in ("takeover", "DoS", "malware", "ransomware"):
+        rr = [x for x in rows if x[0] == lab]
+        lo = sum(t[1] <= w[0] and not (t[1] == w[0] == 0) for _, t, w, _ in rr)
+        hi = sum(t[0] >= w[1] and w[1] > 0 for _, t, w, _ in rr)
+        print(f"  {lab:10s} n {len(rr):2d}  lower {lo:2d}  overlap {len(rr) - lo - hi:2d}  higher {hi:2d}")
+    print("\nwhich worst-incident component does the per-type cost (midpoint) sit closest to? (log distance, pairs with all components)")
+    tmid = lambda t: (t[0] + t[1]) / 2 if t[1] < 1e9 else t[0]
+    names = {"ext payments (during+after)": lambda cm: cm["damagedirsx_bands"] + cm["damagedirlx_bands"],
+             "staff time": lambda cm: cm["damagestaffx_bands"], "disruption": lambda cm: cm["damageindx_bands"],
+             "worst total": lambda cm: sum(cm.values())}
+    full = [x for x in rows if not any(np.isnan(v) for v in x[3].values())]
+    for nm, fn in names.items():
+        dist = [abs(np.log10(max(tmid(t), 10)) - np.log10(max(fn(cm), 10))) for _, t, _, cm in full]
+        print(f"  {nm:28s} median |log10 gap| {np.median(dist):.2f}  (n {len(full)})")
+    print("\npairs (type band £ range | worst band £ range | ext / staff / disruption midpoints):")
+    for lab, t, w, cm in rows:
+        print(f"  {lab:10s} {t[0]:>7,.0f}-{t[1]:<9,.0f} | {w[0]:>7,.0f}-{w[1]:<9,.0f} | "
+              f"{cm['damagedirsx_bands'] + cm['damagedirlx_bands']:>9,.0f} / {cm['damagestaffx_bands']:>9,.0f} / {cm['damageindx_bands']:>9,.0f}")
+
+
+if __name__ == "__main__" and "pairs2" in __import__("sys").argv:
+    cost_pairs_pattern()
