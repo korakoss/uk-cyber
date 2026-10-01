@@ -157,3 +157,54 @@ def top_band_profiles():
 
 if __name__ == "__main__" and "top" in __import__("sys").argv:
     top_band_profiles()
+
+
+WB = {1: (0, 0), 2: (0, 100), 3: (100, 500), 4: (500, 1000), 5: (1000, 5000), 6: (5000, 10000), 7: (10000, 20000),
+      8: (20000, 50000), 9: (50000, 100000), 10: (100000, 500000), 11: (500000, 1e6), 12: (1e6, 5e6), 13: (5e6, 2e7)}
+
+
+def components_tighten():
+    """Worst-incident cost components (payments during / after, staff time, disruption): coverage among attacked firms
+    with a worst band; consistency of the total band with the summed component range; tightened cost interval
+    (total band intersected with summed-components range); effect on the top band and on the weighted mean."""
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    comp = ["damagedirsx_bands", "damagedirlx_bands", "damagestaffx_bands", "damageindx_bands"]
+    V = np.column_stack([pd.to_numeric(r[c], errors="coerce").values for c in comp])
+    valid = (V >= 1) & (V <= 13)
+    ok = ~np.isnan(band)
+    nv = valid[ok].sum(1)
+    print(f"attacked firms with worst band: {ok.sum()}; components valid: all 4 {int((nv == 4).sum())}, 1-3 {int(((nv > 0) & (nv < 4)).sum())}, none {int((nv == 0).sum())}")
+    full = ok & valid.all(1)
+    lo = np.array([sum(WB[int(V[i, j])][0] for j in range(4)) if full[i] else np.nan for i in range(len(V))])
+    hi = np.array([sum(WB[int(V[i, j])][1] for j in range(4)) if full[i] else np.nan for i in range(len(V))])
+    tlo = np.array([WB[int(b)][0] if not np.isnan(b) else np.nan for b in band])
+    thi = np.array([WB[int(b)][1] if not np.isnan(b) else np.nan for b in band])
+    above = full & (tlo > hi)          # total band entirely above parts range
+    below = full & (thi < lo)          # total band entirely below parts range
+    inside = full & ~above & ~below
+    print(f"consistency (all 4 components): overlap {int(inside.sum())}, total ABOVE parts {int(above.sum())}, total BELOW parts {int(below.sum())}")
+    # is the total the derived sum? band of summed midpoints vs reported band
+    mid = lambda b: (WB[int(b)][0] + WB[int(b)][1]) / 2
+    sm = np.array([sum(mid(V[i, j]) for j in range(4)) if full[i] else np.nan for i in range(len(V))])
+    sm_band = np.array([next(k for k, (a, c) in WB.items() if (a <= s <= c) and not (k == 1 and s > 0)) if not np.isnan(s) else np.nan for s in sm])
+    print(f"band of summed component midpoints == reported total band: {np.mean(sm_band[full] == band[full]):.2f}")
+    for nm, m in (("total above parts", above), ("total below parts", below)):
+        if m.any():
+            print(f"  {nm}: reported total bands {pd.Series(band[m]).value_counts().sort_index().to_dict()}")
+    nlo, nhi = np.where(inside, np.maximum(tlo, lo), tlo), np.where(inside, np.minimum(thi, hi), thi)
+    pos = full & inside & (band >= 2)
+    shrink = np.median(((nhi - nlo) / np.maximum(thi - tlo, 1))[pos])
+    print(f"tightened interval width / band width, median over positive-cost consistent firms: {shrink:.2f}")
+    print("\ntop band (£100k-500k) firms: original vs tightened interval")
+    for i in np.where(ok & (band == 10))[0]:
+        print(f"  firm {i:5d}  {NAMES[int(D[i]) - 1] if not np.isnan(D[i]) else 'NA':14s} weight {w[i]:.2f}  "
+              f"[{tlo[i]:,.0f}, {thi[i]:,.0f}] -> [{nlo[i]:,.0f}, {nhi[i]:,.0f}]" + ("" if full[i] else "  (components incomplete)"))
+    m0 = ok & (band >= 1)
+    old = np.average((tlo + thi)[m0] / 2, weights=w[m0])
+    new = np.average((nlo + nhi)[m0] / 2, weights=w[m0])
+    print(f"\nweighted mean worst-incident cost (interval midpoints), attacked firms: original £{old:,.0f}  tightened £{new:,.0f}")
+
+
+if __name__ == "__main__" and "tighten" in __import__("sys").argv:
+    components_tighten()
