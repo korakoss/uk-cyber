@@ -496,3 +496,52 @@ def ransomware_fit_constrained():
 
 if __name__ == "__main__" and "ransc" in __import__("sys").argv:
     ransomware_fit_constrained()
+
+
+def cost_components():
+    """What are the cheap vs expensive worst incidents made of? damage_bands is built from four components:
+    external payments during (damagedirsx) and after (damagedirlx) the incident, staff time (damagestaffx), and damage /
+    disruption (damageindx). Per worst-incident channel (D) and cost group (<£500 / £500-5k / £5k+): share of firms
+    with each component > 0, mean component midpoints, restoration time (Q71), and for ransomware ransom paid (Q83J)."""
+    import glob
+    import pyreadstat
+    sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+    _, meta = pyreadstat.read_sav(sav, metadataonly=True)
+    print("restore labels:", meta.variable_value_labels.get("restore"))
+    print("ranspayyn labels:", meta.variable_value_labels.get("ranspayyn"))
+    print("component scale (damagestaffx):", meta.variable_value_labels.get("damagestaffx_bands"))
+    MID = {1: 0, 2: 50, 3: 300, 4: 750, 5: 3000, 6: 7500, 7: 15000, 8: 35000, 9: 75000, 10: 300000, 11: 750000,
+           12: 3e6, 13: 5e6}
+    X, _, size = load()
+    d = f.load_firms()
+    r = aligned_raw()
+    band, D = d["band"].values, d["D"].values
+    comp = ["damagedirsx_bands", "damagedirlx_bands", "damagestaffx_bands", "damageindx_bands"]
+    cn = ["ext-during", "ext-after", "staff", "disruption"]
+    V = np.column_stack([pd.to_numeric(r[c], errors="coerce").values for c in comp])
+    V = np.where((V >= 1) & (V <= 13), V, np.nan)
+    rest = pd.to_numeric(r["restore"], errors="coerce").values
+    pay = pd.to_numeric(r["ranspayyn"], errors="coerce").values
+    chn = {1: "phishing", 2: "impersonation", 3: "ransomware", 4: "other serious"}
+    for code in (3, 4, 2, 1):
+        print(f"\nWORST INCIDENT = {chn[code].upper()}")
+        for gl, lo, hi in (("<£500", 2, 3), ("£500-5k", 4, 5), ("£5k+", 6, 13)):
+            m = (D == code) & (band >= lo) & (band <= hi)
+            if m.sum() == 0:
+                continue
+            Vm = V[m]
+            has = [np.mean(Vm[:, j][~np.isnan(Vm[:, j])] > 1) if (~np.isnan(Vm[:, j])).any() else float("nan") for j in range(4)]
+            mean = [np.nanmean([MID[int(x)] for x in Vm[:, j] if not np.isnan(x)]) if (~np.isnan(Vm[:, j])).any() else float("nan") for j in range(4)]
+            rs = rest[m]
+            rs = rs[(rs >= 1) & (rs < 997)]
+            line = (f"  {gl:8s} n {m.sum():3d}  share >0: " + " ".join(f"{n} {h:.2f}" for n, h in zip(cn, has)) +
+                    "   mean £: " + " ".join(f"{n} {v:,.0f}" for n, v in zip(cn, mean)) +
+                    "   restore codes: " + " ".join(f"{int(k)}:{int((rs == k).sum())}" for k in np.unique(rs)))
+            if code == 3:
+                p = pay[m]
+                line += f"   ransom paid (Q83J codes): " + str(pd.Series(p[(p > 0) & (p < 997)]).value_counts().to_dict())
+            print(line)
+
+
+if __name__ == "__main__" and "comp" in __import__("sys").argv:
+    cost_components()

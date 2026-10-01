@@ -1493,3 +1493,7 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
   Top-band firms: 505 (Medium, 6 types hit, own ransomware cost <£100) = broad compromise, not ransomware cost -> exclude/reassign to broad uplift. 1431 (Micro, 3 types, no ransomware-cost answer) is the one real driver.
   Constrained (size x1.7 fixed, 505 out): mean per breach Micro £11k / Small+ £19k; also without 1431: £1.9k / £3.2k. Lognormal forced to median ~£70, sigma 3.2 -> shape is wrong: ransomware costs are bimodal (cheap <£500 cluster 42%, real-event cluster >= £5k 43%).
   => ransomware per-breach mean ~£2k-11k (Micro), hinging on one micro firm; use empirical bands (no lognormal) + firm-1431 sensitivity as the range.
+- COST COMPONENTS (breach_layer.py comp; damage_bands = external payments during + after + staff time + disruption; Q71 restore time):
+  Cheap (<£500) worst incidents in EVERY channel = staff-time handling: staff >0 in 88-98%, external payments 4-24%, mean staff ~£130, restore 'no time' / '<1 day' (phishing 159/163, imp 95/96, ransomware 7/8).
+  Expensive (£5k+) ransomware (16): external payments during 73% / after 86%, means £33k / £71k / staff £48k; restore 1 day-1 month+ for 14/16. No firm paid a ransom (all 'No').
+  => ransomware's bimodality = two event types: handled attempt (staff time ~£150, restored same day) vs real event (external payments, days-weeks down). Restore time is an independent marker. Cost model for ransomware: P(real | demand) x cost of real event + handling cost.
