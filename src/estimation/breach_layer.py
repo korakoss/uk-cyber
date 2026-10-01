@@ -268,3 +268,96 @@ def size_effect():
 
 if __name__ == "__main__" and "size" in __import__("sys").argv:
     size_effect()
+
+
+def tail_check():
+    """How fragile are the per-breach means? Base model on the pooled single-breach firms: P(cost > 0) per channel
+    (weighted share), positive costs interval-censored lognormal with channel mu, common sigma, common Small+ shift.
+    Mean per breach = P(>0) * exp(mu + shift + sigma^2/2). Variants:
+      drop-k   : drop each top-band (£100k-500k) firm, and all of them
+      sep-sigma: channel-specific sigma
+      cap500k  : lognormal renormalised below £500k (nothing above the offered-but-empty bands)
+      sigma-all: sigma fixed at the value fitted on ALL attacked firms' worst incidents (channel of worst incident as mu)."""
+    from scipy.optimize import minimize
+    from scipy.stats import norm
+    names = ["phishing", "ransomware", "other serious", "impersonation"]
+    K = 4
+    ch, band, w, sm = single_breach_cells()
+    w = w / w.mean()
+
+    def fit(ch, band, w, sm, sep_sigma=False, fixed_sigma=None):
+        pos = band >= 2
+        lo = np.log([EDGES[b][0] for b in band[pos]])
+        hi = np.log([EDGES[b][1] for b in band[pos]])
+        C, s, ww = np.eye(K)[ch[pos]], sm[pos], w[pos]
+        def nll(p):
+            mu = C @ p[:K] + p[K] * s
+            if fixed_sigma is not None:
+                sg = np.full(len(mu), fixed_sigma)
+            elif sep_sigma:
+                sg = C @ np.exp(p[K + 1:K + 1 + K])
+            else:
+                sg = np.full(len(mu), np.exp(p[K + 1]))
+            return -(ww * np.log(np.maximum(norm.cdf((hi - mu) / sg) - norm.cdf((lo - mu) / sg), 1e-300))).sum()
+        npar = K + 1 + (0 if fixed_sigma is not None else (K if sep_sigma else 1))
+        p0 = np.r_[np.full(K, 6.0), 0.5, np.full(npar - K - 1, 0.7)]
+        o = minimize(nll, p0, method="Nelder-Mead", options={"maxiter": 40000, "xatol": 1e-6, "fatol": 1e-8})
+        o = minimize(nll, o.x, method="BFGS")
+        p = o.x
+        if fixed_sigma is not None:
+            sig = np.full(K, fixed_sigma)
+        elif sep_sigma:
+            sig = np.exp(p[K + 1:K + 1 + K])
+        else:
+            sig = np.full(K, np.exp(p[K + 1]))
+        ppos = np.array([np.average(band[ch == k] >= 2, weights=w[ch == k]) for k in range(K)])
+        return p[:K], p[K], sig, ppos
+
+    def means(mu, shift, sig, ppos, cap=None):
+        out = []
+        for k in range(K):
+            row = []
+            for sz in (0.0, 1.0):
+                m = mu[k] + shift * sz
+                e = np.exp(m + sig[k] ** 2 / 2)
+                if cap is not None:
+                    lu = np.log(cap)
+                    e = e * norm.cdf((lu - m - sig[k] ** 2) / sig[k]) / norm.cdf((lu - m) / sig[k])
+                row.append(ppos[k] * e)
+            out.append(row)
+        return np.array(out)
+
+    def show(lab, M, extra=""):
+        print(f"  {lab:28s} " + "  ".join(f"{names[k][:10]:>10s} £{M[k, 0]:>8,.0f}/{M[k, 1]:>8,.0f}" for k in range(K)) + extra)
+
+    print("mean cost per breach, Micro / Small+")
+    mu, sh, sig, pp = fit(ch, band, w, sm)
+    show("base (common sigma)", means(mu, sh, sig, pp), f"   sigma {sig[0]:.2f}, size x{np.exp(sh):.1f}")
+    show("cap at £500k", means(mu, sh, sig, pp, cap=5e5))
+    top = np.where(band >= 10)[0]
+    for i in top:
+        keep = np.ones(len(ch), bool)
+        keep[i] = False
+        r = fit(ch[keep], band[keep], w[keep], sm[keep])
+        show(f"drop top-band firm ({names[ch[i]][:10]})", means(*r), f"   sigma {r[2][0]:.2f}")
+    keep = band < 10
+    r = fit(ch[keep], band[keep], w[keep], sm[keep])
+    show("drop all top-band firms", means(*r), f"   sigma {r[2][0]:.2f}")
+    r = fit(ch, band, w, sm, sep_sigma=True)
+    show("channel-specific sigma", means(*r), "   sigmas " + "/".join(f"{x:.2f}" for x in r[2]))
+
+    X, _, size = load()
+    d = f.load_firms()
+    b_all, D = d["band"].values, d["D"].values
+    w_all = d["weight"].fillna(d["weight"].median()).values
+    lab_map = {1: 0, 3: 1, 4: 2, 2: 3}
+    m = ~np.isnan(b_all) & ~np.isnan(D)
+    ch_a = np.array([lab_map[int(x)] for x in D[m]])
+    _, _, sig_all, _ = fit(ch_a, b_all[m].astype(int), w_all[m] / w_all[m].mean(), (size[m] >= 2).astype(float))
+    print(f"  (sigma fitted on all {m.sum()} attacked firms' worst incidents: {sig_all[0]:.2f})")
+    r = fit(ch, band, w, sm, fixed_sigma=sig_all[0])
+    show("sigma from all firms", means(*r))
+
+
+if __name__ == "__main__" and "tail" in __import__("sys").argv:
+    tail_check()

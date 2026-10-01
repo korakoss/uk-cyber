@@ -1483,3 +1483,9 @@ does NOT fit the source split. Attack counts leave the money path (evidence only
 - SIZE EFFECT ON COST PER BREACH (breach_layer.py size; 145 pooled single-breach firms; logistic for zero + interval-censored lognormal for positives, channel mu, common sigma 2.08):
   P(no cost): Small+ odds x0.69, p 0.41; positive cost: common Small+ shift x1.7 (log +0.51), p 0.39; channel-specific shifts not better (p 0.35): phishing x1.7, ransomware x8.3 (n18), serious x2.6, impersonation x0.5.
   => size effect on per-breach cost not resolved by the data; carry ONE common factor (~x1.7, wide uncertainty) rather than per-channel cells. Micro medians: phishing £250, ransomware £1.6k, serious £700, impersonation £60 (sigma 2.1 -> means ~9x median).
+- TAIL CHECK (breach_layer.py tail; mean cost per breach Micro/Small+ from interval-censored lognormal):
+  base common sigma 2.08: phishing £1.2k/1.9k, ransomware £13.5k/22k, serious £5.1k/8.4k, impersonation £210/340. Common sigma INFLATES phishing (empirical ~£440, no top band).
+  channel-specific sigma (1.17/2.56/1.77/2.34): phishing £300/520, ransomware £40k/70k, serious £2.8k/5.0k, imp £340/590.
+  cap £500k: ransomware -25%. Dropping one particular ransomware top-band firm halves ransomware (£6.3k); all 3 top-band dropped: ransomware £5.5k, serious £3.0k.
+  sigma from all 993 worst incidents 2.12 (pooled; ~base).
+  => phishing/impersonation stable (~£200-500); serious £3-5k; RANSOMWARE £5.5k-40k (x7 range) hinges on its own sigma (18 positive firms) and one firm. Ransomware per-breach cost is the dominant open uncertainty.
