@@ -1559,3 +1559,5 @@ Annual firm cost = sum of handling + material costs; observed via the worst inci
 9. Ransomware tick includes attempts (reversed tier effect); success = ransom demanded may miss encryption without demand.
 10. Frailty: how it enters the final model (tiers vs continuous) and whether breach rates beyond phishing depend on it - mostly flat but low power.
 11. Survey weighting/selection: success-count answer coverage, nonresponse to cost questions (74 firms partial components), sole traders excluded.
+USER SCORECARD on open questions: 1 very important (must examine); 2 bugs but noncentral; 3 a bit important; 4 probably doing something stupid -> redo that part; 5 good question, maybe important; 6 very important; 7 must do better; 8 probably sucks, look at; 9 look at; 10 look at; 11 deferred after core work.
+Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst vs annual total) -> 6 (tail) -> 7, 8, 9 -> 10, 3, 5 -> 2, 11.
