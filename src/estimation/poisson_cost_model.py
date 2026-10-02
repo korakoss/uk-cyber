@@ -335,3 +335,45 @@ def gof(R=400):
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "gof":
     gof()
+
+
+# --- Details of the one misfitting cell (IS, no outcome flag) -----------------------------------------------------
+# Per firm: size, weight, types hit, worst band and tightened interval, components, outcomes, impacts, restore,
+# external reporting, model log-lik. Run: ... poisson_cost_model.py iscell
+
+def is_cell():
+    import pandas as pd
+    from latent_on_streams import aligned_raw
+    from type_cooccurrence_structure import load, SHORT
+    D = setup()
+    p = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_params.npy")
+    fl = firm_ll(p, D)
+    X, _, size = load()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    olab = {1: "systems corrupted", 2: "personal data", 3: "files lost", 4: "temp access loss", 5: "assets/IP",
+            6: "money stolen", 7: "services down", 8: "3rd-party loss", 11: "paid attackers", 12: "devices damaged",
+            13: "accounts misused"}
+    ilab = {1: "staff stopped", 2: "revenue loss", 3: "staff time", 4: "recovery costs", 5: "new measures", 7: "fines",
+            8: "reputation", 9: "no service", 10: "deterred", 13: "complaints", 14: "compensation"}
+    rlab = {1: "none", 2: "<1 day", 3: "1d-1wk", 4: "1wk-1mo", 5: "1mo+", 6: "not yet"}
+    comp = ["damagedirsx_bands", "damagedirlx_bands", "damagestaffx_bands", "damageindx_bands"]
+    m = np.where((D["sets"] == "IS") & (D["oa"] == 0))[0]
+    print(f"IS outcome-0 cell: {len(m)} firms, total weight {D['w'][m].sum():.2f}")
+    for k in m[np.argsort(-D["hi"][m])]:
+        i = D["idx"][k]
+        types = [SHORT[j] for j in range(X.shape[1]) if X[i, j] == 1]
+        oc = [olab[j] for j in olab if num(f"outcome{j}")[i] == 1]
+        im = [ilab[j] for j in ilab if num(f"impact{j}")[i] == 1]
+        rest = num("restore")[i]
+        cp = [num(c)[i] for c in comp]
+        print(f"\nrow {i}: {['', 'Micro', 'Small', 'Medium', 'Large'][int(size[i])]}, weight {D['w'][k]:.2f} (share of cell "
+              f"{D['w'][k] / D['w'][m].sum():.2f}), worst £{D['lo'][k]:,.0f}-{D['hi'][k]:,.0f}, model loglik {fl[k]:.2f}")
+        print(f"  types: {', '.join(types)};  outcomes: {', '.join(oc) or '-'};  impacts: {', '.join(im) or '-'}")
+        print(f"  restore: {rlab.get(int(rest), rest) if not np.isnan(rest) else 'NA'};  reported externally: {num('reporta')[i]};  "
+              "components (ext-during/ext-after/staff/disruption, band): " +
+              " / ".join(str(int(x)) if not np.isnan(x) and x < 997 else "NA" for x in cp))
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "iscell":
+    is_cell()

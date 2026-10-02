@@ -1637,3 +1637,10 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   fit' was eyeballed noise, NOT a misfit. All 9 regular cells p 0.39-0.96. Total X2 p 0.08, driven entirely by IS
   outcome-0 (8 firms, 26% weight at £20k+ with no outcome flag; p 0.018) - consistent with uncorroborated firm 1380
   (imp+DoS, staff-time-only £100k-500k). => Poisson cost model fits the narrow sample; no missing parameters indicated.
+- IS OUTCOME-0 CELL DETAILS (poisson_cost_model.py iscell; 8 firms): misfit = 2 Small firms, each weight ~0.55:
+  1380 (£100k-500k; staff time band 10 only, all else 0; no outcomes, no impacts, restore none) -> implausible
+    (largest staff-time cost in the survey with no recorded impact) -> data-error suspect; sensitivity / exclude.
+  1256 (£20-40k; staff £10-20k + disruption £10-20k; imp + takeover; staff stopped, restore 1d-1wk) -> plausible real
+    material incident WITHOUT a Q56A outcome flag -> the outcome marker leaks some material events into 'handling'.
+  Other 6 firms ordinary (£0-500, cheap handling). Possible extra material marker: restore >= 1 day / 'staff stopped'
+  without outcome flag (not yet counted).
