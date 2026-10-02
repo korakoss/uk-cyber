@@ -1644,3 +1644,13 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
     material incident WITHOUT a Q56A outcome flag -> the outcome marker leaks some material events into 'handling'.
   Other 6 firms ordinary (£0-500, cheap handling). Possible extra material marker: restore >= 1 day / 'staff stopped'
   without outcome flag (not yet counted).
+- MARKER LEAK (breach_measures.py leak, 2026-10-02): secondary markers among no-outcome firms (narrow / all attacked):
+  external payments > 0: 61 / 81 firms (P .09 vs .38-.46 given outcome); staff stopped 26 / 44; restore >= 1 day 11 / 23;
+  recovery costs 7 / 12; revenue loss 2 / 5.
+  Narrow firms: outcome 98 (12% weight, 30% of weighted cost mass, worst none/<500/500-5k/5k+ .24/.39/.30/.08);
+    no outcome + any marker 83 (10% weight, 25% of cost mass, .08/.41/.47/.03); no outcome, no marker 625 (78%, 45%, .72/.26/.02/0).
+  All attacked: outcome 178 (78% of mass), marker-only 123 (9%), neither 700 (13%).
+  => the outcome flag misses a MIDDLE class (contained incidents with payments / downtime, mostly £500-5k, rarely £5k+),
+     sizeable in narrow firms (a quarter of their cost mass). Currently absorbed by handling (fit OK), so sample means are
+     right, but in the generator it is counted once per hit-year instead of repeating like episodes. 1380 has no marker
+     (staff time only) - consistent with data-error suspicion.

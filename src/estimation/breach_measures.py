@@ -184,3 +184,44 @@ def outcome_validation():
 
 if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "outcomes":
     outcome_validation()
+
+
+def marker_leak():
+    """Does the Q56A outcome flag miss material incidents? Among attacked firms (and the narrow 1-2 channel subset):
+    candidate secondary markers - restore >= 1 day, impact 'staff stopped', 'revenue loss', 'recovery costs', external
+    payments > 0 (during or after) - cross-tabbed with outcome_any. For no-outcome firms with vs without any marker:
+    n, weighted share, worst-cost shares (none/<£500/£500-5k/£5k+, tightened midpoints) and share of weighted cost mass."""
+    from broad_interaction import channels, tightened
+    from material_breach import data
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    lo, hi = tightened(band)
+    mid = np.where(hi == 0, 0.0, (lo + hi) / 2)
+    nch = channels(X).sum(1)
+    rest = nm("restore")
+    ext = (nm("damagedirsx_bands") > 1) & (nm("damagedirsx_bands") <= 13) | (nm("damagedirlx_bands") > 1) & (nm("damagedirlx_bands") <= 13)
+    marks = {"restore >= 1 day": np.isin(rest, [3, 4, 5, 6]), "staff stopped": nm("impact1") == 1,
+             "revenue loss": nm("impact2") == 1, "recovery costs": nm("impact4") == 1, "external payments > 0": ext}
+    anym = np.column_stack(list(marks.values())).any(1)
+    for lab, base in (("all attacked", (nch >= 1) & ~np.isnan(oa) & ~np.isnan(mid)),
+                      ("narrow (1-2 channels)", (nch >= 1) & (nch <= 2) & ~np.isnan(oa) & ~np.isnan(mid))):
+        print(f"\n{lab}: n {base.sum()}, outcome flag {int((base & (oa == 1)).sum())}")
+        print(f"  {'marker':24s} {'n no-outcome':>12s} {'n outcome':>10s}   P(marker | no outcome)  P(marker | outcome)")
+        for k, v in marks.items():
+            a, b = base & (oa == 0), base & (oa == 1)
+            print(f"  {k:24s} {int((a & v).sum()):12d} {int((b & v).sum()):10d}   {np.average(v[a], weights=w[a]):.3f}"
+                  f"                  {np.average(v[b], weights=w[b]):.3f}")
+        tot = (w[base] * mid[base]).sum()
+        print("  group                         n   wshare | worst none/<500/500-5k/5k+ | share of weighted cost mass")
+        for g, m in (("outcome", base & (oa == 1)), ("no outcome, marker", base & (oa == 0) & anym),
+                     ("no outcome, no marker", base & (oa == 0) & ~anym)):
+            b = mid[m]
+            sh = [np.average((b == 0), weights=w[m]), np.average((b > 0) & (b < 500), weights=w[m]),
+                  np.average((b >= 500) & (b < 5000), weights=w[m]), np.average(b >= 5000, weights=w[m])]
+            print(f"  {g:24s} {m.sum():6d}  {w[m].sum() / w[base].sum():.3f}  | " + " ".join(f"{x:.2f}" for x in sh) +
+                  f" | {(w[m] * mid[m]).sum() / tot:.3f}")
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "leak":
+    marker_leak()
