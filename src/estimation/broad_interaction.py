@@ -330,3 +330,125 @@ def is_pair():
 
 if __name__ == "__main__" and "ispair" in __import__("sys").argv:
     is_pair()
+
+
+# --- Why are broad (3+ channel) breaches superlinearly costly? Four tests (2026-10-02) ------------------------------
+# Breached = outcome flag OR soft marker (restore >= 1 day, staff stopped, recovery costs, revenue loss) [W2].
+# Costly = tightened worst-incident midpoint >= £5k.
+# T1 repeats: required episodes per breached broad firm if worst = max of iid narrow-type draws; recorded successes
+#    among broad breached firms; within-broad gradient of worst cost on total successes, attack frequency, # channels.
+# T2 character at matched cost: restore >= 1 day, reported externally, systems corrupted, external-payment share of
+#    the worst incident, broad vs narrow breached firms within the same cost band.
+# T3 co-labelling: for each ticked type with an attempt count (phishing targeted, takeover, hacking, DoS), share with
+#    attempts >= 1, costly vs cheap broad breached firms; attack frequency.
+# T4 frailty on cost: narrow breached firms, worst cost by frailty tier, and WLS controlling channels and size.
+# Run: ... broad_interaction.py why
+
+def wls(y, X, w):
+    Xc = np.column_stack([np.ones(len(y)), X])
+    b = np.linalg.lstsq(Xc * np.sqrt(w)[:, None], y * np.sqrt(w), rcond=None)[0]
+    e = y - Xc @ b
+    bread = np.linalg.inv((Xc * w[:, None]).T @ Xc)
+    meat = (Xc * (w * e)[:, None]).T @ (Xc * (w * e)[:, None])
+    return b, np.sqrt(np.diag(bread @ meat @ bread))
+
+
+def why():
+    from breach_measures import num as cnum
+    import joint_five_channel as f
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    mid = np.where(hi == 0, 0.0, (lo + hi) / 2)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    br = ((oa == 1) | soft) & ~np.isnan(mid) & (nch >= 1)
+    broad, narrow = br & (nch >= 3), br & (nch <= 2)
+    costly = mid >= 5000
+    tier = tier_posteriors().argmax(1)
+    freq = f.load_firms()["freq"].values
+    succ_cols = ["phisheng", "tkvrsuc", "dossoft", "virussoft", "ranssoft"]
+    S = np.column_stack([cnum(r, c) for c in succ_cols])
+    succ = np.nansum(S, 1)
+    answered = (~np.isnan(S)).sum(1)
+
+    print("T1. repeats")
+    p1 = np.average(costly[narrow], weights=w[narrow])
+    pb = np.average(costly[broad], weights=w[broad])
+    m_req = np.log(1 - pb) / np.log(1 - p1 / 1.2)
+    print(f"  narrow breached P(>=£5k) {p1:.3f} (n {narrow.sum()}); broad breached {pb:.3f} (n {broad.sum()});"
+          f" episodes per breached broad firm needed if worst = max of iid narrow draws: ~{m_req:.1f}")
+    for lab, m in (("broad costly", broad & costly), ("broad cheap", broad & ~costly), ("narrow costly", narrow & costly)):
+        s = succ[m]
+        print(f"  {lab:13s} n {m.sum():3d}  success questions answered (mean) {answered[m].mean():.1f}  total successes:"
+              f" 0 {np.mean(s == 0):.2f}  1 {np.mean(s == 1):.2f}  2-4 {np.mean((s >= 2) & (s <= 4)):.2f}  5+ {np.mean(s >= 5):.2f}"
+              f"  median {np.median(s):.0f}")
+    print("  broad breached: P(>=£5k) by total successes / attack frequency / # channels:")
+    for lab, g in (("successes 0", succ == 0), ("successes 1", succ == 1), ("successes 2-4", (succ >= 2) & (succ <= 4)), ("successes 5+", succ >= 5)):
+        m = broad & g
+        print(f"     {lab:15s} n {m.sum():3d}  P(>=£5k) {np.average(costly[m], weights=w[m]) if m.any() else np.nan:.2f}")
+    for k in range(1, 7):
+        m = broad & (freq == k)
+        if m.sum():
+            print(f"     freq {k} n {m.sum():3d}  P(>=£5k) {np.average(costly[m], weights=w[m]):.2f}")
+    for k in (3, 4):
+        m = broad & (nch == k)
+        print(f"     channels {k} n {m.sum():3d}  P(>=£5k) {np.average(costly[m], weights=w[m]):.2f}")
+    ok = broad & ~np.isnan(freq) & (mid > 0)
+    Xr = np.column_stack([np.log1p(succ[ok]), freq[ok], nch[ok]])
+    for lab, y in (("P(>=£5k)", costly[ok].astype(float)), ("log worst", np.log(mid[ok]))):
+        b, se = wls(y, Xr, w[ok] / w[ok].mean())
+        print(f"  WLS {lab:9s} on log1p(successes) {b[1]:+.3f} (se {se[1]:.3f}), freq {b[2]:+.3f} ({se[2]:.3f}), "
+              f"# channels {b[3]:+.3f} ({se[3]:.3f});  n {ok.sum()}")
+
+    print("\nT2. character at matched cost band (breached firms): broad vs narrow")
+    comp = ["damagedirsx_bands", "damagedirlx_bands", "damagestaffx_bands", "damageindx_bands"]
+    V = np.column_stack([nm(c) for c in comp])
+    cmid = np.where((V >= 1) & (V <= 13), np.vectorize(lambda b: (WB[int(b)][0] + WB[int(b)][1]) / 2 if 1 <= b <= 13 else np.nan)(np.nan_to_num(V, nan=1)), np.nan)
+    extshare = (cmid[:, 0] + cmid[:, 1]) / np.maximum(cmid.sum(1), 1)
+    feats = {"restore >= 1 day": np.isin(nm("restore"), [3, 4, 5, 6]), "reported externally": nm("reporta") == 1,
+             "systems corrupted": nm("outcome1") == 1, "money stolen": nm("outcome6") == 1}
+    for blab, (a, b_) in (("£500-5k", (500, 5000)), ("£5k-20k", (5000, 20000)), ("£20k+", (20000, 1e9))):
+        cells = []
+        for glab, g in (("narrow", narrow), ("broad", broad)):
+            m = g & (mid >= a) & (mid < b_)
+            ws = w[m]
+            fe = "  ".join(f"{k} {np.average(v[m], weights=ws):.2f}" for k, v in feats.items()) if m.any() else ""
+            es = np.nanmean(extshare[m]) if m.any() else np.nan
+            cells.append(f"{glab} n {m.sum():3d}: {fe}  ext-payment share {es:.2f}")
+        print(f"  {blab:8s} " + "\n           ".join(cells))
+
+    print("\nT3. co-labelling: ticked types with attempts >= 1 (answered), broad breached costly vs cheap")
+    att = [("phishing (targeted)", 0, "phishcon"), ("takeover", SHORT.index("Takov"), "tkvrcount"),
+           ("hacking", SHORT.index("BankH"), "hackcount"), ("DoS", SHORT.index("DoS"), "doscount")]
+    for lab, j, ac in att:
+        A = cnum(r, ac)
+        cells = []
+        for glab, g in (("costly", broad & costly), ("cheap", broad & ~costly)):
+            m = g & (X[:, j] == 1) & ~np.isnan(A)
+            cells.append(f"{glab}: ticked+answered {m.sum():3d}, attempts>=1 {np.mean(A[m] >= 1) if m.any() else np.nan:.2f},"
+                         f" median attempts {np.median(A[m]) if m.any() else np.nan:.0f}")
+        print(f"  {lab:20s} " + " | ".join(cells))
+    for glab, g in (("costly", broad & costly), ("cheap", broad & ~costly)):
+        fq = freq[g & ~np.isnan(freq)]
+        print(f"  attack frequency {glab}: once {np.mean(fq == 1):.2f}, weekly+ {np.mean(fq >= 4):.2f} (n {len(fq)})")
+
+    print("\nT4. frailty on cost: narrow breached firms by tier")
+    for k, t in enumerate(TIER):
+        m = narrow & (tier == k)
+        print(f"  {t:4s} n {m.sum():3d}  P(>=£500) {np.average(mid[m] >= 500, weights=w[m]):.2f}  P(>=£5k) {np.average(costly[m], weights=w[m]):.2f}"
+              f"  P(zero) {np.average(mid[m] == 0, weights=w[m]):.2f}")
+    m = narrow & (mid > 0)
+    Xr = np.column_stack([(tier[m] == 1), (tier[m] == 2), C[m][:, 1:], (size[m] >= 2)]).astype(float)
+    b, se = wls(np.log(mid[m]), Xr, w[m] / w[m].mean())
+    print(f"  WLS log worst (positive, n {m.sum()}): tier mid {b[1]:+.2f} (se {se[1]:.2f}), high {b[2]:+.2f} ({se[2]:.2f});"
+          f"  controls I/R/S channels, Small+")
+    nb = (nch >= 1) & (nch <= 2) & ~br & ~np.isnan(mid)
+    print("  for contrast, narrow NOT breached (handling) P(>0) by tier: " + ", ".join(
+        f"{t} {np.average(mid[nb & (tier == k)] > 0, weights=w[nb & (tier == k)]):.2f}" for k, t in enumerate(TIER)))
+
+
+if __name__ == "__main__" and "why" in __import__("sys").argv:
+    why()

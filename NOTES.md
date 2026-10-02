@@ -1676,3 +1676,20 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      group, 1.69 (se 1.07); Poisson repeats predict ~2, no repeats 0. Terciles 1.72 / 2.56 / 2.28 (not monotone).
      Confounded with number of channels hit. => weak support for repeats of about Poisson size (~1.6 se).
   => This survey cannot settle the repeat rate; nothing contradicts Poisson repeats (user-preferred generator). Keep it.
+- WHY BROAD BREACHES ARE SUPERLINEARLY COSTLY: 4 TESTS (broad_interaction.py why, 2026-10-02; breached = W2; costly >= £5k).
+  User hypothesis: superlinearity = repeat breaches (independence check allowed one breach per channel).
+  T1 repeats: narrow breached P(>=£5k) .073, broad .291 -> ~5.5 iid episodes per breached broad firm needed. Recorded
+     successes: broad costly median 1, 33% zero (answering ~2.7 success questions), 26% 5+ (cheap 12%). NO dose-response:
+     P(>=£5k) by successes 0/1/2-4/5+ = .35/.20/.27/.41; WLS slope on log1p(successes) -0.01 (se .09); attack frequency
+     +0.03 (.05). => repeats disfavoured (not excluded: impersonation has no success count).
+  T2 matched cost band: £500-5k broad ~= narrow on everything. £5k-20k (24 vs 11): systems corrupted .53 vs .02, money
+     stolen .23 vs .09, restore >= 1d .72 vs .59, external-payment share .35 vs .72; reported externally equal (.52/.56).
+     £20k+ narrow n 5. => earlier 'reported to authorities .39 vs .03' was cost-confounded; the real difference at equal
+     cost is systems corrupted / money stolen and a staff+disruption-heavy cost mix = spreading intrusion signature.
+  T3 co-labelling: ticked takeover in costly broad firms has attempts >= 1 in only 50% (median 0) vs 100% in cheap broad;
+     hacking 40% vs 100% (n 5 / 1); DoS 100% both; targeted phishing higher in costly (83%, median 5 vs 64%, 2).
+     => takeover/hacking ticks in costly firms often have no attack activity behind them: ticked as part of the incident.
+  T4 frailty on cost: narrow breached P(>=£5k) by tier .07/.08/.06; WLS log worst tier mid +.39 (.52), high +.39 (.67). No effect.
+  => Best-supported: one spreading intrusion (often entering via targeted phishing), with extra types ticked because the
+     incident touched them. Not repeats, not frailty. Model: broad compromise = its own single-event class; repeat version
+     only as sensitivity. Thin cells throughout (5-43 firms).
