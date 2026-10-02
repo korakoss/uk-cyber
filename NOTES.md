@@ -1578,3 +1578,8 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   PS/PI Small+ lower). Distinct pattern: breached MICRO firms often report zero cost (P 43%, S 51%, PS 16%) vs Small+ ~2-6%,
   while Small+ breached firms pile into <£500. With m0 pooled across sizes, Small+'s many small positive costs likely drag
   the amount shift below 1. Candidate fix: size-dependent m0 (untested).
+  Tested (m0size, E weighted / F unweighted): m0 Micro .33 -> Small+ .10 (ll +1.9 over C), confirming the zero pattern, but
+  the amount shift did NOT recover: material x0.66 (F x0.54), handling x0.74 (F x1.10). Net mean material cost per breach
+  (zeros included) Small+/Micro ~0.89 weighted. Conclusion: within narrow firms, expected cost per hit/breach is roughly
+  flat to slightly lower for Small+; fewer zero-cost breaches offset smaller amounts. The earlier x1.2-1.7 is not reproduced
+  here; the size difference in totals runs through exposure (more channels hit, broad compromises, q +15%), not per-breach cost.
