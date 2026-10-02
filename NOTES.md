@@ -1744,3 +1744,9 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   Implication: the model curve is fine up to roughly the observed range, but the national tail needs a size-scaling
   catastrophe component (Large/Medium firms) that this survey cannot estimate; one JLR-scale event alone exceeds the
   model's whole national total.
+- DECISION (user, 2026-10-02): for now the tail = the fitted curves extrapolated as they are (lognormals incl. the big-breach
+  class). PINNED SIMPLIFICATION: survey 'size' is headcount bands only (open 250+ band lumps 250 staff with 30,000); no
+  turnover for businesses (only charity income bands; sector is the sole proxy). Real catastrophe losses scale with firm
+  finances (M&S/JLR ~1-3% of revenue), so the extrapolated tail understates Large-firm catastrophes by orders of
+  magnitude. Fixing it (turnover-scaled catastrophe component, ONS turnover/size data within 250+, calibration from
+  known incidents) is a separate sidequest, deferred.
