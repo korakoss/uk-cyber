@@ -1612,3 +1612,14 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      fit G and the episode law jointly. (2) Default: Poisson-within-cell (kappa=1), generative and no epicycle.
      (3) kappa matters out of sample: firms with Lam beyond the sample range (frail, heavily hit; Micro under-sampled) and
      the shape of the annual sum (several smaller vs one bigger draw: same mean, thinner tail). Carry kappa 0-2 as range.
+- POISSON COST MODEL (poisson_cost_model.py, 2026-10-02) = CURRENT narrow-firm cost model (supersedes narrow_cost_model.py's
+  at-most-one-breach-per-channel). Generator per hit channel: handling H_c (zero mass + lognormal) + M_c ~ Poisson(Lam_c)
+  episodes, Lam_c = lam_c x tier x size, iid episode costs G_c (zero mass by size + lognormal), annual = sum. Likelihood via
+  Poisson merging + max of Poisson-many iid draws (closed form). 806 firms, 25 params, ll -1202.2. Params in scratchpad poisson_params.npy.
+  Rates per hit (low tier, Micro): P .055, I .055, R .40, S .57; tier mid x0.75 / high x0.63 (per hit; frailty acts via
+  hits); Small+ x1.19. E[episodes | breached] 1.17 (1.03-1.41). P(outcome) by tier and size fits exactly.
+  Episode cost: zero Micro .48 / Small+ .18, amounts Small+ x0.53 (offsetting again); medians P £525, I £1.2k, R £1.0k, S £150.
+  Expected annual cost per hit firm (handling + episodes x E[G]): P £265, I £404, R £2.1k (n14), S £1.0k (mostly handling
+  £780; S episodes frequent but cheap). Micro ~= Small+ in every channel (Small+ 5-17% lower).
+  Fit: no-outcome cells good; breached cells still rough as before (PI outcome-1 obs £500-5k .59 vs pred .32; S outcome-1
+  cheaper than predicted, PS outcome-1 middle-heavier). Narrow firms only; broad compromises are a separate class.
