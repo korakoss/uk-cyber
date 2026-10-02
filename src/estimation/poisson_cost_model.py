@@ -460,11 +460,16 @@ def unpack_b(p, form):
     P["pi_a"], P["pi_b"], P["mu_big"], P["s_big"] = -50.0, 0.0, 0.0, 1.0
     if form == "F1":
         P["g"], P["g0"] = p[25], p[26]
-    if form in ("F2", "F2T"):
+    if form in ("F2", "F2T", "F2R"):
         P["pi_a"], P["pi_b"], P["mu_big"], P["s_big"] = p[25], p[26], p[27], np.exp(p[28])
     P["t"] = P["u"] = P["k"] = 0.0
     if form == "F2T":  # targeted phishing: phishing breach rate x e^t, big-breach logit +u, phishing handling-zero logit +k
         P["t"], P["u"], P["k"] = p[29], p[30], p[31]
+    if form == "F2R":  # F2 + targeted phishing rate and handling only (adopted main model)
+        P["t"], P["k"] = p[29], p[30]
+    if form == "F1R":  # F1 + targeted phishing rate and handling
+        P["g"], P["g0"] = p[25], p[26]
+        P["t"], P["k"] = p[27], p[28]
     return P
 
 
