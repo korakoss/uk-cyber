@@ -1665,4 +1665,4 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   => TOTAL robust (within ~7%); CHANNEL attribution is not: base S handling £779 was leaked material incidents (W: £70-90);
      impersonation rises x1.25-1.65; ransomware falls ~25-35% (n14). Episodes per breached firm 1.17 -> 1.22-1.24.
      Model shapes: handling sigma 1.93 -> 1.69-1.90; episode sigma 1.95 -> 1.67; Small+ per-hit ~= Micro throughout.
-  Decision proposal: W2 (soft markers = consequences; external payments too loose) as main; base and W1 as range.
+  DECIDED (user, 2026-10-02): W2 (soft markers = consequences; external payments too loose) is the main breach marker; base and W1 as range.
