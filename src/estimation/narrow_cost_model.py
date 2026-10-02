@@ -201,3 +201,36 @@ def size_refit():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "size":
     size_refit()
+
+
+# --- Where does the size effect live? ----------------------------------------------------------------------------
+# Raw comparison, no model: narrow firms by channel set x outcome, Micro vs Small+. Worst-cost group shares
+# (none / <£500 / £500-5k / £5k-20k / £20k+) and median band midpoint among non-zero, weighted and unweighted.
+# Run: ... narrow_cost_model.py where
+
+def where():
+    idx, hits, lo, hi, oa, sm, w = setup()
+    rows = {}
+    for i, hit in zip(idx, hits):
+        rows.setdefault(("".join(CH[c] for c in hit), int(oa[i])), []).append(i)
+    print("set out size    n  wshare | weighted shares none/<500/500-5k/5k-20k/20k+ | unweighted shares          | P(>=£500) w / unw")
+    for key in sorted(rows, key=lambda k: -len(rows[k])):
+        ii = np.array(rows[key])
+        if len(ii) < 15:
+            continue
+        for lab, s_ in (("Micro", 0), ("Small+", 1)):
+            j = ii[sm[ii] == s_]
+            if len(j) == 0:
+                continue
+            mid = (lo[j] + hi[j]) / 2
+            g = np.array([0 if hi[k] == 0 else next(t for t in range(1, 5) if GROUPS[t][0] <= m_ < GROUPS[t][1])
+                          for k, m_ in zip(j, mid)])
+            sw = np.array([w[j][g == t].sum() for t in range(5)]) / w[j].sum()
+            su = np.bincount(g, minlength=5) / len(j)
+            print(f"{key[0]:3s} {key[1]}   {lab:6s} {len(j):4d}  {w[j].sum() / w[idx].sum():.3f} | " +
+                  " ".join(f"{x:.2f}" for x in sw) + "             | " + " ".join(f"{x:.2f}" for x in su) +
+                  f" | {sw[2:].sum():.2f} / {su[2:].sum():.2f}")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "where":
+    where()

@@ -1573,3 +1573,8 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   => Not a pooling artefact. Weighted, Small+ amounts come out ~x0.75 whatever is freed. The material size shift is weakly
   identified here (few outcome firms per cell; it swings with weighting), so the earlier x1.2-1.7 (fitted directly on
   outcome firms) is not contradicted so much as unresolved. Small+ = 57% of narrow firms by count, 21% by weight.
+  Raw location (narrow_cost_model.py where): no-outcome cells (bulk) Micro ~= Small+ (P-only P(>=£500) .04/.04, PI .17/.14);
+  no consistent size effect anywhere. Breached (outcome) cells are tiny (3-22 per size) and point both ways (S Small+ higher,
+  PS/PI Small+ lower). Distinct pattern: breached MICRO firms often report zero cost (P 43%, S 51%, PS 16%) vs Small+ ~2-6%,
+  while Small+ breached firms pile into <£500. With m0 pooled across sizes, Small+'s many small positive costs likely drag
+  the amount shift below 1. Candidate fix: size-dependent m0 (untested).
