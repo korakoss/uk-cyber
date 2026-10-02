@@ -1567,3 +1567,9 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   material: P(zero) .28; median>0 P £440, I £1.1k, R £1.1k, S £275; sigma 1.88 -> mean per event P £1.8k, I £4.7k, R £4.7k, S £1.2k (narrow only; broad class separate).
   Fit: no-outcome groups now match incl. low end (P: obs .70/.25/.04 vs pred .71/.23/.05; PI, I similar). Material groups (n 17-25) rougher: PI outcome-1 obs £500-5k .59 vs pred .32; S outcome-1 cheaper than predicted.
   Odd: size factor x0.75 (Small+ cheaper) vs earlier x1.2-1.7 -> check (weights / confounding with channel mix).
+  Size refit (narrow_cost_model.py size, 2026-10-02): A one shift x0.75 (ll -1205.9); B separate shifts handling x0.75 /
+  material x0.73 (ll -1205.9, no gain); C + Small+ logit shifts on h0 (-0.19) and q (+0.21, q ~+15% rel.) -> amounts still
+  x0.74 (ll -1205.1); D = C unweighted -> handling x1.11, material x0.57, ransomware material mean jumps to £41k (unstable).
+  => Not a pooling artefact. Weighted, Small+ amounts come out ~x0.75 whatever is freed. The material size shift is weakly
+  identified here (few outcome firms per cell; it swings with weighting), so the earlier x1.2-1.7 (fitted directly on
+  outcome firms) is not contradicted so much as unresolved. Small+ = 57% of narrow firms by count, 21% by weight.
