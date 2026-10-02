@@ -1750,3 +1750,17 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   finances (M&S/JLR ~1-3% of revenue), so the extrapolated tail understates Large-firm catastrophes by orders of
   magnitude. Fixing it (turnover-scaled catastrophe component, ONS turnover/size data within 250+, calibration from
   known incidents) is a separate sidequest, deferred.
+- #7 IMPERSONATION (impersonation.py, 2026-10-02). Found direct items: Q53B impersonationhack (did impersonation involve
+  unauthorised access to files/networks), Q53C impersonationtkvr (taking over own website/social/email accounts),
+  disruptphish5 (worst phishing incident resulted in impersonation), fraud4 (breach led to impersonation).
+  468 impersonation-hit firms. External spoofing (Q53B and C both no): 428 firms, 92% of weight; breached .25, spread
+    signature .06, mean worst £5.2k (impersonation-only spoofing 75 firms: breached .10, mean £519).
+  Intrusive (access or takeover): 40 firms, 8% of weight; breached .74, signature .48, mean £11.5k; unauthorised-access
+    subgroup (26) breached .97, mean £15.7k, 55% in £500-5k.
+  Consequence-type ticks (impersonation caused by another breach): 9% of narrow, 19% of broad, 33% of signature firms.
+  Breadth recount without them: 85% of broad firms stay broad, SAME for costly and cheap broad (85% / 85%), signature 79%.
+  => The I channel is two things: cheap external spoofing (exposure, rarely a breach) and a small intrusive kind that is
+     itself a breach (someone got in). Impersonation co-labelling exists but does NOT explain the breadth-cost link
+     (removing it drops costly and cheap broad firms equally) -> breadth effect not an impersonation artefact.
+  Model option: split I into spoofing (exposure channel) and intrusive (treated as breach evidence), or keep I as one
+  channel and note its mixture. Intrusive firms are mostly already flagged breached under W2 (74%).
