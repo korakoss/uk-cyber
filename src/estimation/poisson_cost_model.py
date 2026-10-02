@@ -423,3 +423,135 @@ def widen():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "widen":
     widen()
+
+
+# --- All firms, with exposure breadth amplifying breach severity (explanation A, 2026-10-02) ----------------------
+# Same generator, now on every hit firm (1-4 channels), breach marker W2. Breadth = number of channels hit (nch).
+#   F0: no breadth effect (narrow model applied to everyone).
+#   F1: episode cost scale rises with breadth: log-median + g*(nch-1); zero share logit + g0*(nch-1).
+#   F2: each episode is BIG with prob pi = sigmoid(a + b*(nch-1)); big episodes ~ lognormal(mu_big, s_big), no zero mass;
+#       otherwise the usual channel episode cost.
+# Compare loglik; worst-cost shares by breadth x breached, obs vs pred; expected cost per breach and per hit firm by breadth.
+# Run: ... poisson_cost_model.py breadth
+
+def setup_all():
+    import pandas as pd
+    from latent_on_streams import aligned_raw
+    from material_breach import data
+    from broad_interaction import channels, tightened
+    X, size, band, D_, oa, w = data()
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    m = ~np.isnan(band) & ~np.isnan(oa) & (nch >= 1)
+    idx = np.where(m)[0]
+    tier = tier_posteriors().argmax(1)
+    return dict(idx=idx, H=C[idx], lo=lo[idx], hi=hi[idx], oa=((oa == 1) | soft)[idx].astype(float), sm=(size >= 2)[idx].astype(float),
+                w=w[idx] / w[idx].mean(), tier=tier[idx], nch=nch[idx],
+                sets=np.array(["".join(CH[c] for c in np.where(C[i] == 1)[0]) for i in idx]))
+
+
+def unpack_b(p, form):
+    P = unpack(p[:25])
+    P["g"] = P["g0"] = 0.0
+    P["pi_a"], P["pi_b"], P["mu_big"], P["s_big"] = -50.0, 0.0, 0.0, 1.0
+    if form == "F1":
+        P["g"], P["g0"] = p[25], p[26]
+    if form == "F2":
+        P["pi_a"], P["pi_b"], P["mu_big"], P["s_big"] = p[25], p[26], p[27], np.exp(p[28])
+    return P
+
+
+def joint_cdf_b(x, P, D, outcome):
+    e = D["nch"] - 1
+    Lc = D["H"] * P["lam"][None] * np.exp(P["bt"][D["tier"]] + P["bs"] * D["sm"])[:, None]
+    L = Lc.sum(1)
+    m0 = sig(P["m0"] + P["dm0"] * D["sm"] + P["g0"] * e)
+    muh = P["mu_h"][None] + P["dh"] * D["sm"][:, None]
+    mum = P["mu_m"][None] + (P["dm"] * D["sm"] + P["g"] * e)[:, None]
+    pi = sig(P["pi_a"] + P["pi_b"] * e)
+    lx = np.log(np.maximum(x, 1e-12))[:, None]
+    pos = (x > 0)[:, None]
+    Fh = P["h0"][None] + (1 - P["h0"][None]) * np.where(pos, norm.cdf((lx - muh) / P["s_h"]), 0.0)
+    Fh = np.where(D["H"] == 1, Fh, 1.0).prod(1)
+    Fs = m0[:, None] + (1 - m0[:, None]) * np.where(pos, norm.cdf((lx - mum) / P["s_m"]), 0.0)
+    Fb = np.where(pos[:, 0], norm.cdf((lx[:, 0] - P["mu_big"]) / P["s_big"]), 0.0)
+    Fm = (1 - pi)[:, None] * Fs + (pi * Fb)[:, None]
+    F = (Lc * Fm).sum(1) / L
+    if outcome:
+        return (np.exp(-L * (1 - F)) - np.exp(-L)) * Fh
+    return np.exp(-L) * Fh
+
+
+def loglik_b(p, D, form):
+    P = unpack_b(p, form)
+    o = D["oa"] == 1
+    up = np.where(o, joint_cdf_b(D["hi"], P, D, True), joint_cdf_b(D["hi"], P, D, False))
+    low = np.where(o, joint_cdf_b(D["lo"], P, D, True), joint_cdf_b(D["lo"], P, D, False))
+    pr = np.where(D["hi"] == 0, up, up - low)
+    return (D["w"] * np.log(np.maximum(pr, 1e-300))).sum()
+
+
+def fit_b(D, form, p0):
+    f = lambda p: -loglik_b(p, D, form)
+    o = minimize(f, p0, method="L-BFGS-B", options={"maxiter": 20000})
+    for _ in range(3):
+        o = minimize(f, o.x, method="Nelder-Mead", options={"maxiter": 40000, "xatol": 1e-6, "fatol": 1e-8})
+        o = minimize(f, o.x, method="L-BFGS-B", options={"maxiter": 20000})
+    return o.x, -o.fun
+
+
+def breadth():
+    D = setup_all()
+    base = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_params_w2.npy")
+    print(f"firms {len(D['w'])}; by channels hit: " + ", ".join(f"{k}: {(D['nch'] == k).sum()}" for k in (1, 2, 3, 4)) +
+          f"; breached (W2) {int(D['oa'].sum())}")
+    starts = {"F0": base, "F1": np.r_[base, 0.3, -0.3], "F2": np.r_[base, -3.0, 0.8, np.log(20000), np.log(1.2)]}
+    fits = {}
+    for form in ("F0", "F1", "F2"):
+        p, ll = fit_b(D, form, starts[form])
+        fits[form] = (p, ll)
+        P = unpack_b(p, form)
+        extra = {"F0": "", "F1": f"  cost scale x{np.exp(P['g']):.2f} per extra channel, zero-share logit {P['g0']:+.2f} per extra channel",
+                 "F2": f"  P(big) by channels 1/2/3/4: " + "/".join(f"{sig(P['pi_a'] + P['pi_b'] * k):.3f}" for k in range(4)) +
+                       f";  big episode median £{np.exp(P['mu_big']):,.0f}, sigma {P['s_big']:.2f}"}[form]
+        print(f"\n{form}: loglik {ll:.1f}  params {len(p)}{extra}")
+        print("   rates per hit " + ", ".join(f"{c} {v:.3f}" for c, v in zip(CH, P["lam"])) +
+              f"; episode medians " + ", ".join(f"{c} £{np.exp(v):,.0f}" for c, v in zip(CH, P["mu_m"])) + f", sigma {P['s_m']:.2f}")
+        print("   worst-cost shares (none/<500/500-5k/5k-20k/20k+) by channels x breached, obs | pred:")
+        for k in (1, 2, 3, 4):
+            for o in (0, 1):
+                m = (D["nch"] == k) & (D["oa"] == o)
+                Dm = {kk: (v[m] if isinstance(v, np.ndarray) and len(v) == len(D["w"]) else v) for kk, v in D.items()}
+                n = m.sum()
+                mid = (Dm["lo"] + Dm["hi"]) / 2
+                g = np.array([0 if h == 0 else next(j for j in range(1, 5) if GROUPS[j][0] <= x < GROUPS[j][1]) for h, x in zip(Dm["hi"], mid)])
+                obs = np.array([Dm["w"][g == j].sum() for j in range(5)]) / Dm["w"].sum()
+                cs = [joint_cdf_b(np.full(n, b), P, Dm, bool(o)) for b in (0, 500, 5000, 20000, 1e12)]
+                pr = np.diff(np.column_stack([np.zeros(n)] + cs), axis=1) / cs[-1][:, None]
+                pred = (Dm["w"][:, None] * pr).sum(0) / Dm["w"].sum()
+                print(f"     {k} ch, breached {o}  n {n:4d}  " + " ".join(f"{v:.2f}" for v in obs) + " | " + " ".join(f"{v:.2f}" for v in pred))
+        print("   expected cost per breach (episode mean) and per hit firm (handling + episodes), by channels:")
+        for k in (1, 2, 3, 4):
+            m = D["nch"] == k
+            e = k - 1
+            m0 = sig(P["m0"] + P["dm0"] * D["sm"][m] + P["g0"] * e)
+            pi = sig(P["pi_a"] + P["pi_b"] * e)
+            Lc = D["H"][m] * P["lam"][None] * np.exp(P["bt"][D["tier"][m]] + P["bs"] * D["sm"][m])[:, None]
+            eg_c = (1 - m0)[:, None] * np.exp(P["mu_m"][None] + (P["dm"] * D["sm"][m] + P["g"] * e)[:, None] + P["s_m"] ** 2 / 2)
+            eg_c = (1 - pi) * eg_c + pi * np.exp(P["mu_big"] + P["s_big"] ** 2 / 2)
+            eh = ((1 - P["h0"])[None] * np.exp(P["mu_h"][None] + P["dh"] * D["sm"][m][:, None] + P["s_h"] ** 2 / 2) * D["H"][m]).sum(1)
+            ep = (Lc * eg_c).sum(1)
+            perbreach = ep / np.maximum(Lc.sum(1), 1e-12)
+            print(f"     {k} ch  n {m.sum():4d}  mean cost per breach £{np.average(perbreach, weights=D['w'][m]):,.0f}"
+                  f"  expected episodes {np.average(Lc.sum(1), weights=D['w'][m]):.2f}"
+                  f"  annual per firm £{np.average(eh + ep, weights=D['w'][m]):,.0f}")
+    np.save("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_breadth_fits.npy",
+            np.array([fits[k][0] for k in ("F0", "F1", "F2")], dtype=object), allow_pickle=True)
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "breadth":
+    breadth()

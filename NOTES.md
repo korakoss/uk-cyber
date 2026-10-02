@@ -1709,3 +1709,17 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      across channels. What holds: given a signature-type breach, genuinely broad firms suffer far costlier ones
      (median x10). Breadth of real exposure amplifies severity. Open: why (more attack surface lets an intrusion spread?),
      and whether impersonation ticks are co-labelled (uncheckable directly).
+- BREADTH-AMPLIFIED MODEL ON ALL FIRMS (poisson_cost_model.py breadth, 2026-10-02; 1001 hit firms, W2 marker; fits in
+  scratchpad poisson_breadth_fits.npy [F0, F1, F2]).
+  F0 no breadth effect: ll -1671.6 (25 params). Fits passably only by inflating channel medians, esp. ransomware £8.7k
+     (ransomware mostly appears in broad firms) - composition standing in for breadth.
+  F1 episode cost scale x2.05 per extra channel (+ zero share down): ll -1665.6 (27); LR vs F0 12.0, p ~.003. AIC best.
+  F2 each episode 'big' with prob 1.4% / 7.5% / 31% / 72% for 1/2/3/4 channels; big median £4.2k, sigma 2.09; ordinary
+     episodes sigma 1.54: ll -1664.7 (29); LR vs F0 13.8, p ~.008. AIC 2 worse than F1.
+  Both fit the breadth x breached cost shares well (3-ch breached £20k+: obs .11, F1 .09, F2 .11; 4-ch: obs .19, .25/.26).
+  Implied (sample, weighted): annual cost per hit firm by channels 1/2/3/4: F1 £357/£1.6k/£6.2k/£27k; F2 £383/£1.7k/
+     £10.0k/£33k. Mean cost per breach 3-ch: F1 £7.2k vs F2 £11.9k -> forms agree on the fit, differ ~1.6x in broad-firm
+     means = tail extrapolation again (#6).
+  => Breadth effect is real (p ~.003-.008) after channel-specific costs. Proposed: F2 as main (matches story A: a breach
+     stays contained or spreads; spreading likelier with more fronts), F1 as sensitivity. Caveat: impersonation
+     co-labelling (story B) would inflate the apparent breadth effect; uncheckable.
