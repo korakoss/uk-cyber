@@ -1623,3 +1623,12 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   £780; S episodes frequent but cheap). Micro ~= Small+ in every channel (Small+ 5-17% lower).
   Fit: no-outcome cells good; breached cells still rough as before (PI outcome-1 obs £500-5k .59 vs pred .32; S outcome-1
   cheaper than predicted, PS outcome-1 middle-heavier). Narrow firms only; broad compromises are a separate class.
+- BREACHED-CELL MISFIT CHECKS (poisson_cost_model.py sigma / m0ch, 2026-10-02):
+  (1) channel-specific episode sigma (P 2.21, I 1.84, R 2.29, S 1.57): +0.4 ll for 3 params, fit unchanged.
+  (2) no top-band (>= £100k) breached firms among narrow firms at all -> 'a few top-band firms widen sigma' was wrong.
+      Least-likely breached firms are £5k-50k worst incidents, mostly Small+ with low weights (rows 1699, 6, 2061, 1170, 632).
+  (3) channel-specific episode zero share: +2.9 ll for 3 params (marginal); zero P .52, S .53, I/R -> 0 (boundary).
+      PI cell improves (pred £500-5k .32 -> .38 vs obs .59), others ~unchanged.
+  => remaining misfit points in opposite directions across cells of ~20 firms (PI/PS middle-heavier than predicted, S
+     bottom-heavier) -> not separable from noise with this n. Only structural candidate left: two-type episode cost
+     (contained vs real event). Kept the base model (shared sigma, size-only zero share).

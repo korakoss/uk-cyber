@@ -39,6 +39,12 @@ def setup():
 
 
 def unpack(p):
+    if len(p) == 29:  # channel-specific episode zero share (logit per channel + shared size shift)
+        return dict(lam=np.exp(p[0:4]), bt=np.r_[0.0, p[4:6]], bs=p[6], h0=sig(p[7:11]), mu_h=p[11:15], s_h=np.exp(p[15]),
+                    m0=p[25:29][None], dm0=p[17], mu_m=p[18:22], s_m=np.exp(p[22]), dh=p[23], dm=p[24])
+    if len(p) == 28:  # channel-specific episode-cost sigma
+        return dict(lam=np.exp(p[0:4]), bt=np.r_[0.0, p[4:6]], bs=p[6], h0=sig(p[7:11]), mu_h=p[11:15], s_h=np.exp(p[15]),
+                    m0=p[16], dm0=p[17], mu_m=p[18:22], s_m=np.exp(p[22:26])[None], dh=p[26], dm=p[27])
     return dict(lam=np.exp(p[0:4]), bt=np.r_[0.0, p[4:6]], bs=p[6], h0=sig(p[7:11]), mu_h=p[11:15], s_h=np.exp(p[15]),
                 m0=p[16], dm0=p[17], mu_m=p[18:22], s_m=np.exp(p[22]), dh=p[23], dm=p[24])
 
@@ -46,7 +52,7 @@ def unpack(p):
 def firm_terms(P, D):
     """Per-firm episode rates (n,4), m0 (n,), handling and material log-means (n,4)."""
     Lc = D["H"] * P["lam"][None] * np.exp(P["bt"][D["tier"]] + P["bs"] * D["sm"])[:, None]
-    m0 = sig(P["m0"] + P["dm0"] * D["sm"])
+    m0 = sig(P["m0"] + P["dm0"] * D["sm"][:, None]) if np.ndim(P["m0"]) else sig(P["m0"] + P["dm0"] * D["sm"])
     muh = P["mu_h"][None] + P["dh"] * D["sm"][:, None]
     mum = P["mu_m"][None] + P["dm"] * D["sm"][:, None]
     return Lc, m0, muh, mum
@@ -60,21 +66,26 @@ def joint_cdf(x, P, D, T, outcome):
     pos = (x > 0)[:, None]
     Fh = P["h0"][None] + (1 - P["h0"][None]) * np.where(pos, norm.cdf((lx - muh) / P["s_h"]), 0.0)
     Fh = np.where(D["H"] == 1, Fh, 1.0).prod(1)
-    Fm = m0[:, None] + (1 - m0[:, None]) * np.where(pos, norm.cdf((lx - mum) / P["s_m"]), 0.0)
+    m0 = m0 if m0.ndim == 2 else m0[:, None]
+    Fm = m0 + (1 - m0) * np.where(pos, norm.cdf((lx - mum) / P["s_m"]), 0.0)
     F = (Lc * Fm).sum(1) / L
     if outcome:
         return (np.exp(-L * (1 - F)) - np.exp(-L)) * Fh
     return np.exp(-L) * Fh
 
 
-def loglik(p, D):
+def firm_ll(p, D):
     P = unpack(p)
     T = firm_terms(P, D)
     o = D["oa"] == 1
     up = np.where(o, joint_cdf(D["hi"], P, D, T, True), joint_cdf(D["hi"], P, D, T, False))
     low = np.where(o, joint_cdf(D["lo"], P, D, T, True), joint_cdf(D["lo"], P, D, T, False))
     pr = np.where(D["hi"] == 0, up, up - low)
-    return (D["w"] * np.log(np.maximum(pr, 1e-300))).sum()
+    return np.log(np.maximum(pr, 1e-300))
+
+
+def loglik(p, D):
+    return (D["w"] * firm_ll(p, D)).sum()
 
 
 def fit(D):
@@ -146,5 +157,97 @@ def main():
     report(p, ll, D)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+# --- Episode-cost spread: channel-specific sigma, and which firms set it ------------------------------------------
+# Breached-firm cells are middle-heavier than one shared sigma (~1.95) predicts. (1) refit with sigma per channel;
+# (2) list the outcome firms the base model finds least likely; (3) refit base dropping the top-band (>= £100k) outcome
+# firms and see sigma. Fit shares for breached cells printed for each.
+# Run: ... poisson_cost_model.py sigma
+
+def breached_fit(p, D, label):
+    P = unpack(p)
+    T = firm_terms(P, D)
+    print(f"  [{label}] breached cells obs vs pred (none/<500/500-5k/5k-20k/20k+):")
+    for st in ("PI", "P", "S", "PS"):
+        m = (D["sets"] == st) & (D["oa"] == 1)
+        Dm = {k: (v[m] if isinstance(v, np.ndarray) and len(v) == len(D["w"]) else v) for k, v in D.items()}
+        Tm = tuple(t[m] for t in T)
+        mid = (Dm["lo"] + Dm["hi"]) / 2
+        g = np.array([0 if h == 0 else next(j for j in range(1, 5) if GROUPS[j][0] <= x < GROUPS[j][1]) for h, x in zip(Dm["hi"], mid)])
+        obs = np.array([Dm["w"][g == j].sum() for j in range(5)]) / Dm["w"].sum()
+        n = m.sum()
+        cs = [joint_cdf(np.full(n, b), P, Dm, Tm, True) for b in (0, 500, 5000, 20000, 1e12)]
+        pr = np.diff(np.column_stack([np.zeros(n)] + cs), axis=1) / cs[-1][:, None]
+        pred = (Dm["w"][:, None] * pr).sum(0) / Dm["w"].sum()
+        print(f"     {st:3s} n {n:3d}  obs " + " ".join(f"{v:.2f}" for v in obs) + "   pred " + " ".join(f"{v:.2f}" for v in pred))
+
+
+def sigma_check():
+    D = setup()
+    base = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_params.npy")
+    ll0 = loglik(base, D)
+    print(f"base: loglik {ll0:.1f}, shared episode sigma {np.exp(base[22]):.2f}")
+    breached_fit(base, D, "base")
+
+    f = lambda p: -loglik(p, D)
+    p1 = np.r_[base[:22], np.full(4, base[22]), base[23:25]]
+    o = minimize(f, p1, method="L-BFGS-B", options={"maxiter": 20000})
+    for _ in range(2):
+        o = minimize(f, o.x, method="Nelder-Mead", options={"maxiter": 30000, "xatol": 1e-6, "fatol": 1e-8})
+        o = minimize(f, o.x, method="L-BFGS-B", options={"maxiter": 20000})
+    P1 = unpack(o.x)
+    print(f"\n(1) channel-specific sigma: loglik {-o.fun:.1f} (+{-o.fun - ll0:.1f} for 3 params);  sigma " +
+          ", ".join(f"{c} {v:.2f}" for c, v in zip(CH, P1["s_m"][0])) + ";  medians " +
+          ", ".join(f"{c} £{np.exp(v):,.0f}" for c, v in zip(CH, P1["mu_m"])) +
+          f";  zero Micro {sig(P1['m0']):.2f} / Small+ {sig(P1['m0'] + P1['dm0']):.2f}")
+    breached_fit(o.x, D, "channel sigma")
+
+    print("\n(2) outcome firms least likely under base (lowest log-lik):")
+    fl = firm_ll(base, D)
+    o_ = np.where(D["oa"] == 1)[0]
+    for k in o_[np.argsort(fl[o_])][:8]:
+        print(f"     row {D['idx'][k]:5d}  set {D['sets'][k]:3s}  {'Small+' if D['sm'][k] else 'Micro '}  weight {D['w'][k]:.2f}"
+              f"  worst £{D['lo'][k]:,.0f}-{D['hi'][k]:,.0f}  loglik {fl[k]:.2f}")
+
+    keep = ~((D["oa"] == 1) & (D["lo"] >= 100000))
+    print(f"\n(3) drop top-band outcome firms: rows {list(D['idx'][~keep])}")
+    Dk = {k: (v[keep] if isinstance(v, np.ndarray) and len(v) == len(D["w"]) else v) for k, v in D.items()}
+    fk = lambda p: -loglik(p, Dk)
+    o2 = minimize(fk, base, method="L-BFGS-B", options={"maxiter": 20000})
+    o2 = minimize(fk, o2.x, method="Nelder-Mead", options={"maxiter": 30000, "xatol": 1e-6, "fatol": 1e-8})
+    P2 = unpack(o2.x)
+    print(f"     shared sigma {P2['s_m']:.2f};  medians " + ", ".join(f"{c} £{np.exp(v):,.0f}" for c, v in zip(CH, P2["mu_m"])) +
+          f";  zero Micro {sig(P2['m0']):.2f} / Small+ {sig(P2['m0'] + P2['dm0']):.2f}")
+    breached_fit(o2.x, Dk, "no top band")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "sigma":
+    sigma_check()
+
+
+# (4) channel-specific episode zero share: breached cells differ mainly in their zero share (P .37, S .40, PS .20, PI .01).
+# Run: ... poisson_cost_model.py m0ch
+
+def m0_channel():
+    D = setup()
+    base = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_params.npy")
+    ll0 = loglik(base, D)
+    f = lambda p: -loglik(p, D)
+    p1 = np.r_[base, np.full(4, base[16])]
+    o = minimize(f, p1, method="L-BFGS-B", options={"maxiter": 20000})
+    for _ in range(2):
+        o = minimize(f, o.x, method="Nelder-Mead", options={"maxiter": 30000, "xatol": 1e-6, "fatol": 1e-8})
+        o = minimize(f, o.x, method="L-BFGS-B", options={"maxiter": 20000})
+    P = unpack(o.x)
+    print(f"channel zero share: loglik {-o.fun:.1f} (+{-o.fun - ll0:.1f} for 3 params);  zero (Micro) " +
+          ", ".join(f"{c} {v:.2f}" for c, v in zip(CH, sig(P["m0"][0]))) + f";  Small+ logit shift {P['dm0']:+.2f};  medians " +
+          ", ".join(f"{c} £{np.exp(v):,.0f}" for c, v in zip(CH, P["mu_m"])) + f";  sigma {P['s_m']:.2f};  Small+ amount x{np.exp(P['dm']):.2f}")
+    breached_fit(o.x, D, "channel zero share")
+    np.save("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_params_m0ch.npy", o.x)
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "m0ch":
+    m0_channel()
