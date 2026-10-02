@@ -460,22 +460,28 @@ def unpack_b(p, form):
     P["pi_a"], P["pi_b"], P["mu_big"], P["s_big"] = -50.0, 0.0, 0.0, 1.0
     if form == "F1":
         P["g"], P["g0"] = p[25], p[26]
-    if form == "F2":
+    if form in ("F2", "F2T"):
         P["pi_a"], P["pi_b"], P["mu_big"], P["s_big"] = p[25], p[26], p[27], np.exp(p[28])
+    P["t"] = P["u"] = P["k"] = 0.0
+    if form == "F2T":  # targeted phishing: phishing breach rate x e^t, big-breach logit +u, phishing handling-zero logit +k
+        P["t"], P["u"], P["k"] = p[29], p[30], p[31]
     return P
 
 
 def joint_cdf_b(x, P, D, outcome):
     e = D["nch"] - 1
+    tg = D.get("tg", np.zeros(len(e)))
     Lc = D["H"] * P["lam"][None] * np.exp(P["bt"][D["tier"]] + P["bs"] * D["sm"])[:, None]
+    Lc[:, 0] = Lc[:, 0] * np.exp(P.get("t", 0.0) * tg)
     L = Lc.sum(1)
     m0 = sig(P["m0"] + P["dm0"] * D["sm"] + P["g0"] * e)
     muh = P["mu_h"][None] + P["dh"] * D["sm"][:, None]
     mum = P["mu_m"][None] + (P["dm"] * D["sm"] + P["g"] * e)[:, None]
-    pi = sig(P["pi_a"] + P["pi_b"] * e)
+    pi = sig(P["pi_a"] + P["pi_b"] * e + P.get("u", 0.0) * tg)
     lx = np.log(np.maximum(x, 1e-12))[:, None]
     pos = (x > 0)[:, None]
-    Fh = P["h0"][None] + (1 - P["h0"][None]) * np.where(pos, norm.cdf((lx - muh) / P["s_h"]), 0.0)
+    h0 = sig(np.log(P["h0"] / (1 - P["h0"]))[None] + P.get("k", 0.0) * tg[:, None] * np.array([1.0, 0, 0, 0])[None])
+    Fh = h0 + (1 - h0) * np.where(pos, norm.cdf((lx - muh) / P["s_h"]), 0.0)
     Fh = np.where(D["H"] == 1, Fh, 1.0).prod(1)
     Fs = m0[:, None] + (1 - m0[:, None]) * np.where(pos, norm.cdf((lx - mum) / P["s_m"]), 0.0)
     Fb = np.where(pos[:, 0], norm.cdf((lx[:, 0] - P["mu_big"]) / P["s_big"]), 0.0)
@@ -634,3 +640,92 @@ def gof_b(R=300):
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "gofb":
     gof_b()
+
+
+# --- #8 mass vs targeted phishing ---------------------------------------------------------------------------------
+# Targeted = phishcon >= 1 (or phishcon_bands 2-9 when the count is missing); phishing-hit firms with neither answer
+# treated as mass-only (count reported). F2T = F2 + targeted-phishing firms get phishing breach rate x e^t, big-breach
+# logit +u, phishing handling-zero logit +k. Compare with F2; implied phishing breach rate, big chance and per-hit
+# phishing cost for mass-only vs targeted firms. Run: ... poisson_cost_model.py targeted
+
+def targeted():
+    import pandas as pd
+    from latent_on_streams import aligned_raw
+    from breach_measures import num as cnum
+    D = setup_all()
+    r = aligned_raw()
+    t = cnum(r, "phishcon")[D["idx"]]
+    cb = pd.to_numeric(r["phishcon_bands"], errors="coerce").values[D["idx"]]
+    tg = np.where(~np.isnan(t), t >= 1, (cb >= 2) & (cb <= 9))
+    D["tg"] = (tg & (D["H"][:, 0] == 1)).astype(float)
+    ph = D["H"][:, 0] == 1
+    print(f"phishing-hit firms {ph.sum()}: targeted {int(D['tg'].sum())}, mass-only {int((ph & (D['tg'] == 0)).sum())}"
+          f" (of which no targeted answer {int((ph & np.isnan(t) & ~((cb >= 1) & (cb <= 9))).sum())})")
+    fits = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_breadth_fits.npy", allow_pickle=True)
+    p2 = np.asarray(fits[2], float)
+    ll2 = loglik_b(p2, D, "F2")
+    pT, llT = fit_b(D, "F2T", np.r_[p2, 0.5, 0.3, -0.3])
+    P = unpack_b(pT, "F2T")
+    print(f"F2 loglik {ll2:.1f};  F2T loglik {llT:.1f}  (+{llT - ll2:.1f} for 3 params)")
+    print(f"  targeted firms: phishing breach rate x{np.exp(P['t']):.2f}, big-breach odds x{np.exp(P['u']):.2f},"
+          f" phishing handling-zero odds x{np.exp(P['k']):.2f}")
+    print(f"  phishing breach rate per hit (low tier, Micro): mass {P['lam'][0]:.3f}, targeted {P['lam'][0] * np.exp(P['t']):.3f}")
+    for lab, m in (("mass-only", ph & (D["tg"] == 0)), ("targeted", ph & (D["tg"] == 1))):
+        e = D["nch"][m] - 1
+        tgm = D["tg"][m]
+        pi = sig(P["pi_a"] + P["pi_b"] * e + P["u"] * tgm)
+        print(f"  {lab:9s} n {m.sum():4d}  channels {np.average(D['nch'][m], weights=D['w'][m]):.2f}  P(big | breach) {np.average(pi, weights=D['w'][m]):.3f}"
+              f"  breached obs {np.average(D['oa'][m], weights=D['w'][m]):.2f}")
+    np.save("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_f2t.npy", pT)
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "targeted":
+    targeted()
+
+
+# Decomposition of the targeted-phishing gain: (a) rate + handling only (u fixed 0); (b) big-breach shift only (t, k
+# fixed 0); full fit's P(big | breach) by channels-hit for mass-only / no-phishing / targeted firms.
+# Run: ... poisson_cost_model.py targeted2
+
+def targeted2():
+    import pandas as pd
+    from latent_on_streams import aligned_raw
+    from breach_measures import num as cnum
+    D = setup_all()
+    r = aligned_raw()
+    t = cnum(r, "phishcon")[D["idx"]]
+    cb = pd.to_numeric(r["phishcon_bands"], errors="coerce").values[D["idx"]]
+    D["tg"] = (np.where(~np.isnan(t), t >= 1, (cb >= 2) & (cb <= 9)) & (D["H"][:, 0] == 1)).astype(float)
+    fits = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_breadth_fits.npy", allow_pickle=True)
+    p2 = np.asarray(fits[2], float)
+    pT = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_f2t.npy")
+    ll2, llT = loglik_b(p2, D, "F2"), loglik_b(pT, D, "F2T")
+    for lab, free in (("(a) rate + handling only", [0, 2]), ("(b) big-breach shift only", [1])):
+        def f(q):
+            ext = np.zeros(3)
+            ext[free] = q[29:]
+            return -loglik_b(np.r_[q[:29], ext], D, "F2T")
+        q0 = np.r_[p2, np.zeros(len(free))]
+        o = minimize(f, q0, method="L-BFGS-B", options={"maxiter": 20000})
+        o = minimize(f, o.x, method="Nelder-Mead", options={"maxiter": 40000, "xatol": 1e-6, "fatol": 1e-8})
+        o = minimize(f, o.x, method="L-BFGS-B", options={"maxiter": 20000})
+        print(f"{lab}: loglik {-o.fun:.1f} (+{-o.fun - ll2:.1f} over F2 for {len(free)} params); extras {np.round(o.x[29:], 2)}")
+    print(f"full F2T: loglik {llT:.1f} (+{llT - ll2:.1f})")
+    P = unpack_b(pT, "F2T")
+    print("full F2T P(big | breach) by channels hit 1/2/3/4:")
+    for lab, tgv in (("no targeted phishing", 0.0), ("targeted phishing", 1.0)):
+        print(f"   {lab:22s} " + " / ".join(f"{sig(P['pi_a'] + P['pi_b'] * k + P['u'] * tgv):.3f}" for k in range(4)))
+    print(f"   big episode median £{np.exp(P['mu_big']):,.0f}, sigma {P['s_big']:.2f}")
+    ph = D["H"][:, 0] == 1
+    mid = np.where(D["hi"] == 0, 0.0, (D["lo"] + D["hi"]) / 2)
+    print("observed, breached firms: P(worst >= £5k) by group and channels hit (n in brackets):")
+    for lab, g in (("no phishing", ~ph), ("phishing, mass-only", ph & (D["tg"] == 0)), ("targeted phishing", D["tg"] == 1)):
+        cells = []
+        for k in (1, 2, 3, 4):
+            m = g & (D["oa"] == 1) & (D["nch"] == k)
+            cells.append(f"{np.average(mid[m] >= 5000, weights=D['w'][m]) if m.any() else float('nan'):.2f} ({m.sum()})")
+        print(f"   {lab:20s} " + "  ".join(cells))
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "targeted2":
+    targeted2()

@@ -1764,3 +1764,15 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      (removing it drops costly and cheap broad firms equally) -> breadth effect not an impersonation artefact.
   Model option: split I into spoofing (exposure channel) and intrusive (treated as breach evidence), or keep I as one
   channel and note its mixture. Intrusive firms are mostly already flagged breached under W2 (74%).
+- #8 MASS vs TARGETED PHISHING (poisson_cost_model.py targeted / targeted2, 2026-10-02). Targeted = phishcon >= 1 (or
+  bands); 867 phishing-hit firms: targeted 420, mass-only 447 (120 of them no targeted answer -> counted mass-only).
+  Unified F2 model + targeted-firm effects:
+    (a) phishing breach rate x1.48 (mass .065 vs targeted .095 per hit, low tier Micro) + phishing handling-zero odds
+        x0.44 (targeted firms more often have clean-up cost): +10.1 ll for 2 params (p ~4e-5).  <- ADOPT
+    (b) big-breach odds shift alone: +2.7 for 1 param; in the full fit it degenerates (no big breaches at all without
+        targeted phishing, u -> 15.9), contradicted by data: breached mass-only firms with 3/4 channels have P(>= £5k)
+        .23/.36 vs targeted .28/.51. Combined gain over (a) only +2.2. -> not adopted; big-breach chance stays
+        breadth-driven, common to mass and targeted.
+  Old subtraction approach and its untested 'mass engagement same whether targeted' assumption are superseded: the model
+  estimates the rates per firm type directly. Params of (a) not saved yet (refit at assembly; F2T full fit saved as
+  scratchpad poisson_f2t.npy but degenerate).
