@@ -1729,3 +1729,18 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   handled-attempt vs real-event split again).
   => no gross misfit for any form; but p ~.98 even for F0 means this test (no refit, weighted effective n) has little
      power here. The discriminating evidence is the likelihood ratio (breadth effect p ~.003-.008), not this test.
+- TAIL BY EXTRAPOLATING THE MODEL CURVE + 2025 SANITY CHECK (tail_extrapolation.py, 2026-10-02). User: extrapolate the
+  fitted curve; sanity check assuming the largest 2025 UK incident (JLR ~£1.9bn est. UK economic impact; M&S ~£300m
+  reported profit hit; approximate reference sizes) was the year's largest loss.
+  National (ONS N, weighted means over all firms incl. unhit): F2 172.7k breaches/yr (29.2k big), expected cost £1.36bn
+  (Micro .88, Small .33, Medium .11, Large .04); 33% from single losses > £500k, 7% > £5m. F1: £1.03bn; 18% / 3%.
+  Single losses per year UK (F2): > £500k 318; > £5m 9.9; > £50m 0.10 (1 in 10 yrs); > £300m 1 in 835 yrs; > £1.9bn 1 in
+  164,000 yrs. F1: M&S-scale 1 in 8,500 yrs, JLR-scale 1 in 3.2m yrs. Typical largest UK loss in a year: ~£19m (F2), ~£10m (F1).
+  => FALSIFIED at the top: 2025 had M&S- and JLR-scale losses (plus Co-op); the model calls them 1-in-hundreds to
+     1-in-millions-of-years events, and puts the typical annual maximum ~2 orders of magnitude lower. Cause: big-breach
+     cost is size-independent in the model (Large firms draw from the same curve as Micro), and the survey has few Large
+     firms and nothing above £500k. Real catastrophes scale with firm size (JLR revenue ~£29bn). Caveat: JLR £1.9bn is
+     economy-wide incl. supply chain; the firm's own cost is smaller but still hundreds of millions.
+  Implication: the model curve is fine up to roughly the observed range, but the national tail needs a size-scaling
+  catastrophe component (Large/Medium firms) that this survey cannot estimate; one JLR-scale event alone exceeds the
+  model's whole national total.
