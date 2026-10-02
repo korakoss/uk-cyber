@@ -1598,3 +1598,17 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   per-breach cost G_c; annual = handling + sum of N_c costs; worst incident = likelihood observation (max), not the total.
   The (b) results above are evidence on thinning successes -> material breaches (ransomware repeats = handled attempts;
   multi-success phishing looks like one bigger event), not on the count tail. Cross-channel (a) result stands.
+- REPEAT-EPISODE TEST (breach_repeats.py, 2026-10-02). Material episodes per hit channel ~ Poisson(lam_c x tier x size);
+  outcome flag = M>=1. Rates (low tier, Micro): P .055, I .054, R .40, S .57; tier mid x0.75, high x0.64 (per hit; frailty acts
+  via hits); Small+ x1.20. P(outcome) by tier fits (.088/.154/.335). Among 98 narrow outcome firms, M|M>=1 ~ ZTP(kappa Lam),
+  worst = max of M per-episode draws (closed form), G refitted per kappa:
+    loglik kappa 0 / 0.5 / 1 / 2 / 4 / 8: -187.59 / -187.52 / -187.51 / -187.68 / -188.77 / -192.98.
+  => one episode and Poisson-within-cell fit equally well; heavy overdispersion (kappa >= ~4) disfavoured. No worst-cost
+     gradient across implied E[M|M>=1] terciles (1.03 / 1.11 / 1.33) - but predicted gradient is tiny too (low power).
+  KEY: E[M|M>=1] x E[G] per breached firm is invariant in kappa (£1,803 / 1,800 / 1,799 / 1,800 / 1,805 / 1,771): the data
+     pin expected annual material cost per breached firm, not its split into episodes x cost. As kappa rises, fitted
+     per-episode G shrinks (medians down, m0 up) to keep the max right.
+  => Implications: (1) never fit G assuming one episode and then add a repeat multiplier on top (double counting);
+     fit G and the episode law jointly. (2) Default: Poisson-within-cell (kappa=1), generative and no epicycle.
+     (3) kappa matters out of sample: firms with Lam beyond the sample range (frail, heavily hit; Micro under-sampled) and
+     the shape of the annual sum (several smaller vs one bigger draw: same mean, thinner tail). Carry kappa 0-2 as range.
