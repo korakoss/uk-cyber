@@ -377,3 +377,49 @@ def is_cell():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "iscell":
     is_cell()
+
+
+# --- Widened breach marker ----------------------------------------------------------------------------------------
+# The outcome flag misses contained incidents (breach_measures.py leak). Refit with breach marker =
+# W1: outcome OR (external payments > 0 OR staff stopped OR restore >= 1 day OR recovery costs OR revenue loss)
+# W2: outcome OR (staff stopped OR restore >= 1 day OR recovery costs OR revenue loss)   [external payments excluded]
+# Compare per-hit expected cost (handling + episodes x E[G]) with the base fit.
+# Run: ... poisson_cost_model.py widen
+
+def per_hit(p, D):
+    P = unpack(p)
+    Lc, m0, muh, mum = firm_terms(P, D)
+    out = []
+    for c in range(4):
+        m = D["H"][:, c] == 1
+        eh = (1 - P["h0"][c]) * np.exp(muh[m, c] + P["s_h"] ** 2 / 2)
+        eg = (1 - m0[m]) * np.exp(mum[m, c] + P["s_m"] ** 2 / 2)
+        out.append((np.average(eh, weights=D["w"][m]), np.average(Lc[m, c], weights=D["w"][m]),
+                    np.average(eg, weights=D["w"][m]), np.average(eh + Lc[m, c] * eg, weights=D["w"][m])))
+    return out
+
+
+def widen():
+    import pandas as pd
+    from latent_on_streams import aligned_raw
+    D = setup()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values[D["idx"]]
+    ext = ((nm("damagedirsx_bands") > 1) & (nm("damagedirsx_bands") <= 13)) | ((nm("damagedirlx_bands") > 1) & (nm("damagedirlx_bands") <= 13))
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    base = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_params.npy")
+    res = {"base (outcome)": (base, D)}
+    for lab, mk in (("W1 outcome|any marker", ext | soft), ("W2 outcome|soft marker", soft)):
+        Dw = dict(D)
+        Dw["oa"] = ((D["oa"] == 1) | mk).astype(float)
+        print(f"\n===== {lab}: breached firms {int(Dw['oa'].sum())} (was {int(D['oa'].sum())})")
+        p, ll = fit(Dw)
+        report(p, ll, Dw)
+        res[lab] = (p, Dw)
+    print("\n===== per-hit expected annual cost: handling + episodes x E[G] = total")
+    for lab, (p, Dx) in res.items():
+        print(f"  {lab:24s} " + "   ".join(f"{c} £{h:,.0f}+{e:.3f}x£{g:,.0f}=£{t:,.0f}" for c, (h, e, g, t) in zip(CH, per_hit(p, Dx))))
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "widen":
+    widen()

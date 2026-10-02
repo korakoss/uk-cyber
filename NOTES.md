@@ -1654,3 +1654,15 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      sizeable in narrow firms (a quarter of their cost mass). Currently absorbed by handling (fit OK), so sample means are
      right, but in the generator it is counted once per hit-year instead of repeating like episodes. 1380 has no marker
      (staff time only) - consistent with data-error suspicion.
+- WIDENED MARKER REFIT (poisson_cost_model.py widen, 2026-10-02). Breached firms: base 98; W2 outcome|soft (restore>=1d,
+  staff stopped, recovery costs, revenue loss) 136; W1 W2|external payments 181.
+  Per-hit expected annual cost (handling + episodes x E[G]):
+             P      I      R      S
+    base   £265   £404  £2,111 £1,017
+    W2     £252   £503  £1,569   £647
+    W1     £193   £673  £1,385   £715
+  Rough count-weighted narrow total (n hit P672 I288 R14 S117): base 443k, W2 412k (-7%), W1 427k (-4%).
+  => TOTAL robust (within ~7%); CHANNEL attribution is not: base S handling £779 was leaked material incidents (W: £70-90);
+     impersonation rises x1.25-1.65; ransomware falls ~25-35% (n14). Episodes per breached firm 1.17 -> 1.22-1.24.
+     Model shapes: handling sigma 1.93 -> 1.69-1.90; episode sigma 1.95 -> 1.67; Small+ per-hit ~= Micro throughout.
+  Decision proposal: W2 (soft markers = consequences; external payments too loose) as main; base and W1 as range.
