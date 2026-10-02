@@ -1693,3 +1693,19 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   => Best-supported: one spreading intrusion (often entering via targeted phishing), with extra types ticked because the
      incident touched them. Not repeats, not frailty. Model: broad compromise = its own single-event class; repeat version
      only as sensitivity. Thin cells throughout (5-43 firms).
+- ESCALATION HYPOTHESIS TESTS (escalation.py, 2026-10-02). Hypothesis: any episode may escalate into a spreading
+  intrusion that costs more AND paints extra type ticks, so 'broad' is partly an outcome. Signature = systems corrupted
+  OR money stolen OR 3+ distinct outcomes; breached = W2. W2 Poisson params saved: scratchpad poisson_params_w2.npy.
+  1. P(signature | breached) by channel count 1/2/3/4: .19/.32/.33/.61. Signature events labelled narrow are CHEAP
+     (25 firms: mean £1.4k, median £750, 5% >= £5k); labelled broad are costly (42: mean £51k, median £7.5k, 62% >= £5k).
+     Costly breached firms (59): 59% have signature, 66% broad.
+  2. Signature firms per expected episode ('p_esc') ~0.22 overall; tier .18/.21/.29; Micro .24 / Small+ .17; phishing
+     hit .24 vs not .17. => signature is common (~29% of breached), not a rare escalation class; loose marker.
+  3. Co-labelling real at TYPE level: unbacked (0 attempts) ticks concentrate in signature firms (takeover 36% vs 4-6%;
+     hacking 60% vs 0%; DoS 0% everywhere). But at CHANNEL level it creates no breadth: 100% of broad firms stay broad
+     after dropping unbacked ticks (they fall inside the S channel, which the firm already has). Impersonation /
+     ransomware / malware ticks cannot be checked (no attempt counts).
+  => Strong form ('breadth is created by the incident') NOT supported where checkable: broad firms are genuinely exposed
+     across channels. What holds: given a signature-type breach, genuinely broad firms suffer far costlier ones
+     (median x10). Breadth of real exposure amplifies severity. Open: why (more attack surface lets an intrusion spread?),
+     and whether impersonation ticks are co-labelled (uncheckable directly).
