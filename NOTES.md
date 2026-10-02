@@ -1548,7 +1548,7 @@ Annual firm cost = sum of handling + material costs; observed via the worst inci
   => breadth (3+) drives the tail rate in both broad subgroups; the subgroups differ in SHAPE: PIS-type spreading compromise = spread-out middle; ransomware/malware broad = bimodal (handled vs disaster), like ransomware itself. Second subgroup too thin (12) for its own distribution -> sensitivity.
 
 ## OPEN QUESTIONS (2026-10-01, not yet understood)
-1. [CLOSED 2026-10-02, see #1 WORST vs ANNUAL TOTAL] Worst incident vs annual total: only the worst is priced; crimecost check weak (narrower concept, n156). Multi-material-breach firms' second incidents unpriced except via the 1.0-1.17 sum/max read on per-type costs.
+1. [REOPENED 2026-10-02: model N_c count law, see USER CORRECTION] Worst incident vs annual total: only the worst is priced; crimecost check weak (narrower concept, n156). Multi-material-breach firms' second incidents unpriced except via the 1.0-1.17 sum/max read on per-type costs.
 2. Two cost questions disagree (per-type ~same or ~half, or floor '<£100'); recall vs itemisation unresolved -> factor ~2 either way.
 3. Handling vs material split: outcome flags mark 'material' imperfectly (other serious non-material incidents cost £4.3k mean); breach definition (success vs outcome) not reconciled across channels.
 4. Narrow-firm cost fit misfits low end (zero share); handling-cost layer has no parametric form yet.
@@ -1591,6 +1591,10 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
     ransomware (1: 25, 2+: 8): 2+ CHEAPER (0/8 >= £5k vs .36) -> repeat 'demands' are handled attempts. Add-on ~0
       (the iid upper bound +99-230% is decisively rejected).
     other serious (1: 33, 2+: 14): >=£5k .47 vs .09 (pred .26-.33), mean below pred. Upper-bound add-on +9-10%.
-  => #1 CLOSED: annual total ~= sum over channels of per-channel worst; worst-incident observation understates the annual
-     total by ~1% (cross-channel) + at most ~5% (within-channel repeats, upper bound; iid already rejected). Carry x1.0-1.1.
-     Caveat: thin 2+ cells (8-66); add-on uses any-channel worst, all hit firms incl. broad.
+  USER CORRECTION (2026-10-02): do NOT summarise as annual = (1+eps) x worst. Low in-sample repeats (3,835 firms) do not make
+  repeats negligible in a 1.4M-firm population; Micro is most under-represented (43% of narrow sample, ~80% of weight).
+  #1 REOPENED as a generative piece: per hit channel, N_c material breaches ~ count law (frailty-driven, e.g. negbin),
+  P(N_c>=1)=q_c; tail/dispersion from success counts (material breaches subset of successes -> success law bounds it);
+  per-breach cost G_c; annual = handling + sum of N_c costs; worst incident = likelihood observation (max), not the total.
+  The (b) results above are evidence on thinning successes -> material breaches (ransomware repeats = handled attempts;
+  multi-success phishing looks like one bigger event), not on the count tail. Cross-channel (a) result stands.
