@@ -126,5 +126,78 @@ def main():
     report(p, ll, S)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+# --- Size-factor refit -------------------------------------------------------------------------------------------
+# The pooled fit gave Small+ x0.75 on cost amounts. Suspects: one shift shared by handling and material (handling bulk
+# dominates); size unable to act through zero shares / breach rates; weighting. Variants:
+#   A  one shift (as above)                               B  separate shifts for handling and material amounts
+#   C  B + Small+ logit shifts on h0 (shared over channels) and on q (shared over channels)
+#   D  C unweighted
+# Run: ... narrow_cost_model.py size
+
+def unpack_v(p, v):
+    P = unpack(p[:20])
+    P["dh"] = p[19]
+    P["dm"] = p[20] if v in "BCD" else p[19]
+    P["dh0"] = p[21] if v in "CD" else 0.0
+    P["dq"] = p[22] if v in "CD" else 0.0
+    return P
+
+
+def at_size(P, sm):
+    sig = lambda z: 1 / (1 + np.exp(-z))
+    lg = lambda x: np.log(x / (1 - x))
+    Q = dict(P)
+    Q["h0"] = sig(lg(P["h0"]) + P["dh0"] * sm)
+    Q["q"] = sig(lg(P["q"]) + P["dq"] * sm)
+    Q["mu_h"] = P["mu_h"] + P["dh"] * sm
+    Q["mu_m"] = P["mu_m"] + P["dm"] * sm
+    Q["delta"] = 0.0
+    return Q
+
+
+def fit_variant(v, S, p_start):
+    idx, hits, lo, hi, oa, sm, w = S
+    ww = np.ones_like(w) if v == "D" else w
+    k = {"A": 20, "B": 21, "C": 23, "D": 23}[v]
+
+    def nll(p):
+        P = unpack_v(p, v)
+        Ps = (at_size(P, 0.0), at_size(P, 1.0))
+        s = 0.0
+        for i, hit in zip(idx, hits):
+            s -= ww[i] * np.log(max(firm_lik(i, hit, lo[i], hi[i], bool(oa[i]), Ps[int(sm[i])], 0.0), 1e-300))
+        return s
+    p0 = np.r_[p_start, np.zeros(23 - len(p_start))][:k]
+    o = minimize(nll, p0, method="L-BFGS-B", options={"maxiter": 3000})
+    o = minimize(nll, o.x, method="Nelder-Mead", options={"maxiter": 6000, "xatol": 1e-4, "fatol": 1e-6})
+    return o.x, -o.fun, k
+
+
+def size_refit():
+    S = setup()
+    idx, hits, lo, hi, oa, sm, w = S
+    print(f"firms {len(idx)}, Small+ {int(sm[idx].sum())}, Small+ weight share {w[idx][sm[idx] == 1].sum() / w[idx].sum():.3f}")
+    base = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/narrow_params.npy")
+    start = np.r_[base, base[19]]
+    for v in "ABCD":
+        p, ll, k = fit_variant(v, S, start if v != "A" else base)
+        if v in "BC":
+            start = p
+        P = unpack_v(p, v)
+        print(f"\n{v}: loglik {ll:.1f}  params {k}")
+        print(f"   handling amount x{np.exp(P['dh']):.2f}   material amount x{np.exp(P['dm']):.2f}"
+              f"   h0 logit shift {P['dh0']:+.2f}   q logit shift {P['dq']:+.2f}")
+        for lab, s_ in (("Micro", 0.0), ("Small+", 1.0)):
+            Q = at_size(P, s_)
+            print(f"   {lab:6s} q " + " ".join(f"{c}{x:.3f}" for c, x in zip(CH, Q["q"])) +
+                  "  h0 " + " ".join(f"{c}{x:.2f}" for c, x in zip(CH, Q["h0"])) +
+                  "  mean handling " + " ".join(f"{c}£{(1 - Q['h0'][j]) * np.exp(Q['mu_h'][j] + Q['s_h'] ** 2 / 2):,.0f}" for j, c in enumerate(CH)) +
+                  "  mean material " + " ".join(f"{c}£{(1 - Q['m0']) * np.exp(Q['mu_m'][j] + Q['s_m'] ** 2 / 2):,.0f}" for j, c in enumerate(CH)))
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "size":
+    size_refit()
