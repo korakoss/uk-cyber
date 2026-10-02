@@ -1789,3 +1789,15 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   weight; mean worst £23k) vs narrow (14; mean £1.4k) -> its cost is largely the breadth effect.
   => Unified model already uses the W2 breach marker, not demands, and treats attempt-only ticks as hits without a
      breach: no change needed. Ransomware-specific numbers remain thin.
+- NATIONAL ESTIMATE (national_estimate.py main, 2026-10-02). Main model F2R = F2 breadth model + targeted-phishing
+  rate x1.48 and handling; W2 marker; ll -1654.6; P(big | breach) 1.1% / 6.4% / 29% / 71% for 1-4 channels; big median
+  £4.5k, sigma 2.08. Params: scratchpad national_main_F2R.npy.
+  NATIONAL £1.38bn/yr (employer businesses; ~172.7k breaches). Components: handling £0.15bn (11%), ordinary breaches
+  £0.15bn (11%), big breaches £1.07bn (78%). By size: Micro £0.88bn (£765/business), Small £0.34bn (£1,531), Medium
+  £0.12bn (£2,985), Large £0.04bn (£5,217). Share from single losses > £500k 33%, > £5m 8%.
+  Sensitivities (refit): F1R cost-scale breadth £1.04bn (0.75x); no targeted split £1.36bn; marker outcome-only £1.49bn
+  (1.08x); W1 £1.36bn; firm 1380 out £1.37bn. Repeat rate not refit (in-sample invariance +-2%).
+  Empirical baseline (worst incident as annual cost, weighted midpoints): £1.31bn.
+  vs old £2.2bn: old pipeline added per-type worst->annual bridge multipliers (double counting under the current
+  understanding) and leaned on a few top-band firms - best reading, not a verified decomposition.
+  Excludes: Large-firm catastrophes (pinned), sole traders. Bootstrap running (national_estimate.py boot; 4 x 50).
