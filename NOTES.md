@@ -1666,3 +1666,13 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      impersonation rises x1.25-1.65; ransomware falls ~25-35% (n14). Episodes per breached firm 1.17 -> 1.22-1.24.
      Model shapes: handling sigma 1.93 -> 1.69-1.90; episode sigma 1.95 -> 1.67; Small+ per-hit ~= Micro throughout.
   DECIDED (user, 2026-10-02): W2 (soft markers = consequences; external payments too loose) is the main breach marker; base and W1 as range.
+- DIRECT REPEAT SIGNALS (breach_repeats.py direct, 2026-10-02). User point: one firm can't distinguish one big vs several
+  small breaches, but the sample distribution can in principle (more breach-prone firms -> bigger worst, fewer zeros,
+  different shape). kappa profile was flat = weak identification in THIS data, not logical impossibility. Direct signals:
+  A. per-type yearly cost / worst incident (worst = that channel): 1 success (34 firms) median .44, share >= 1 .38;
+     2+ successes (8 firms, 6 at the '<£100' floor) median .79, share >= 1 .50. Predicted for 2+: no repeats .44 / .38;
+     every success a costly episode .68 [.18-1.23] / .38 [.12-.75]. => uninformative (8 firms, floor-dominated).
+  B. distinct consequences among 136 breached narrow firms (W2): slope on log E[episodes|breached], given worst-cost
+     group, 1.69 (se 1.07); Poisson repeats predict ~2, no repeats 0. Terciles 1.72 / 2.56 / 2.28 (not monotone).
+     Confounded with number of channels hit. => weak support for repeats of about Poisson size (~1.6 se).
+  => This survey cannot settle the repeat rate; nothing contradicts Poisson repeats (user-preferred generator). Keep it.
