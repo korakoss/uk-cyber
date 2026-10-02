@@ -555,3 +555,82 @@ def breadth():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "breadth":
     breadth()
+
+
+# --- Goodness of fit of the breadth models (parametric bootstrap, all 1001 hit firms) ------------------------------
+# Same design as gof(): simulate each fitted generator on the same firms, weighted Pearson X2 with effective n over the
+# 5 worst-cost groups, per cell; cells = channel set x breached (>= 8 firms) and channels-hit count x breached.
+# Parameters not refitted per replicate (conservative). Run: ... poisson_cost_model.py gofb
+
+def simulate_b(P, D, rng):
+    e = D["nch"] - 1
+    n = len(D["w"])
+    Lc = D["H"] * P["lam"][None] * np.exp(P["bt"][D["tier"]] + P["bs"] * D["sm"])[:, None]
+    m0 = sig(P["m0"] + P["dm0"] * D["sm"] + P["g0"] * e)
+    muh = P["mu_h"][None] + P["dh"] * D["sm"][:, None]
+    mum = P["mu_m"][None] + (P["dm"] * D["sm"] + P["g"] * e)[:, None]
+    pi = sig(P["pi_a"] + P["pi_b"] * e)
+    hc = np.where(rng.random((n, 4)) < P["h0"][None], 0.0, np.exp(muh + P["s_h"] * rng.standard_normal((n, 4))))
+    worst = np.where(D["H"] == 1, hc, 0.0).max(1)
+    M = rng.poisson(Lc)
+    for i, j in zip(*np.nonzero(M)):
+        k = M[i, j]
+        big = rng.random(k) < pi[i]
+        small = np.where(rng.random(k) < m0[i], 0.0, np.exp(mum[i, j] + P["s_m"] * rng.standard_normal(k)))
+        x = np.where(big, np.exp(P["mu_big"] + P["s_big"] * rng.standard_normal(k)), small)
+        worst[i] = max(worst[i], x.max())
+    return worst, (M.sum(1) >= 1).astype(int)
+
+
+def gof_b(R=300):
+    D = setup_all()
+    fits = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_breadth_fits.npy", allow_pickle=True)
+    edges = [0, 500, 5000, 20000]
+    grp = lambda v: np.where(v <= 0, 0, np.searchsorted(edges, v, side="right"))
+    gobs = grp(np.where(D["hi"] == 0, 0.0, (D["lo"] + D["hi"]) / 2))
+    oobs = D["oa"].astype(int)
+    labels = {"set": D["sets"], "nch": D["nch"].astype(str)}
+    for form, p in zip(("F0", "F1", "F2"), fits):
+        P = unpack_b(np.asarray(p, float), form)
+        rng = np.random.default_rng(11)
+        sims = [simulate_b(P, D, rng) for _ in range(R)]
+        sims = [(grp(wv), o) for wv, o in sims]
+        print(f"\n{form}")
+        for kind, lab in labels.items():
+            cells = [k for k in set(zip(lab, oobs)) if ((lab == k[0]) & (oobs == k[1])).sum() >= 8]
+
+            def shares(g, o, key):
+                m = (lab == key[0]) & (o == key[1])
+                if not m.any():
+                    return None, 0.0
+                w = D["w"][m]
+                return np.array([w[g[m] == j].sum() for j in range(5)]) / w.sum(), w.sum() ** 2 / (w ** 2).sum()
+            exp_ = {}
+            for key in cells:
+                num, den = np.zeros(5), 0.0
+                for g, o in sims:
+                    m = (lab == key[0]) & (o == key[1])
+                    num += np.array([D["w"][m & (g == j)].sum() for j in range(5)])
+                    den += D["w"][m].sum()
+                exp_[key] = np.maximum(num / max(den, 1e-12), 1e-4)
+
+            def x2(g, o):
+                out = {}
+                for key in cells:
+                    s, ne = shares(g, o, key)
+                    out[key] = 0.0 if s is None else ne * ((s - exp_[key]) ** 2 / exp_[key]).sum()
+                return out
+            xo = x2(gobs, oobs)
+            xs = [x2(g, o) for g, o in sims]
+            to, ts = sum(xo.values()), np.array([sum(x.values()) for x in xs])
+            print(f"  cells by {kind:3s} ({len(cells):2d}): total X2 obs {to:6.1f}  sim median {np.median(ts):6.1f}  p {np.mean(ts >= to):.3f}")
+            worst = sorted(cells, key=lambda k: -xo[k])[:3]
+            for key in worst:
+                s_ = np.array([x[key] for x in xs])
+                print(f"     worst cell {key[0]:4s} breached {key[1]}  n {((lab == key[0]) & (oobs == key[1])).sum():3d}  X2 {xo[key]:5.1f}"
+                      f"  p {np.mean(s_ >= xo[key]):.3f}  obs " + " ".join(f"{v:.2f}" for v in shares(gobs, oobs, key)[0]) +
+                      "  exp " + " ".join(f"{v:.2f}" for v in exp_[key]))
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "gofb":
+    gof_b()

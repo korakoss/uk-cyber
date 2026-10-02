@@ -1723,3 +1723,9 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   => Breadth effect is real (p ~.003-.008) after channel-specific costs. Proposed: F2 as main (matches story A: a breach
      stays contained or spreads; spreading likelier with more fronts), F1 as sensitivity. Caveat: impersonation
      co-labelling (story B) would inflate the apparent breadth effect; uncheckable.
+- GOF OF BREADTH MODELS (poisson_cost_model.py gofb; 300 sims each, all 1001 firms): channel set x breached (15 cells)
+  p F0 .977 / F1 .977 / F2 .990; channels-hit x breached (7 cells) p .970 / .987 / .983. No cell below p .09.
+  Worst cell everywhere: PRS breached (9 firms) bimodal - .71 <£500, .28 £5-20k, nothing between (ransomware's
+  handled-attempt vs real-event split again).
+  => no gross misfit for any form; but p ~.98 even for F0 means this test (no refit, weighted effective n) has little
+     power here. The discriminating evidence is the likelihood ratio (breadth effect p ~.003-.008), not this test.
