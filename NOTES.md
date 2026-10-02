@@ -1804,3 +1804,12 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   BOOTSTRAP (200 resamples within size band, refit F2R each; national_estimate.py boot / bootsum): median £1.17bn;
   50% £0.87-1.76bn; 90% £0.56-3.81bn; 95% £0.48-4.44bn; max £46bn (one blow-up); 9.5% > £3bn, 2.5% > £5bn.
   Strongly right-skewed: driven by the big-breach tail spread refitted on resamples (few firms carry it).
+- #11 PART 2, FIRMS WITHOUT COST ANSWERS (national_estimate.py missing / missing2, 2026-10-02): 127 of 1128 attacked
+  firms (8.9% of weight) have no worst-incident band (all answered the outcome question). They are MORE exposed
+  (channels 2.18 vs 1.49; 3+ channels .20 vs .12; impersonation .58 vs .32; other serious .58 vs .27; tier high .41 vs
+  .12) but report FEWER breaches (outcome .11 vs .16; soft marker .09 vs .16). Model P(breach) for them .35 vs reported
+  W2 .16.
+  National: scaling answering firms (current) £1.375bn; model imputation from exposure only £1.521bn (1.106x);
+  imputation conditional on their own breach marker £1.438bn (1.045x)  <- best. Effect +0-11%, best guess +5%.
+- #2 CLOSED (2026-10-02): per-type yearly cost vs worst incident disagreement does not feed the estimate (priced from
+  the itemised worst-incident question); likely holistic-recall undershoot. Uninformative for repeats.

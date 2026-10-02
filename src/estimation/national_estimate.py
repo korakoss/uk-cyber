@@ -195,3 +195,85 @@ def boot_summary():
 
 if __name__ == "__main__" and sys.argv[1] == "bootsum":
     boot_summary()
+
+
+# --- #11 part 2: attacked firms without usable cost answers -------------------------------------------------------
+# 'have' = attacked with worst-incident band and outcome answer. Compare attacked firms without (missing) vs with, on
+# what they did answer; then recompute the national total imputing each missing firm from the fitted model given its
+# own channels, tier, size and targeted-phishing status, instead of scaling up the answering firms.
+# Run: ... national_estimate.py missing
+
+def missing():
+    pop = population()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    hit, have, w, size = pop["hit"], pop["have"], pop["w"], pop["size"]
+    miss = hit & ~have
+    print(f"attacked firms {hit.sum()}: with cost data {have.sum()}, without {miss.sum()} "
+          f"(weighted share without {w[miss].sum() / w[hit].sum():.3f})")
+    print("  why missing: no worst band " + str(int((miss & np.isnan(pop['band'])).sum())) + ", no outcome answer "
+          + str(int((miss & np.isnan(pop['oa'])).sum())))
+    oa_ans = ~np.isnan(pop["oa"])
+    feats = {"Micro": size == 1, "Small": size == 2, "Medium": size == 3, "Large": size == 4,
+             "channels hit (mean)": pop["nch"], "3+ channels": pop["nch"] >= 3,
+             "phishing": pop["C"][:, 0] == 1, "impersonation": pop["C"][:, 1] == 1, "ransomware": pop["C"][:, 2] == 1,
+             "other serious": pop["C"][:, 3] == 1, "targeted phishing": pop["tg"] == 1,
+             "tier mid": pop["tier"] == 1, "tier high": pop["tier"] == 2,
+             "soft breach marker": pop["soft"], "attack freq weekly+": nm("freq") >= 4}
+    print(f"  {'':22s} {'with':>7s} {'without':>8s}   (weighted)")
+    for k, v in feats.items():
+        v = v.astype(float)
+        print(f"  {k:22s} {np.average(v[have], weights=w[have]):7.3f} {np.average(v[miss], weights=w[miss]):8.3f}")
+    m = miss & oa_ans
+    print(f"  outcome flag (where answered): with {np.average(pop['oa'][have], weights=w[have]):.3f}, without "
+          f"{np.average(pop['oa'][m], weights=w[m]) if m.any() else float('nan'):.3f} (n {m.sum()})")
+    p = np.load(SP + "national_main_F2R.npy")
+    c = per_firm_cost(pcm.unpack_b(p, "F2R"), pop)
+    v = c["handling"] + c["ordinary"] + c["big"]
+    base, by_b = national(v, pop)
+    tot, by = 0.0, {}
+    for s in (1, 2, 3, 4):
+        a = size == s
+        val = (w[a & hit] * v[a & hit]).sum() / w[a].sum() * N[s]
+        by[s] = val
+        tot += val
+    print(f"\nnational: scaling answering firms £{base / 1e9:.3f}bn;  model-imputing missing firms £{tot / 1e9:.3f}bn ({tot / base:.3f}x)")
+    for s in (1, 2, 3, 4):
+        a = size == s
+        print(f"  {SL[s]:6s} missing weight share {w[a & miss].sum() / w[a & hit].sum():.3f};  model cost per firm: answering "
+              f"£{np.average(v[a & have], weights=w[a & have]):,.0f}, missing £{np.average(v[a & miss], weights=w[a & miss]) if (a & miss).any() else float('nan'):,.0f};"
+              f"  total £{by_b[s] / 1e9:.3f}bn -> £{by[s] / 1e9:.3f}bn")
+
+
+if __name__ == "__main__" and sys.argv[1] == "missing":
+    missing()
+
+
+# Missing firms imputed conditional on their own breach marker (W2: outcome flag or soft marker, which they answered):
+# E[annual | no breach] = handling; E[annual | breached] = handling + Lam E[G] / (1 - exp(-Lam)).
+# Run: ... national_estimate.py missing2
+
+def missing2():
+    pop = population()
+    hit, have, w, size = pop["hit"], pop["have"], pop["w"], pop["size"]
+    miss = hit & ~have
+    p = np.load(SP + "national_main_F2R.npy")
+    c = per_firm_cost(pcm.unpack_b(p, "F2R"), pop)
+    L = c["episodes"]
+    eg = (c["ordinary"] + c["big"])
+    br = ((pop["oa"] == 1) | pop["soft"])
+    v = c["handling"] + eg
+    vc = np.where(br, c["handling"] + eg / np.maximum(-np.expm1(-L), 1e-12), c["handling"])
+    print(f"missing firms {miss.sum()}: breached (W2) {int((miss & br).sum())} ({np.average(br[miss], weights=w[miss]):.3f} weighted);"
+          f" model P(breach) for them {np.average(-np.expm1(-L[miss]), weights=w[miss]):.3f}")
+    base = national(v, pop)[0]
+    tot = 0.0
+    for s in (1, 2, 3, 4):
+        a = size == s
+        val = ((w[a & have] * v[a & have]).sum() + (w[a & miss] * vc[a & miss]).sum()) / w[a].sum() * N[s]
+        tot += val
+    print(f"national: scaling £{base / 1e9:.3f}bn;  imputing missing firms given their breach marker £{tot / 1e9:.3f}bn ({tot / base:.3f}x)")
+
+
+if __name__ == "__main__" and sys.argv[1] == "missing2":
+    missing2()
