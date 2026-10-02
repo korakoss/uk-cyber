@@ -251,3 +251,87 @@ def m0_channel():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "m0ch":
     m0_channel()
+
+
+# --- Goodness of fit: parametric bootstrap ------------------------------------------------------------------------
+# Simulate the fitted generator for the same 806 firms (their hits, tier, size, weights): handling per hit channel,
+# Poisson episodes, iid episode costs, outcome = any episode, worst = max. Statistic per cell (channel set x outcome,
+# cells with >= 8 observed firms): weighted Pearson X2 over the 5 worst-cost groups, effective n = (sum w)^2 / sum w^2.
+# Compare observed X2 (total, breached cells, each cell) with the simulated distribution. Parameters not refitted per
+# replicate (makes the test conservative: simulated X2 slightly too large).
+# Run: ... poisson_cost_model.py gof
+
+def simulate(P, D, rng):
+    Lc, m0, muh, mum = firm_terms(P, D)
+    n = len(D["w"])
+    hcost = np.where(rng.random((n, 4)) < P["h0"][None], 0.0, np.exp(muh + P["s_h"] * rng.standard_normal((n, 4))))
+    worst = np.where(D["H"] == 1, hcost, 0.0).max(1)
+    M = rng.poisson(Lc)
+    for i, j in zip(*np.nonzero(M)):
+        x = np.where(rng.random(M[i, j]) < m0[i], 0.0, np.exp(mum[i, j] + P["s_m"] * rng.standard_normal(M[i, j])))
+        worst[i] = max(worst[i], x.max())
+    return worst, (M.sum(1) >= 1).astype(int)
+
+
+def cell_stats(group, out, D, cells):
+    st = {}
+    for key in cells:
+        m = (D["sets"] == key[0]) & (out == key[1])
+        if m.sum() == 0:
+            st[key] = 0.0
+            continue
+        w = D["w"][m]
+        neff = w.sum() ** 2 / (w ** 2).sum()
+        obs = np.array([w[group[m] == j].sum() for j in range(5)]) / w.sum()
+        st[key] = (obs, neff)
+    return st
+
+
+def gof(R=400):
+    D = setup()
+    P = unpack(np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/poisson_params.npy"))
+    rng = np.random.default_rng(3)
+    edges = [0, 500, 5000, 20000]
+    to_group = lambda v: np.where(v <= 0, 0, np.searchsorted(edges, v, side="right"))
+    mid = np.where(D["hi"] == 0, 0.0, (D["lo"] + D["hi"]) / 2)
+    gobs = to_group(mid)
+    cells = [k for k in set(zip(D["sets"], D["oa"].astype(int))) if ((D["sets"] == k[0]) & (D["oa"] == k[1])).sum() >= 8]
+    sims = [simulate(P, D, rng) for _ in range(R)]
+    gs = [(to_group(wv), o) for wv, o in sims]
+    # expected shares per cell from the simulations (pooled)
+    exp_ = {}
+    for key in cells:
+        num = np.zeros(5)
+        den = 0.0
+        for g, o in gs:
+            m = (D["sets"] == key[0]) & (o == key[1])
+            num += np.array([D["w"][m & (g == j)].sum() for j in range(5)])
+            den += D["w"][m].sum()
+        exp_[key] = np.maximum(num / den, 1e-4)
+
+    def x2(g, o):
+        out = {}
+        for key, v in cell_stats(g, o, D, cells).items():
+            if v == 0.0:
+                out[key] = 0.0
+            else:
+                obs, neff = v
+                out[key] = neff * ((obs - exp_[key]) ** 2 / exp_[key]).sum()
+        return out
+    xo = x2(gobs, D["oa"].astype(int))
+    xs = [x2(g, o) for g, o in gs]
+    tot_o, tot_s = sum(xo.values()), np.array([sum(x.values()) for x in xs])
+    br = [k for k in cells if k[1] == 1]
+    bo, bs = sum(xo[k] for k in br), np.array([sum(x[k] for k in br) for x in xs])
+    print(f"replicates {R}; cells {len(cells)} ({len(br)} breached)")
+    print(f"total X2 obs {tot_o:.1f}  sim median {np.median(tot_s):.1f}  95% {np.percentile(tot_s, 95):.1f}  p {np.mean(tot_s >= tot_o):.3f}")
+    print(f"breached cells X2 obs {bo:.1f}  sim median {np.median(bs):.1f}  95% {np.percentile(bs, 95):.1f}  p {np.mean(bs >= bo):.3f}")
+    for key in sorted(cells, key=lambda k: -xo[k]):
+        s = np.array([x[key] for x in xs])
+        print(f"  {key[0]:3s} outcome {key[1]}  X2 obs {xo[key]:6.1f}  sim median {np.median(s):5.1f}  p {np.mean(s >= xo[key]):.3f}"
+              f"   obs " + " ".join(f"{v:.2f}" for v in cell_stats(gobs, D['oa'].astype(int), D, [key])[key][0]) +
+              "  exp " + " ".join(f"{v:.2f}" for v in exp_[key]))
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "gof":
+    gof()

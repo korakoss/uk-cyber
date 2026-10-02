@@ -1632,3 +1632,8 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   => remaining misfit points in opposite directions across cells of ~20 firms (PI/PS middle-heavier than predicted, S
      bottom-heavier) -> not separable from noise with this n. Only structural candidate left: two-type episode cost
      (contained vs real event). Kept the base model (shared sigma, size-only zero share).
+- GOF, PARAMETRIC BOOTSTRAP (poisson_cost_model.py gof; 400 sims of the fitted generator, weighted Pearson X2 with
+  effective n, 10 cells channel set x outcome): breached cells X2 11.0 vs sim median 14.4, p 0.73 -> the 'rough breached
+  fit' was eyeballed noise, NOT a misfit. All 9 regular cells p 0.39-0.96. Total X2 p 0.08, driven entirely by IS
+  outcome-0 (8 firms, 26% weight at £20k+ with no outcome flag; p 0.018) - consistent with uncorroborated firm 1380
+  (imp+DoS, staff-time-only £100k-500k). => Poisson cost model fits the narrow sample; no missing parameters indicated.
