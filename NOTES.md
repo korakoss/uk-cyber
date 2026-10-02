@@ -1548,7 +1548,7 @@ Annual firm cost = sum of handling + material costs; observed via the worst inci
   => breadth (3+) drives the tail rate in both broad subgroups; the subgroups differ in SHAPE: PIS-type spreading compromise = spread-out middle; ransomware/malware broad = bimodal (handled vs disaster), like ransomware itself. Second subgroup too thin (12) for its own distribution -> sensitivity.
 
 ## OPEN QUESTIONS (2026-10-01, not yet understood)
-1. Worst incident vs annual total: only the worst is priced; crimecost check weak (narrower concept, n156). Multi-material-breach firms' second incidents unpriced except via the 1.0-1.17 sum/max read on per-type costs.
+1. [CLOSED 2026-10-02, see #1 WORST vs ANNUAL TOTAL] Worst incident vs annual total: only the worst is priced; crimecost check weak (narrower concept, n156). Multi-material-breach firms' second incidents unpriced except via the 1.0-1.17 sum/max read on per-type costs.
 2. Two cost questions disagree (per-type ~same or ~half, or floor '<£100'); recall vs itemisation unresolved -> factor ~2 either way.
 3. Handling vs material split: outcome flags mark 'material' imperfectly (other serious non-material incidents cost £4.3k mean); breach definition (success vs outcome) not reconciled across channels.
 4. Narrow-firm cost fit misfits low end (zero share); handling-cost layer has no parametric form yet.
@@ -1583,3 +1583,14 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   (zeros included) Small+/Micro ~0.89 weighted. Conclusion: within narrow firms, expected cost per hit/breach is roughly
   flat to slightly lower for Small+; fewer zero-cost breaches offset smaller amounts. The earlier x1.2-1.7 is not reproduced
   here; the size difference in totals runs through exposure (more channels hit, broad compromises, q +15%), not per-breach cost.
+- #1 WORST vs ANNUAL TOTAL (total_vs_worst.py gaps, 2026-10-02):
+  (a) across channels, narrow-model simulation: E[sum]/E[max] = 1.012 overall (2-channel sets 1.02). Negligible.
+  (b) repeats within channel (success counts; 'each extra success = fresh draw from 1-success firms' worst'):
+    phishing (1: 111, 2+: 66): 2+ costlier (>=£5k .17 vs .04) - above the iid-max prediction at the top (.11-.16), below it
+      at >=£500 (.52 vs .66-.68): looks like one bigger event, not repeated draws. Upper-bound add-on +3% (cap 5) / +5% (uncapped).
+    ransomware (1: 25, 2+: 8): 2+ CHEAPER (0/8 >= £5k vs .36) -> repeat 'demands' are handled attempts. Add-on ~0
+      (the iid upper bound +99-230% is decisively rejected).
+    other serious (1: 33, 2+: 14): >=£5k .47 vs .09 (pred .26-.33), mean below pred. Upper-bound add-on +9-10%.
+  => #1 CLOSED: annual total ~= sum over channels of per-channel worst; worst-incident observation understates the annual
+     total by ~1% (cross-channel) + at most ~5% (within-channel repeats, upper bound; iid already rejected). Carry x1.0-1.1.
+     Caveat: thin 2+ cells (8-66); add-on uses any-channel worst, all hit firms incl. broad.
