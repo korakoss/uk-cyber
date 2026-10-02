@@ -1800,4 +1800,7 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   Empirical baseline (worst incident as annual cost, weighted midpoints): £1.31bn.
   vs old £2.2bn: old pipeline added per-type worst->annual bridge multipliers (double counting under the current
   understanding) and leaned on a few top-band firms - best reading, not a verified decomposition.
-  Excludes: Large-firm catastrophes (pinned), sole traders. Bootstrap running (national_estimate.py boot; 4 x 50).
+  Excludes: Large-firm catastrophes (pinned), sole traders.
+  BOOTSTRAP (200 resamples within size band, refit F2R each; national_estimate.py boot / bootsum): median £1.17bn;
+  50% £0.87-1.76bn; 90% £0.56-3.81bn; 95% £0.48-4.44bn; max £46bn (one blow-up); 9.5% > £3bn, 2.5% > £5bn.
+  Strongly right-skewed: driven by the big-breach tail spread refitted on resamples (few firms carry it).

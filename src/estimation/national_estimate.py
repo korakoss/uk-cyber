@@ -183,3 +183,15 @@ if __name__ == "__main__":
         main()
     elif sys.argv[1] == "boot":
         boot(int(sys.argv[2]) if len(sys.argv) > 2 else 100)
+
+
+def boot_summary():
+    """Summarise the bootstrap log: percentiles, share of replicates far above the main estimate."""
+    x = np.loadtxt(SP + "national_boot.log") / 1e9
+    print(f"replicates {len(x)}: median £{np.median(x):.2f}bn; 50% £{np.percentile(x, 25):.2f}-{np.percentile(x, 75):.2f}bn;"
+          f" 90% £{np.percentile(x, 5):.2f}-{np.percentile(x, 95):.2f}bn; 95% £{np.percentile(x, 2.5):.2f}-{np.percentile(x, 97.5):.2f}bn")
+    print(f"  min £{x.min():.2f}bn, max £{x.max():.2f}bn; share > £3bn {np.mean(x > 3):.3f}, > £5bn {np.mean(x > 5):.3f}")
+
+
+if __name__ == "__main__" and sys.argv[1] == "bootsum":
+    boot_summary()
