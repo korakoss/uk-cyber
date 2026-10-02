@@ -1776,3 +1776,16 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   Old subtraction approach and its untested 'mass engagement same whether targeted' assumption are superseded: the model
   estimates the rates per firm type directly. Params of (a) not saved yet (refit at assembly; F2T full fit saved as
   scratchpad poisson_f2t.npy but degenerate).
+- #9 RANSOMWARE TICK (ransomware.py, 2026-10-02). 68 ticked firms with cost data (5.6% of attacked weight). ranschk
+  (other attempts) almost never asked (3 answers) - unusable.
+  Composition (weighted): ransom demanded 58% (33 firms; breached .61, costs bimodal 60% <£500 / 25% >= £5k, mean £24k);
+  attempt only (no demand, not breached) 15% (12; mean £613); breached WITHOUT a demand 27% (23; 47% encryption-like
+  = systems corrupted / files lost / devices damaged / restore >= 1d; mean £10.8k).
+  => 'ransom demanded' is a poor success marker both ways: ~40% of demands are handled without a breach, and about a
+     third of ransomware-related breaches had no demand.
+  Reversed tier effect explained: P(demand | tick) mid .82 -> high .36, but P(breached | tick) mid .44 -> high .76 (low
+  tier n 2). It was an artefact of using demand as the success marker; with the breach marker the direction is normal.
+  Ransomware as a consequence of phishing: 5 of 68 (minor). Ransomware sits mostly in broad firms (54 of 68, 72% of
+  weight; mean worst £23k) vs narrow (14; mean £1.4k) -> its cost is largely the breadth effect.
+  => Unified model already uses the W2 breach marker, not demands, and treats attempt-only ticks as hits without a
+     breach: no change needed. Ransomware-specific numbers remain thin.
