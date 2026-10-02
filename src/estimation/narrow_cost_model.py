@@ -234,3 +234,47 @@ def where():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "where":
     where()
+
+
+# --- Size-dependent material zero share ---------------------------------------------------------------------------
+# Raw data: breached Micro firms often report zero cost, Small+ almost never. With m0 pooled, Small+'s small positive
+# costs may drag the amount shift down. E = C + Small+ logit shift on m0 (weighted); F = E unweighted.
+# Run: ... narrow_cost_model.py m0size
+
+def m0size():
+    S = setup()
+    sig = lambda z: 1 / (1 + np.exp(-z))
+    base = np.load("/tmp/claude-0/-home-user-uk-cyber/6e8dfdbe-60fd-596b-8b20-907319eda82c/scratchpad/narrow_params.npy")
+    idx, hits, lo, hi, oa, sm, w = S
+    for v in "EF":
+        ww = np.ones_like(w) if v == "F" else w
+
+        def nll(p):
+            P = unpack_v(p[:23], "C")
+            Ps = []
+            for s_ in (0.0, 1.0):
+                Q = at_size(P, s_)
+                Q["m0"] = sig(p[13] + p[23] * s_)
+                Ps.append(Q)
+            s = 0.0
+            for i, hit in zip(idx, hits):
+                s -= ww[i] * np.log(max(firm_lik(i, hit, lo[i], hi[i], bool(oa[i]), Ps[int(sm[i])], 0.0), 1e-300))
+            return s
+        p0 = np.r_[base, base[19], 0.0, 0.0, 0.0]
+        o = minimize(nll, p0, method="L-BFGS-B", options={"maxiter": 3000})
+        o = minimize(nll, o.x, method="Nelder-Mead", options={"maxiter": 8000, "xatol": 1e-4, "fatol": 1e-6})
+        p = o.x
+        P = unpack_v(p[:23], "C")
+        print(f"\n{v}: loglik {-o.fun:.1f}  params 24")
+        print(f"   handling amount x{np.exp(P['dh']):.2f}   material amount x{np.exp(P['dm']):.2f}   h0 shift {P['dh0']:+.2f}"
+              f"   q shift {P['dq']:+.2f}   m0 Micro {sig(p[13]):.2f} -> Small+ {sig(p[13] + p[23]):.2f}")
+        for lab, s_ in (("Micro", 0.0), ("Small+", 1.0)):
+            Q = at_size(P, s_)
+            m0 = sig(p[13] + p[23] * s_)
+            print(f"   {lab:6s} q " + " ".join(f"{c}{x:.3f}" for c, x in zip(CH, Q["q"])) +
+                  "  mean handling " + " ".join(f"{c}£{(1 - Q['h0'][j]) * np.exp(Q['mu_h'][j] + Q['s_h'] ** 2 / 2):,.0f}" for j, c in enumerate(CH)) +
+                  "  mean material " + " ".join(f"{c}£{(1 - m0) * np.exp(Q['mu_m'][j] + Q['s_m'] ** 2 / 2):,.0f}" for j, c in enumerate(CH)))
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "m0size":
+    m0size()
