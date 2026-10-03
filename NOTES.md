@@ -1864,3 +1864,16 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
     plug-in scales answering firms. By band (separate): Micro £0.72bn (£624/business), Small £0.66bn (£3,015),
     Medium £0.13bn (£3,291), Large £0.06bn (£7,141). Medium/Large per business now reflect their own (broader) exposure.
   Params: scratchpad generator_cost_full.npy / generator_cost_pooled.npy.
+- CHANNEL COMPOSITION WITHIN BREACHES (broad_interaction.py composition / compnarrow, 2026-10-03). User question: given a
+  broad big breach, does composition matter; does a univariately costlier channel make the broad breach costlier?
+  Interval-censored lognormal of worst cost on presence of a channel/type, breached (W2) firms with positive cost.
+  NARROW (108): no channel or raw type matters (all LR <= 1.2): ransomware x1.31 [.39-4.41], impersonation x1.46,
+    bank hacking x0.63 [.28-1.43] -> no channel is clearly costlier on its own.
+  BROAD (105, median £1.9k): ransomware x1.19 [.42-3.36] (no effect); 4 vs 3 channels x1.76 [.45-6.83] (n.s.);
+    BANK HACKING x9.3 [3.4-25.7], LR 16.8 (p ~4e-5; survives 7-test Bonferroni), 23 firms; other raw types ~1.
+    (other-serious x0.01 / impersonation x3.2 rest on the 3 / 9 broad firms without them - not interpretable.)
+  Bank hacking: narrow - money stolen .43 but median worst £350; broad - money stolen .34, median £15k vs £3k without.
+  Channel sets (broad): PIS 68 P(>=£5k) .23 median £1.8k; PIRS 25 .45 / £12.5k; PRS 9 .29 / £350; PIR 3 (incl. 1431).
+  => Composition matters, but NOT by carrying over univariate channel costs: ransomware adds nothing in broad breaches;
+     the one strong component is bank-account hacking, which is cheap alone and ~9x costlier inside a broad breach
+     (direct money theft as part of a spreading compromise). An interaction, not additivity. n=23 - thin but strong.

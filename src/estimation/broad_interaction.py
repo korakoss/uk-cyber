@@ -452,3 +452,110 @@ def why():
 
 if __name__ == "__main__" and "why" in __import__("sys").argv:
     why()
+
+
+# --- Does channel composition matter within broad breaches? (2026-10-03) -----------------------------------------
+# Breached (W2) firms with positive worst cost, tightened intervals, survey-weighted interval-censored lognormal:
+#   log cost = a + sum_j b_j * [type/channel j present] (+ 4-vs-3 channels), common sigma.
+# Fitted separately among BROAD (3-4 channels) and NARROW (1-2) breached firms, one regressor at a time (plus 4-vs-3 in
+# broad) and jointly for the channel set. Question: does a channel that is costlier on its own also make a broad breach
+# costlier? Also raw-type presence (malware, DoS, bank hacking, takeover, ransomware, impersonation) within broad.
+# Run: ... broad_interaction.py composition
+
+def icl_fit(lo, hi, Xr, w):
+    llo, lhi = np.log(np.maximum(lo, 1.0)), np.log(hi)
+    Xc = np.column_stack([np.ones(len(lo)), Xr]) if Xr.size else np.ones((len(lo), 1))
+
+    def nll(p):
+        mu = Xc @ p[:-1]
+        s = np.exp(p[-1])
+        pr = norm.cdf((lhi - mu) / s) - norm.cdf((llo - mu) / s)
+        return -(w * np.log(np.maximum(pr, 1e-300))).sum()
+    p0 = np.r_[np.log(np.average((lo + hi) / 2, weights=w)), np.zeros(Xc.shape[1] - 1), np.log(1.8)]
+    o = minimize(nll, p0, method="BFGS")
+    se = np.sqrt(np.clip(np.diag(o.hess_inv), 0, None))
+    return o.x, se, -o.fun
+
+
+def composition():
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    br = ((oa == 1) | soft) & ~np.isnan(band) & (hi > 0)
+    ww = w / w[br].mean()
+    names = ["phishing", "impersonation", "ransomware", "other serious"]
+    for lab, g in (("NARROW (1-2 channels)", br & (nch <= 2)), ("BROAD (3-4 channels)", br & (nch >= 3))):
+        print(f"\n{lab}: breached firms with positive worst cost {g.sum()}")
+        b0, _, ll0 = icl_fit(lo[g], hi[g], np.empty((g.sum(), 0)), ww[g])
+        print(f"  baseline median £{np.exp(b0[0]):,.0f}, sigma {np.exp(b0[-1]):.2f}")
+        for j, nmj in enumerate(names):
+            x = C[g, j]
+            if x.min() == x.max():
+                print(f"  {nmj:14s} present in all/none ({int(x.sum())}/{g.sum()})")
+                continue
+            b, se, ll = icl_fit(lo[g], hi[g], x[:, None], ww[g])
+            print(f"  {nmj:14s} present {int(x.sum()):3d}/{g.sum()}: cost x{np.exp(b[1]):.2f} [{np.exp(b[1] - 1.96 * se[1]):.2f}-{np.exp(b[1] + 1.96 * se[1]):.2f}]  LR {2 * (ll - ll0):.1f}")
+        if lab.startswith("BROAD"):
+            x = (nch[g] == 4).astype(float)
+            b, se, ll = icl_fit(lo[g], hi[g], x[:, None], ww[g])
+            print(f"  {'4 vs 3 channels':14s} present {int(x.sum()):3d}/{g.sum()}: cost x{np.exp(b[1]):.2f} [{np.exp(b[1] - 1.96 * se[1]):.2f}-{np.exp(b[1] + 1.96 * se[1]):.2f}]  LR {2 * (ll - ll0):.1f}")
+            print("  raw types within broad:")
+            for t in ("Malwr", "DoS", "BankH", "Takov", "Ransm", "Imper", "AcOut"):
+                x = X[g, SHORT.index(t)].astype(float)
+                if x.min() == x.max():
+                    continue
+                b, se, ll = icl_fit(lo[g], hi[g], x[:, None], ww[g])
+                print(f"    {t:6s} present {int(x.sum()):3d}: cost x{np.exp(b[1]):.2f} [{np.exp(b[1] - 1.96 * se[1]):.2f}-{np.exp(b[1] + 1.96 * se[1]):.2f}]  LR {2 * (ll - ll0):.1f}")
+            keep = [j for j in range(4) if C[g, j].min() != C[g, j].max()]
+            b, se, ll = icl_fit(lo[g], hi[g], C[g][:, keep], ww[g])
+            print(f"  joint ({', '.join(names[j] for j in keep)}): " + ", ".join(
+                f"{names[j]} x{np.exp(b[1 + i]):.2f} [{np.exp(b[1 + i] - 1.96 * se[1 + i]):.2f}-{np.exp(b[1 + i] + 1.96 * se[1 + i]):.2f}]" for i, j in enumerate(keep)) +
+                  f";  LR vs none {2 * (ll - ll0):.1f} on {len(keep)} df")
+            print("  costly (>= £5k) share and median by channel set:")
+            sets = np.array(["".join("PIRS"[j] for j in range(4) if C[i, j]) for i in range(len(C))])
+            mid = (lo + hi) / 2
+            for st in sorted(set(sets[g]), key=lambda s: -(sets[g] == s).sum()):
+                m = g & (sets == st)
+                print(f"    {st:4s} n {m.sum():3d}  P(>= £5k) {np.average(mid[m] >= 5000, weights=w[m]):.2f}  median £{np.median(mid[m]):,.0f}")
+
+
+if __name__ == "__main__" and "composition" in __import__("sys").argv:
+    composition()
+
+
+# Raw-type presence effects among NARROW breached firms (same regression) - is bank hacking costly on its own too?
+# Run: ... broad_interaction.py compnarrow
+
+def composition_narrow():
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    nch = channels(X).sum(1)
+    lo, hi = tightened(band)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    br = ((oa == 1) | soft) & ~np.isnan(band) & (hi > 0)
+    ww = w / w[br].mean()
+    g = br & (nch <= 2)
+    b0, _, ll0 = icl_fit(lo[g], hi[g], np.empty((g.sum(), 0)), ww[g])
+    print(f"narrow breached {g.sum()}, baseline median £{np.exp(b0[0]):,.0f}")
+    for t in ("Malwr", "DoS", "BankH", "Takov", "Ransm", "Imper", "AcOut"):
+        x = X[g, SHORT.index(t)].astype(float)
+        if x.sum() < 2:
+            print(f"  {t:6s} present {int(x.sum())}")
+            continue
+        b, se, ll = icl_fit(lo[g], hi[g], x[:, None], ww[g])
+        print(f"  {t:6s} present {int(x.sum()):3d}: cost x{np.exp(b[1]):.2f} [{np.exp(b[1] - 1.96 * se[1]):.2f}-{np.exp(b[1] + 1.96 * se[1]):.2f}]  LR {2 * (ll - ll0):.1f}")
+    bh = X[:, SHORT.index("BankH")] == 1
+    for lab, m in (("narrow", br & (nch <= 2)), ("broad", br & (nch >= 3))):
+        for v in (1, 0):
+            mm = m & (bh == v)
+            print(f"  {lab:6s} bank hacking {'yes' if v else 'no '} n {mm.sum():3d}: money stolen {np.average(nm('outcome6')[mm] == 1, weights=w[mm]):.2f},"
+                  f" median worst £{np.median(((lo + hi) / 2)[mm]):,.0f}")
+
+
+if __name__ == "__main__" and "compnarrow" in __import__("sys").argv:
+    composition_narrow()
