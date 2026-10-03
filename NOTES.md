@@ -1813,3 +1813,23 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   imputation conditional on their own breach marker £1.438bn (1.045x)  <- best. Effect +0-11%, best guess +5%.
 - #2 CLOSED (2026-10-02): per-type yearly cost vs worst incident disagreement does not feed the estimate (priced from
   the itemised worst-incident question); likely holistic-recall undershoot. Uninformative for repeats.
+- USER CORRECTION (2026-10-03): 'clean-up once per attack type per year, supported by flat worst cost vs volume' was
+  WRONG reasoning - same worst-vs-sum error as breaches: a flat max says nothing about the sum of many small clean-ups.
+  Also flagged by user: Medium/Large pooled with Small everywhere (untested), and the national estimate uses observed
+  hit patterns instead of the fitted exposure model (counts_given_frailty.py LCA). Agreed plan: (A) per-attack
+  clean-up, (B) separate Small/Medium/Large effects, (C) plug in and check the exposure model.
+- (A) PER-ATTACK CLEAN-UP (handling_volume.py, 2026-10-03). n attacks/yr from Q54 frequency (1/5/12/52/300/1000; 31
+  missing -> 5). Per attack: zero w.p. sigmoid(a0 + gam log n), else lognormal(mu + channel shifts + Small+ - beta log n).
+  Worst = max over n clean-ups and breaches. Breaches as F2R.
+  Fit: ll -1688.9 vs once-per-attack-type model -1654.6 (29 vs 31 params; loses channel-specific zero shares and the
+  targeted-phishing handling term, so not a clean comparison). Fitted gam .97: P(zero per attack) .71 at n=1, .991 at
+  52, .9995 at 1000 -> expected number of COSTLY clean-ups grows only like n^0.03; beta ~0 (-.03). Yearly clean-up
+  (phishing-only Micro) £86 at 1 attack, £153 at 52, £186 at 1000. National clean-up £0.13bn (total £1.48bn).
+  Profile over beta (cheaper per attack at high volume, others refit): ll -1689 / -1692 / -1711 / -1733 / -1755 / -1774
+  for beta 0 / .25 / .5 / .75 / 1 / 1.25; national clean-up £0.13 / 0.19 / 0.49 / 2.1 / 14.8 / 186bn.
+  => The data DO bound accumulation: high-frequency non-breached firms often report a worst incident of exactly zero
+     (47-76%), which is impossible if many attacks each cost a little. Large accumulation (beta >= .5) is rejected
+     (ll -22 or worse). Clean-up total £0.13-0.19bn: the earlier conclusion survives, now as a fitted, bounded result.
+     Identification rests on respondents reporting tiny costs as non-zero in the worst-incident question.
+  Fit by frequency OK except small daily/several-a-day cells. Keep the once-per-type form (better fit) for the main
+  model; cite this bound.
