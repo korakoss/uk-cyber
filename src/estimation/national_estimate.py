@@ -277,3 +277,29 @@ def missing2():
 
 if __name__ == "__main__" and sys.argv[1] == "missing2":
     missing2()
+
+
+def show_params():
+    """Print every parameter of the adopted main model F2R in readable units."""
+    P = pcm.unpack_b(np.load(SP + "national_main_F2R.npy"), "F2R")
+    ch = ["phishing", "impersonation", "ransomware", "other serious"]
+    print("breach rate per hit channel per year (low tier, Micro, mass phishing): " +
+          ", ".join(f"{c} {v:.3f}" for c, v in zip(ch, P["lam"])))
+    print(f"  multipliers: frailty tier mid x{np.exp(P['bt'][1]):.2f}, high x{np.exp(P['bt'][2]):.2f}; Small+ x{np.exp(P['bs']):.2f};"
+          f" targeted phishing (phishing channel only) x{np.exp(P['t']):.2f}")
+    print("handling (clean-up) per hit channel: P(zero) " + ", ".join(f"{c} {v:.2f}" for c, v in zip(ch, P["h0"])) +
+          f"; targeted-phishing odds of zero x{np.exp(P['k']):.2f}")
+    print("  median if > 0: " + ", ".join(f"{c} £{np.exp(v):,.0f}" for c, v in zip(ch, P["mu_h"])) +
+          f"; spread (log-sd) {P['s_h']:.2f}; Small+ amount x{np.exp(P['dh']):.2f}")
+    print("  mean (Micro, incl. zeros): " + ", ".join(
+        f"{c} £{(1 - P['h0'][j]) * np.exp(P['mu_h'][j] + P['s_h'] ** 2 / 2):,.0f}" for j, c in enumerate(ch)))
+    print("each breach: P(big) by channels hit 1/2/3/4: " + "/".join(f"{sig(P['pi_a'] + P['pi_b'] * k):.3f}" for k in range(4)))
+    print(f"  big breach: median £{np.exp(P['mu_big']):,.0f}, spread {P['s_big']:.2f}, mean £{np.exp(P['mu_big'] + P['s_big'] ** 2 / 2):,.0f}; no zero mass")
+    print(f"  ordinary breach: P(zero) Micro {sig(P['m0']):.2f} / Small+ {sig(P['m0'] + P['dm0']):.2f}; median if > 0 " +
+          ", ".join(f"{c} £{np.exp(v):,.0f}" for c, v in zip(ch, P["mu_m"])) + f"; spread {P['s_m']:.2f}; Small+ amount x{np.exp(P['dm']):.2f}")
+    print("  ordinary mean (Micro, incl. zeros): " + ", ".join(
+        f"{c} £{(1 - sig(P['m0'])) * np.exp(P['mu_m'][j] + P['s_m'] ** 2 / 2):,.0f}" for j, c in enumerate(ch)))
+
+
+if __name__ == "__main__" and sys.argv[1] == "params":
+    show_params()
