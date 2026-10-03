@@ -1,0 +1,649 @@
+"""Empirical per-type attack counts for the non-phishing channels.
+
+Per-type count questions in the survey: ranssoft (ransomware), doscount (DoS), tkvrcount (account takeover),
+hackcount (hacking / unauthorised access). Exact answer where >= 0, else the '_bands' answer (1=None,
+2=1, 3=2-3, 4=4-5, 5=6-10, 6=11-20, 7=21-50, 8=51-100, 9=100+). Tabulated among firms flagged with the
+matching type(s): coverage, exact value:#firms, band:#firms for the rest. Impersonation has no count
+question: global freq answer among impersonation-only firms shown instead (1 once .. 6 several/day).
+Unweighted firm counts.
+
+Run: PYTHONPATH=/home/user/md-clean/src:src/estimation python3 src/estimation/channel_counts_empirical.py
+"""
+
+import numpy as np
+import pandas as pd
+
+import joint_five_channel as f
+from latent_on_streams import aligned_raw
+from type_cooccurrence_structure import load, SHORT
+
+VARS = [("ranssoft", ["Ransm"]), ("doscount", ["DoS"]), ("tkvrcount", ["Takov"]),
+        ("hackcount", ["BankH", "AcOut", "AcStf"])]
+BAND = {1: "0", 2: "1", 3: "2-3", 4: "4-5", 5: "6-10", 6: "11-20", 7: "21-50", 8: "51-100", 9: "100+"}
+
+
+def main():
+    X, w, size = load()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    for var, types in VARS:
+        hit = X[:, [SHORT.index(t) for t in types]].max(1) == 1
+        ex = num(var).where(lambda s: (s >= 0) & (s < 997)).values
+        bd = num(var + "_bands").where(lambda s: s.between(1, 9)).values
+        print(f"\n{var}  (flagged {'/'.join(types)}: {hit.sum()} firms; exact {int((hit & ~np.isnan(ex)).sum())}, "
+              f"band only {int((hit & np.isnan(ex) & ~np.isnan(bd)).sum())}, missing {int((hit & np.isnan(ex) & np.isnan(bd)).sum())})")
+        v = ex[hit & ~np.isnan(ex)]
+        print("  exact:  " + "  ".join(f"{int(x)}:{int((v == x).sum())}" for x in np.unique(v)))
+        b = bd[hit & np.isnan(ex) & ~np.isnan(bd)]
+        if len(b):
+            print("  bands:  " + "  ".join(f"{BAND[int(x)]}:{int((b == x).sum())}" for x in np.unique(b)))
+        nh = (~hit) & ~np.isnan(ex) & (ex > 0)
+        print(f"  (firms NOT flagged but reporting count>0: {int(nh.sum())})")
+
+    d = f.load_firms()
+    fq = d["freq"].values
+    io = (X[:, SHORT.index("Imper")] == 1) & (X.sum(1) == 1) & ~np.isnan(fq)
+    print(f"\nImpersonation-only firms, global freq answer (n={io.sum()}):")
+    lab = {1: "once", 2: "<monthly", 3: "monthly", 4: "weekly", 5: "daily", 6: "several/day"}
+    for g, gm in (("Micro", size == 1), ("Small+", size >= 2)):
+        m = io & gm
+        print(f"  {g:7s} n={m.sum():3d}  " + "  ".join(f"{lab[k]}:{int((fq[m] == k).sum())}" for k in range(1, 7)))
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
+    main()
+
+
+def ransomware_sum_vs_soft():
+    """Is Cybercrime_ranssum the positive part of ranssoft? Firm-by-firm match among ransomware-flagged firms."""
+    X, w, size = load()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    hit = X[:, SHORT.index("Ransm")] == 1
+    soft = num("ranssoft").where(lambda s: (s >= 0) & (s < 997)).values
+    rsum = num("Cybercrime_ranssum").where(lambda s: s >= 0).values
+    print(f"flagged {hit.sum()}; ranssoft answered {int((hit & ~np.isnan(soft)).sum())}, >0 {int((hit & (soft > 0)).sum())}; "
+          f"ranssum present {int((hit & ~np.isnan(rsum)).sum())}, >0 {int((hit & (rsum > 0)).sum())}")
+    both = hit & ~np.isnan(soft) & ~np.isnan(rsum)
+    print(f"both present {both.sum()}, equal {int((soft[both] == rsum[both]).sum())}")
+    print(f"ranssoft>0 without ranssum {int((hit & (soft > 0) & np.isnan(rsum)).sum())}; "
+          f"ranssum without ranssoft>0 {int((hit & ~np.isnan(rsum) & ~(soft > 0)).sum())}")
+    print(f"ranssum present among NON-flagged firms: {int((~hit & ~np.isnan(rsum)).sum())}")
+
+
+if __name__ == "__main__" and "ranssum" in __import__("sys").argv:
+    ransomware_sum_vs_soft()
+
+
+def ranssum_by_size():
+    """Cybercrime_ranssum values by size band (1 Micro .. 4 Large), unweighted firm counts."""
+    X, w, size = load()
+    r = aligned_raw()
+    rsum = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 0).values
+    hit = X[:, SHORT.index("Ransm")] == 1
+    for s, lab in zip(range(1, 5), ["Micro", "Small", "Medium", "Large"]):
+        m = (size == s) & ~np.isnan(rsum)
+        v = rsum[m]
+        print(f"{lab:6s} flagged {int((hit & (size == s)).sum()):3d}  with ranssum {m.sum():3d}   "
+              + "  ".join(f"{int(x)}:{int((v == x).sum())}" for x in np.unique(v)))
+
+
+if __name__ == "__main__" and "ranssize" in __import__("sys").argv:
+    ranssum_by_size()
+
+
+def ranssum_poisson_check(drop=(100,)):
+    """Zero-truncated Poisson for Cybercrime_ranssum (all firms have >= 1), sizes pooled, dropping given values.
+    MLE lambda; expected vs observed per value bin; parametric-bootstrap p for (a) Pearson X2, (b) max count."""
+    from scipy.optimize import brentq
+    from scipy.stats import poisson
+    r = aligned_raw()
+    v = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 1).dropna().values
+    v = v[~np.isin(v, drop)]
+    n, mean = len(v), v.mean()
+    lam = brentq(lambda l: l / (1 - np.exp(-l)) - mean, 1e-6, 100)
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10**6)]
+
+    def pk(a, b):
+        return (poisson.cdf(b, lam) - poisson.cdf(a - 1, lam)) / (1 - np.exp(-lam))
+
+    exp = np.array([n * pk(a, b) for a, b in bins])
+    obs = np.array([((v >= a) & (v <= b)).sum() for a, b in bins])
+    x2 = ((obs - exp) ** 2 / exp).sum()
+    rng = np.random.default_rng(0)
+    sims_x2, sims_max = [], []
+    for _ in range(20000):
+        s = rng.poisson(lam, 5 * n)
+        s = s[s > 0][:n]
+        o = np.array([((s >= a) & (s <= b)).sum() for a, b in bins])
+        sims_x2.append(((o - exp) ** 2 / exp).sum())
+        sims_max.append(s.max())
+    print(f"dropped {drop}: n={n}, mean {mean:.2f}, var {v.var(ddof=1):.2f}, ZT-Poisson lambda {lam:.2f}")
+    for (a, b), o, e in zip(bins, obs, exp):
+        print(f"  {str(a) if a == b else (f'{a}-{b}' if b < 10**6 else f'{a}+'):>5s}  obs {o:3d}  exp {e:6.2f}")
+    print(f"  X2 {x2:.1f}, bootstrap p {np.mean(np.array(sims_x2) >= x2):.4f};  "
+          f"max {v.max():g}, P(max >= obs) {np.mean(np.array(sims_max) >= v.max()):.5f}")
+
+
+if __name__ == "__main__" and "ranspois" in __import__("sys").argv:
+    ranssum_poisson_check((100,))
+    ranssum_poisson_check((100, 24))
+
+
+def ranssum_logseries_check(drop=()):
+    """Log-series law for Cybercrime_ranssum (>= 1), sizes pooled. MLE theta (mean equation); obs vs expected per
+    bin; parametric-bootstrap p for Pearson X2 and for the max count."""
+    from scipy.optimize import brentq
+    from scipy.stats import logser
+    r = aligned_raw()
+    v = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 1).dropna().values
+    v = v[~np.isin(v, drop)]
+    n, mean = len(v), v.mean()
+    th = brentq(lambda t: -t / ((1 - t) * np.log(1 - t)) - mean, 1e-9, 1 - 1e-12)
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10), (11, 10**6)]
+    pk = lambda a, b: logser.cdf(b, th) - logser.cdf(a - 1, th)
+    exp = np.array([n * pk(a, b) for a, b in bins])
+    obs = np.array([((v >= a) & (v <= b)).sum() for a, b in bins])
+    x2 = ((obs - exp) ** 2 / exp).sum()
+    rng = np.random.default_rng(0)
+    sx, sm = [], []
+    for _ in range(20000):
+        s = logser.rvs(th, size=n, random_state=rng)
+        o = np.array([((s >= a) & (s <= b)).sum() for a, b in bins])
+        sx.append(((o - exp) ** 2 / exp).sum())
+        sm.append(s.max())
+    print(f"dropped {drop}: n={n}, mean {mean:.2f}, log-series theta {th:.3f}")
+    for (a, b), o, e in zip(bins, obs, exp):
+        lab = str(a) if a == b else (f"{a}-{b}" if b < 10**6 else f"{a}+")
+        print(f"  {lab:>5s}  obs {o:3d}  exp {e:6.2f}")
+    print(f"  X2 {x2:.1f}, bootstrap p {np.mean(np.array(sx) >= x2):.3f};  max {v.max():g}, "
+          f"P(max >= obs) {np.mean(np.array(sm) >= v.max()):.3f}")
+
+
+if __name__ == "__main__" and "ranslogser" in __import__("sys").argv:
+    ranssum_logseries_check(())
+    ranssum_logseries_check((100,))
+
+
+def ranssum_zipf_oils(drop=()):
+    """Zipf P(k) = k^-a / zeta(a) and one-inflated log-series P(1) = pi + (1-pi) LS(1), P(k>1) = (1-pi) LS(k),
+    for Cybercrime_ranssum (>= 1), sizes pooled. MLE; obs vs expected per bin; log-lik and AIC (log-series
+    included for reference); parametric-bootstrap p for Pearson X2 (parameters refitted per replicate) and
+    for the max count."""
+    from scipy.optimize import minimize, minimize_scalar
+    from scipy.stats import logser, zipf
+    r = aligned_raw()
+    v = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 1).dropna().values.astype(int)
+    v = v[~np.isin(v, drop)]
+    n = len(v)
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10), (11, 10**6)]
+    tf = lambda t: 1 / (1 + np.exp(-t))
+
+    def fit_zipf(x):
+        a = minimize_scalar(lambda a: -zipf.logpmf(x, a).sum(), bounds=(1.01, 10), method="bounded").x
+        return (a,), zipf.logpmf(x, a).sum()
+
+    def fit_ls(x):
+        t = minimize_scalar(lambda u: -logser.logpmf(x, tf(u)).sum(), bounds=(-10, 15), method="bounded").x
+        return (tf(t),), logser.logpmf(x, tf(t)).sum()
+
+    def oils_logpmf(x, pi, th):
+        ls = logser.pmf(x, th)
+        return np.log(np.where(x == 1, pi + (1 - pi) * ls, (1 - pi) * ls))
+
+    def fit_oils(x):
+        o = minimize(lambda z: -oils_logpmf(x, tf(z[0]), tf(z[1])).sum(), [0.0, 2.0], method="Nelder-Mead")
+        return (tf(o.x[0]), tf(o.x[1])), -o.fun
+
+    def cdf(model, k, p):
+        if model == "zipf":
+            return zipf.cdf(k, *p)
+        if model == "logser":
+            return logser.cdf(k, *p)
+        pi, th = p
+        return np.where(k >= 1, pi + (1 - pi) * logser.cdf(k, th), 0.0)
+
+    def rvs(model, p, size, rng):
+        if model == "zipf":
+            return zipf.rvs(*p, size=size, random_state=rng)
+        if model == "logser":
+            return logser.rvs(*p, size=size, random_state=rng)
+        pi, th = p
+        s = logser.rvs(th, size=size, random_state=rng)
+        return np.where(rng.random(size) < pi, 1, s)
+
+    def expected(model, p, m):
+        return np.array([m * (cdf(model, b, p) - cdf(model, a - 1, p)) for a, b in bins])
+
+    obs = np.array([((v >= a) & (v <= b)).sum() for a, b in bins])
+    rng = np.random.default_rng(0)
+    print(f"\ndropped {drop}: n={n}")
+    for name, fit, k in (("logser", fit_ls, 1), ("zipf", fit_zipf, 1), ("oils", fit_oils, 2)):
+        p, ll = fit(v)
+        e = expected(name, p, n)
+        x2 = ((obs - e) ** 2 / e).sum()
+        sx, sm = [], []
+        for _ in range(2000):
+            s = rvs(name, p, n, rng)
+            ps, _ = fit(s)
+            es = expected(name, ps, n)
+            os_ = np.array([((s >= a) & (s <= b)).sum() for a, b in bins])
+            sx.append(((os_ - es) ** 2 / es).sum())
+            sm.append(s.max())
+        par = ", ".join(f"{x:.3f}" for x in p)
+        print(f"  {name:6s} params ({par})  loglik {ll:7.2f}  AIC {2 * k - 2 * ll:6.2f}  "
+              f"X2 {x2:5.1f} p {np.mean(np.array(sx) >= x2):.3f}  P(max>={v.max()}) {np.mean(np.array(sm) >= v.max()):.3f}")
+        print("         obs " + " ".join(f"{o:5d}" for o in obs) + "   (1 / 2 / 3-4 / 5-10 / 11+)")
+        print("         exp " + " ".join(f"{x:5.1f}" for x in e))
+
+
+if __name__ == "__main__" and "ranszipf" in __import__("sys").argv:
+    ranssum_zipf_oils(())
+    ranssum_zipf_oils((100,))
+
+
+def ranssum_dlnorm(drop=()):
+    """Discretised lognormal (k = round(X), X lognormal, k >= 1; log-space likelihood) for Cybercrime_ranssum,
+    sizes pooled. MLE, obs vs expected per bin, AIC (compare Zipf / one-inflated log-series from ranszipf),
+    bootstrap X2 p (refit, 1000 reps), P(max >= observed max)."""
+    from scipy.optimize import minimize
+    from scipy.stats import norm
+
+    def lp(x, mu, s):
+        lo = (np.log(np.maximum(x - 0.5, 0.5)) - mu) / s
+        hi = (np.log(x + 0.5) - mu) / s
+        a, b = norm.logsf(lo), norm.logsf(hi)
+        return a + np.log(np.maximum(-np.expm1(b - a), 1e-300)) - norm.logsf((np.log(0.5) - mu) / s)
+
+    def fit(x):
+        o = minimize(lambda z: -lp(x, z[0], np.exp(z[1])).sum(), [np.log(x).mean(), 0.0], method="Nelder-Mead")
+        return o.x[0], np.exp(o.x[1]), -o.fun
+
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10), (11, 10**6)]
+
+    def expected(mu, s, n):
+        c = lambda k: norm.cdf((np.log(k + 0.5) - mu) / s)
+        z = norm.sf((np.log(0.5) - mu) / s)
+        c0 = norm.cdf((np.log(0.5) - mu) / s)
+        return np.array([n * ((c(b) if b < 10**6 else 1.0) - (c(a - 1) if a > 1 else c0)) / z for a, b in bins])
+
+    def rvs(mu, s, n, rng):
+        out = np.empty(0, np.int64)
+        while len(out) < n:
+            k = np.rint(np.minimum(np.exp(rng.normal(mu, s, 20 * n)), 1e9)).astype(np.int64)
+            out = np.concatenate([out, k[k >= 1]])
+        return out[:n]
+
+    r = aligned_raw()
+    v = pd.to_numeric(r["Cybercrime_ranssum"], errors="coerce").where(lambda s: s >= 1).dropna().values.astype(np.int64)
+    v = v[~np.isin(v, drop)]
+    n = len(v)
+    mu, s, ll = fit(v)
+    obs = np.array([((v >= a) & (v <= b)).sum() for a, b in bins])
+    e = expected(mu, s, n)
+    x2 = ((obs - e) ** 2 / e).sum()
+    rng = np.random.default_rng(0)
+    sx, sm = [], []
+    for _ in range(1000):
+        y = rvs(mu, s, n, rng)
+        m2, s2, _ = fit(y)
+        es = expected(m2, s2, n)
+        sx.append(((np.array([((y >= a) & (y <= b)).sum() for a, b in bins]) - es) ** 2 / es).sum())
+        sm.append(y.max())
+    print(f"\ndropped {drop}: n={n}  mu {mu:.2f} sigma {s:.2f} (median {np.exp(mu):.2f})  AIC {4 - 2 * ll:.2f}  "
+          f"X2 {x2:.1f} p {np.mean(np.array(sx) >= x2):.3f}  P(max>={v.max()}) {np.mean(np.array(sm) >= v.max()):.3f}")
+    print("  obs " + " ".join(f"{o:5d}" for o in obs) + "   (1 / 2 / 3-4 / 5-10 / 11+)")
+    print("  exp " + " ".join(f"{x:5.1f}" for x in e))
+
+
+if __name__ == "__main__" and "ransdlnorm" in __import__("sys").argv:
+    ranssum_dlnorm(())
+    ranssum_dlnorm((100,))
+
+
+def ranssum_dlnorm_profile():
+    """The unconstrained ransdlnorm MLE runs off to mu -> -inf (bootstrap then never finishes). Profile likelihood:
+    for fixed mu, best sigma and -loglik, all 35 and dropping 100. Compare Zipf -loglik (53.91 all, 43.62 drop 100)."""
+    from scipy.optimize import minimize
+    from scipy.stats import norm
+
+    def lp(x, mu, s):
+        lo = (np.log(np.maximum(x - 0.5, 0.5)) - mu) / s
+        hi = (np.log(x + 0.5) - mu) / s
+        a, b = norm.logsf(lo), norm.logsf(hi)
+        return a + np.log(np.maximum(-np.expm1(b - a), 1e-300)) - norm.logsf((np.log(0.5) - mu) / s)
+
+    v0 = pd.to_numeric(aligned_raw()["Cybercrime_ranssum"], errors="coerce").dropna().values.astype(np.int64)
+    v0 = v0[v0 >= 1]
+    for drop in ((), (100,)):
+        v = v0[~np.isin(v0, drop)]
+        print(f"\ndropped {drop}: n={len(v)}")
+        for mu in (2, 1, 0, -1, -2, -5, -10, -20, -40, -80):
+            o = minimize(lambda z: -lp(v, mu, np.exp(z[0])).sum(), [1.0], method="Nelder-Mead")
+            print(f"  mu {mu:4d}  best sigma {np.exp(o.x[0]):5.2f}  -loglik {o.fun:6.2f}")
+
+
+if __name__ == "__main__" and "ransprofile" in __import__("sys").argv:
+    ranssum_dlnorm_profile()
+
+
+def cybercrime_sums():
+    """Derived Cybercrime_*sum counts (virus, hack, dos; rans for reference): coverage among firms flagged with
+    the matching type(s), among non-flagged firms, and the value distribution (>= 1)."""
+    X, w, size = load()
+    r = aligned_raw()
+    spec = [("Cybercrime_ranssum", ["Ransm"]), ("Cybercrime_virussum", ["Malwr"]), ("Cybercrime_dossum", ["DoS"]),
+            ("Cybercrime_hacksum", ["BankH", "AcOut", "AcStf", "Takov"])]
+    for col, types in spec:
+        v = pd.to_numeric(r[col], errors="coerce").where(lambda s: s >= 0).values
+        hit = X[:, [SHORT.index(t) for t in types]].max(1) == 1
+        pos = v[hit & (v >= 1)]
+        print(f"\n{col} (flag {'/'.join(types)}: {hit.sum()} firms): present {int((hit & ~np.isnan(v)).sum())}, "
+              f">=1 {len(pos)}, zeros {int((hit & (v == 0)).sum())}; non-flagged with value {int((~hit & ~np.isnan(v)).sum())}")
+        print("  " + "  ".join(f"{int(x)}:{int((pos == x).sum())}" for x in np.unique(pos)))
+
+
+if __name__ == "__main__" and "sums" in __import__("sys").argv:
+    cybercrime_sums()
+
+
+def other_serious_pool():
+    """Other-serious count pool: per firm, sum of the available derived counts Cybercrime_hacksum + virussum + dossum
+    (firms with at least one present; all present values are >= 1). Fits: log-series, Zipf, one-inflated
+    log-series (bootstrap X2 p, refit, 1000 reps), discretised lognormal (MLE with mu >= -40; AIC only, it can
+    degenerate to the power-law limit). Also the same with each firm-type value as a separate observation."""
+    from scipy.optimize import minimize, minimize_scalar
+    from scipy.stats import logser, norm, zipf
+    r = aligned_raw()
+    cols = ["Cybercrime_hacksum", "Cybercrime_virussum", "Cybercrime_dossum"]
+    V = np.column_stack([pd.to_numeric(r[c], errors="coerce").where(lambda s: s >= 1).values for c in cols])
+    have = ~np.isnan(V)
+    print(f"firms with any: {have.any(1).sum()}; with 2+ of the three: {(have.sum(1) >= 2).sum()}")
+    per_firm = np.nansum(V[have.any(1)], 1).astype(np.int64)
+    per_obs = V[have].astype(np.int64)
+    tf = lambda u: 1 / (1 + np.exp(-u))
+    bins = [(1, 1), (2, 2), (3, 4), (5, 10), (11, 10**6)]
+
+    def fit(name, x):
+        if name == "zipf":
+            a = minimize_scalar(lambda a: -zipf.logpmf(x, a).sum(), bounds=(1.01, 10), method="bounded").x
+            return (a,), zipf.logpmf(x, a).sum()
+        if name == "logser":
+            u = minimize_scalar(lambda u: -logser.logpmf(x, tf(u)).sum(), bounds=(-10, 15), method="bounded").x
+            return (tf(u),), logser.logpmf(x, tf(u)).sum()
+        f = lambda z: -np.log(np.where(x == 1, tf(z[0]) + (1 - tf(z[0])) * logser.pmf(x, tf(z[1])),
+                                       (1 - tf(z[0])) * logser.pmf(x, tf(z[1])))).sum()
+        o = minimize(f, [0.0, 2.0], method="Nelder-Mead")
+        return (tf(o.x[0]), tf(o.x[1])), -o.fun
+
+    def cdf(name, k, p):
+        if k >= 10**6:
+            return 1.0
+        if name == "zipf":
+            return zipf.cdf(k, *p)
+        if name == "logser":
+            return logser.cdf(k, *p)
+        return p[0] + (1 - p[0]) * logser.cdf(k, p[1]) if k >= 1 else 0.0
+
+    def rvs(name, p, n, rng):
+        if name == "zipf":
+            return zipf.rvs(*p, size=n, random_state=rng)
+        if name == "logser":
+            return logser.rvs(*p, size=n, random_state=rng)
+        return np.where(rng.random(n) < p[0], 1, logser.rvs(p[1], size=n, random_state=rng))
+
+    def eo(name, p, x):
+        e = np.array([len(x) * (cdf(name, b, p) - cdf(name, a - 1, p)) for a, b in bins])
+        return e, np.array([((x >= a) & (x <= b)).sum() for a, b in bins])
+
+    def dln(x):
+        def lp(mu, s):
+            lo = (np.log(np.maximum(x - 0.5, 0.5)) - mu) / s
+            hi = (np.log(x + 0.5) - mu) / s
+            a, b = norm.logsf(lo), norm.logsf(hi)
+            return (a + np.log(np.maximum(-np.expm1(b - a), 1e-300)) - norm.logsf((np.log(0.5) - mu) / s)).sum()
+        best = None
+        for m0 in (1.0, 0.0, -3.0, -10.0, -30.0):
+            o = minimize(lambda z: -lp(max(z[0], -40), np.exp(z[1])), [m0, 0.5], method="Nelder-Mead")
+            if best is None or o.fun < best.fun:
+                best = o
+        return max(best.x[0], -40), np.exp(best.x[1]), -best.fun
+
+    rng = np.random.default_rng(0)
+    for lab, x in (("per firm (sum)", per_firm), ("per firm-type obs", per_obs)):
+        print(f"\n{lab}: n={len(x)}, values " + "  ".join(f"{int(v)}:{int((x == v).sum())}" for v in np.unique(x)))
+        print(f"  {'obs':>44s} " + " ".join(f"{o:5d}" for o in eo('zipf', (2.0,), x)[1]) + "   (1 / 2 / 3-4 / 5-10 / 11+)")
+        for name, k in (("logser", 1), ("zipf", 1), ("oils", 2)):
+            p, ll = fit(name, x)
+            e, o = eo(name, p, x)
+            x2 = ((o - e) ** 2 / e).sum()
+            sx, sm = [], []
+            for _ in range(1000):
+                s = rvs(name, p, len(x), rng)
+                es, os_ = eo(name, fit(name, s)[0], s)
+                sx.append(((os_ - es) ** 2 / es).sum())
+                sm.append(s.max())
+            par = ",".join(f"{v:.3f}" for v in p)
+            print(f"  {name:6s} ({par:>11s}) AIC {2 * k - 2 * ll:6.1f} p {np.mean(np.array(sx) >= x2):.3f} "
+                  f"P(max>={x.max()}) {np.mean(np.array(sm) >= x.max()):.2f}  " + " ".join(f"{v:5.1f}" for v in e))
+        mu, s, ll = dln(x)
+        print(f"  dlnorm (mu {mu:.2f}, sigma {s:.2f}) AIC {4 - 2 * ll:6.1f}" + ("  [at mu bound: power-law limit]" if mu <= -39.9 else ""))
+
+
+if __name__ == "__main__" and "ospool" in __import__("sys").argv:
+    other_serious_pool()
+
+
+def mass_only_firms():
+    """Mass-phishing-only candidates: phishing-flagged firms reporting 0 targeted (phishcon == 0, or band 'None' when
+    no exact answer). Counts overall and by size; among those hit by phishing only (no other type): the global freq
+    answer, which then refers to untargeted phishing alone. Compare with phishing-only firms with >= 1 targeted."""
+    X, w, size = load()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    con = num("phishcon").where(lambda s: s >= 0).values
+    band = num("phishcon_bands").where(lambda s: s.between(1, 9)).values
+    t0 = np.where(~np.isnan(con), con == 0, band == 1)
+    t1 = np.where(~np.isnan(con), con >= 1, band >= 2)
+    unk = np.isnan(con) & np.isnan(band)
+    ph = X[:, 0] == 1
+    only = ph & (X.sum(1) == 1)
+    d = f.load_firms()
+    fq = d["freq"].values
+    print(f"phishing-flagged {ph.sum()}: targeted 0 -> {int((ph & t0).sum())}, targeted >=1 -> {int((ph & t1).sum())}, "
+          f"unknown {int((ph & unk).sum())}")
+    for s, lab in zip(range(1, 5), ["Micro", "Small", "Medium", "Large"]):
+        m = ph & (size == s)
+        print(f"  {lab:6s} phishing {m.sum():4d}: targeted 0 {int((m & t0).sum()):4d}  >=1 {int((m & t1).sum()):4d}")
+    lab = {1: "once", 2: "<monthly", 3: "monthly", 4: "weekly", 5: "daily", 6: "sev/day"}
+    for nm, m in (("phishing-only, targeted 0 (mass only)", only & t0), ("phishing-only, targeted >=1", only & t1)):
+        mm = m & ~np.isnan(fq)
+        print(f"\n{nm}: {m.sum()} firms, with freq {mm.sum()}")
+        for g, gm in (("Micro", size == 1), ("Small+", size >= 2)):
+            q = mm & gm
+            print(f"  {g:7s} n={q.sum():3d}  " + "  ".join(f"{lab[k]}:{int((fq[q] == k).sum())}" for k in range(1, 7)))
+
+
+if __name__ == "__main__" and "massonly" in __import__("sys").argv:
+    mass_only_firms()
+
+
+FREQ_EDGES = {  # lower count edge of each freq band 1..6 (once, <monthly, monthly, weekly, daily, several/day)
+    "A literal": [1, 2, 12, 52, 365, 730],
+    "B centred": [1, 2, 9, 31, 151, 501],
+    "C loose":   [1, 2, 7, 26, 101, 301],
+}
+
+
+def single_channel_band_fits():
+    """Count law from the global freq answer of single-channel firms (freq then refers to that channel only):
+    impersonation-only firms, and mass-phishing-only firms (phishing only, 0 targeted). Band = interval of counts
+    (edges per scenario FREQ_EDGES). Multinomial MLE of (a) discretised lognormal on k >= 1 (log-space),
+    (b) right-truncated Zipf on 1..2000. G2 vs saturated with chi2 p (df = 5 - #params; rough), fitted band shares.
+    Unweighted, sizes pooled (mass also by Micro / Small+)."""
+    from scipy.optimize import minimize
+    from scipy.stats import chi2, norm
+    X, w, size = load()
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    con = num("phishcon").where(lambda s: s >= 0).values
+    band = num("phishcon_bands").where(lambda s: s.between(1, 9)).values
+    t0 = np.where(~np.isnan(con), con == 0, band == 1)
+    fq = f.load_firms()["freq"].values
+    one = X.sum(1) == 1
+    imp_only = one & (X[:, SHORT.index("Imper")] == 1) & ~np.isnan(fq)
+    mass_only = one & (X[:, 0] == 1) & t0 & ~np.isnan(fq)
+    KMAX = 2000
+    ks = np.arange(1, KMAX + 1)
+
+    def band_probs_ln(mu, s, lo):
+        def lsf(k):  # log P(X_cont >= k - 0.5), i.e. rounded value >= k
+            return norm.logsf((np.log(k - 0.5) - mu) / s) if k > 1 else norm.logsf((np.log(0.5) - mu) / s)
+        z = lsf(1)
+        tops = [np.exp(lsf(a) - z) for a in lo] + [0.0]
+        return np.array([tops[i] - tops[i + 1] for i in range(6)])
+
+    def band_probs_zipf(a, lo):
+        p = ks ** -a
+        p /= p.sum()
+        cum = np.concatenate([[0], np.cumsum(p)])
+        hi = lo[1:] + [KMAX + 1]
+        return np.array([cum[min(h, KMAX + 1) - 1] - cum[l - 1] for l, h in zip(lo, hi)])
+
+    def g2(o, p):
+        e = o.sum() * p
+        m = o > 0
+        return 2 * (o[m] * np.log(o[m] / np.maximum(e[m], 1e-300))).sum()
+
+    groups = [("Impersonation-only", imp_only), ("Mass-only (all)", mass_only),
+              ("Mass-only Micro", mass_only & (size == 1)), ("Mass-only Small+", mass_only & (size >= 2))]
+    for gl, gm in groups:
+        o = np.array([(fq[gm] == k).sum() for k in range(1, 7)], float)
+        print(f"\n{gl}: n={int(o.sum())}  obs shares " + " ".join(f"{v:.2f}" for v in o / o.sum()))
+        for sc, lo in FREQ_EDGES.items():
+            nll = lambda z: -(o * np.log(np.maximum(band_probs_ln(z[0], np.exp(z[1]), lo), 1e-300))).sum()
+            best = min((minimize(nll, [m0, 0.5], method="Nelder-Mead") for m0 in (2.0, 0.0, -3.0, -10.0)),
+                       key=lambda q: q.fun)
+            mu, s = best.x[0], np.exp(best.x[1])
+            pl = band_probs_ln(mu, s, lo)
+            gl2 = g2(o, pl)
+            nz = lambda a: -(o * np.log(np.maximum(band_probs_zipf(a[0], lo), 1e-300))).sum()
+            bz = min((minimize(nz, [a0], method="Nelder-Mead") for a0 in (0.5, 1.0, 2.0)), key=lambda q: q.fun)
+            pz = band_probs_zipf(bz.x[0], lo)
+            gz = g2(o, pz)
+            print(f"  [{sc:9s}] dlnorm mu {mu:6.2f} sigma {s:5.2f} (median {np.exp(mu):8.2f})  G2 {gl2:5.1f} "
+                  f"p {chi2.sf(gl2, 3):.3f}  fit " + " ".join(f"{v:.2f}" for v in pl))
+            print(f"  {'':11s} zipf   a {bz.x[0]:5.2f} (cap {KMAX})                      G2 {gz:5.1f} "
+                  f"p {chi2.sf(gz, 4):.3f}  fit " + " ".join(f"{v:.2f}" for v in pz))
+
+
+if __name__ == "__main__" and "bandfits" in __import__("sys").argv:
+    single_channel_band_fits()
+
+
+def check_999():
+    """Is 999 a special code in the scale count variables? Value frequencies at/near 997-999 and >= 900, SPSS value
+    labels / missing-value metadata if available, and cross-check against the banded version (band 9 = 100+)."""
+    import glob
+    r = aligned_raw()
+    X, w, size = load()
+    for col, bcol in (("phishcon", "phishcon_bands"), ("Cybercrime_phishsum", None), ("Cybercrime_hacksum", None),
+                      ("hackcount", "hackcount_bands"), ("ranssoft", "ranssoft_bands"), ("tkvrcount", "tkvrcount_bands"),
+                      ("doscount", "doscount_bands")):
+        v = pd.to_numeric(r[col], errors="coerce")
+        big = v[v >= 300].value_counts().sort_index()
+        line = f"{col:22s} >=300: " + ", ".join(f"{int(k)}:{c}" for k, c in big.items())
+        if bcol:
+            b = pd.to_numeric(r[bcol], errors="coerce")
+            line += f"   | bands of 999-firms: {b[v == 999].value_counts().to_dict()}"
+        print(line)
+    try:
+        import pyreadstat
+        sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+        _, meta = pyreadstat.read_sav(sav, metadataonly=True, user_missing=True)
+        for col in ("phishcon", "Cybercrime_phishsum", "Cybercrime_hacksum", "hackcount"):
+            print(f"\n{col}: label {meta.column_names_to_labels.get(col)!r}")
+            print(f"  value labels: {meta.variable_value_labels.get(col)}")
+            print(f"  missing ranges: {meta.missing_ranges.get(col)}  user missing: {meta.missing_user_values.get(col)}")
+    except Exception as e:
+        print("metadata read failed:", e)
+
+
+if __name__ == "__main__" and "c999" in __import__("sys").argv:
+    check_999()
+
+
+def phishsum_components():
+    """What does Cybercrime_phishsum add up? List phishing-related scale variables (labels from SPSS metadata),
+    then test candidate sums against phishsum firm by firm (exact match share), and dump discordant firms."""
+    import glob
+    import itertools
+    import pyreadstat
+    r = aligned_raw()
+    sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+    _, meta = pyreadstat.read_sav(sav, metadataonly=True)
+    lab = meta.column_names_to_labels
+    cands = [c for c in r.columns if c.lower().startswith(("phish", "cybercrime_phish", "fraud")) and not c.endswith(("_bands", "_comb", "_comb1", "_comb2"))]
+    for c in cands + ["Cybercrime_phish", "Cybercrime_allsum", "Cybercrime_notphishsum"]:
+        if c in r.columns:
+            v = pd.to_numeric(r[c], errors="coerce")
+            print(f"{c:26s} n>=0 {int((v >= 0).sum()):4d}  max {v.max():g}  | {str(lab.get(c))[:150]}")
+    ps = pd.to_numeric(r["Cybercrime_phishsum"], errors="coerce")
+    ok = ps >= 0
+    num = {c: pd.to_numeric(r[c], errors="coerce").where(lambda s: s >= 0) for c in cands if c != "Cybercrime_phishsum"}
+    num = {c: v for c, v in num.items() if (v.notna() & ok).sum() > 20}
+    print(f"\nphishsum present: {int(ok.sum())}")
+    res = []
+    for k in (1, 2, 3):
+        for combo in itertools.combinations(num, k):
+            s = sum(num[c].fillna(0) for c in combo)
+            anyv = pd.concat([num[c].notna() for c in combo], axis=1).any(axis=1)
+            m = ok & anyv
+            res.append((np.mean(s[m] == ps[m]) if m.sum() else 0, int(m.sum()), combo))
+    for share, n, combo in sorted(res, reverse=True)[:8]:
+        print(f"  {' + '.join(combo):60s} exact match {share:.3f} on {n}")
+    best = sorted(res, reverse=True)[0][2]
+    s = sum(num[c].fillna(0) for c in best)
+    bad = ok & (s != ps)
+    print(f"\nbest combo {best}: discordant {int(bad.sum())}; first 15:")
+    cols = ["Cybercrime_phishsum"] + list(num)
+    print(pd.DataFrame({c: pd.to_numeric(r[c], errors="coerce") for c in cols})[bad].head(15).to_string())
+
+
+if __name__ == "__main__" and "phishsum" in __import__("sys").argv:
+    phishsum_components()
+
+
+def phishsum_rule():
+    """Verify phishsum = phisheng + (phishcon, or phishcondk band mapped to a fixed value). Infer the band -> value
+    map from firms with phisheng known and phishcon missing; then exact-match share over all phishsum firms.
+    Also: phishcondk / phishconyes value labels, and how phisheng / phishcon relate (routing)."""
+    import glob
+    import pyreadstat
+    r = aligned_raw()
+    num = lambda c: pd.to_numeric(r[c], errors="coerce")
+    ps, eng, con, dk, yes = (num(c) for c in ("Cybercrime_phishsum", "phisheng", "phishcon", "phishcondk", "phishconyes"))
+    sav = glob.glob("/home/user/uk-cyber/data/raw/*.sav")[0]
+    _, meta = pyreadstat.read_sav(sav, metadataonly=True)
+    for c in ("phishcondk", "phishconyes"):
+        print(f"{c} labels: {meta.variable_value_labels.get(c)}")
+    m = (ps >= 0) & con.isna() & dk.between(1, 20)
+    implied = (ps - eng.where(eng >= 0).fillna(0))[m]
+    print("\nimplied value per phishcondk code (phishsum - phisheng, phishcon missing):")
+    mp = {}
+    for code in sorted(dk[m].unique()):
+        vals = implied[dk[m] == code].value_counts()
+        mp[code] = vals.index[0]
+        print(f"  code {int(code)}: {dict(vals)}")
+    tgt = con.where(con >= 0).fillna(dk.map(mp))
+    pred = eng.where(eng >= 0).fillna(0) + tgt.fillna(0)
+    ok = ps >= 0
+    print(f"\nphishsum firms {int(ok.sum())}: exact match of engaged + targeted {np.mean(pred[ok] == ps[ok]):.3f}")
+    bad = ok & (pred != ps)
+    print(pd.DataFrame({"phishsum": ps, "phisheng": eng, "phishcon": con, "phishcondk": dk, "phishconyes": yes})[bad].head(12).to_string())
+    print(f"\nrouting: phishconyes value counts among phishing firms: {yes.value_counts().to_dict()}")
+    print(f"firms with phishcon answered, by phishconyes: {yes[con >= 0].value_counts(dropna=False).to_dict()}")
+
+
+if __name__ == "__main__" and "phishrule" in __import__("sys").argv:
+    phishsum_rule()
