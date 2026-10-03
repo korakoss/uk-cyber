@@ -1833,3 +1833,21 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      Identification rests on respondents reporting tiny costs as non-zero in the worst-incident question.
   Fit by frequency OK except small daily/several-a-day cells. Keep the once-per-type form (better fit) for the main
   model; cite this bound.
+  CAVEATS (user, 2026-10-03): the survey prices INCIDENT-attributed costs only (staff time dealing with the incident,
+  payments, disruption); ambient routine handling, security spending and third-party costs are outside it, so the
+  zero-worst bound covers incident-attributed clean-up only. 'Almost all extra attacks cost nothing' was an inference
+  under independent attacks; firm heterogeneity (always-free vs costly firms) explains the flat zero share too
+  (raw: no-cost share among non-breached firms 63/66/69/67/76/47% by frequency once..several a day). Not resolved.
+  The national figure = incident costs to employer businesses, not total cost of cybercrime.
+- BREADTH IS NOT MODELLED (user, 2026-10-03): the cost model conditions on each firm's observed ticks; the national
+  total reuses observed weighted patterns. The exposure LCA (counts_given_frailty) only supplies tier labels.
+- EXPOSURE MODEL vs BREADTH (exposure_check.py, 2026-10-03). LCA K=3 within Micro and within Small+ (as in use).
+  Within the fitted groups it reproduces breadth (0-4 channels) essentially exactly (Micro X2 1.3, Small+ 0.0), channel
+  rates, all pairwise co-occurrences (ratios .90-1.05) and raw type counts. K=4 no different. (Very flexible model on 10
+  flags - near-saturated for these margins, so little falsification power; says nothing on incident-made ticks.)
+  BUT pooling Small+Medium+Large fails badly: weighted Small+ = Small, while Medium and Large are much broader:
+    breadth 3-4 channels: Small 9%, Medium 17%, Large 31% vs pooled model 11%; X2 Medium 47.5, Large 101.3 (df 4).
+    Hit rates Large vs model: phishing .69/.45, impersonation .53/.29, ransomware .10/.04, other serious .39/.17.
+  => A generated version must fit exposure separately for Small, Medium, Large (or size as covariate); current national
+     estimate (observed patterns per size) is unaffected by this, but the generator would understate Medium/Large
+     breadth and hence cost. Same pooling problem as the cost side (task B).
