@@ -1851,3 +1851,16 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   => A generated version must fit exposure separately for Small, Medium, Large (or size as covariate); current national
      estimate (observed patterns per size) is unaffected by this, but the generator would understate Medium/Large
      breadth and hence cost. Same pooling problem as the cost side (task B).
+- FULL GENERATOR (generator.py, 2026-10-03). Exposure: LCA K=3 per size band (Micro/Small/Medium/Large), tiers from
+  per-band posteriors. Reproduces breadth in every band (X2 1.3 / 0.0 / 0.0 / 0.0; near-saturated, weak test).
+  Class shares low/mid/high: Micro .83/.08/.08, Small .71/.26/.03, Medium .57/.35/.08, Large .29/.55/.16.
+  Cost model with band effects (breach rate, handling amount, ordinary zero share, ordinary amount, big-chance odds):
+    pooled Small=Medium=Large ll -1649.4 (32 params); separate bands ll -1647.4 (42). LR 4.0 on 10 df (p ~.95)
+    -> NO evidence that Medium/Large differ from Small on the cost side, given exposure. Pooling now tested, kept.
+    Caveat: with a band shift on the big-breach chance, the fit reallocates Small+ breaches (big-chance odds x14,
+    ordinary amount x0.02, big median £1.3k sigma 2.36) - ordinary vs big split weakly identified; totals unaffected.
+  National: generator £1.56-1.57bn vs observed-pattern plug-in £1.44bn (same cost model). Gap ~+9% = generator models
+    every attacked firm incl. those without cost answers from exposure alone (cf. exposure-only imputation +11%);
+    plug-in scales answering firms. By band (separate): Micro £0.72bn (£624/business), Small £0.66bn (£3,015),
+    Medium £0.13bn (£3,291), Large £0.06bn (£7,141). Medium/Large per business now reflect their own (broader) exposure.
+  Params: scratchpad generator_cost_full.npy / generator_cost_pooled.npy.
