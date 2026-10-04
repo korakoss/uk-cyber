@@ -338,3 +338,45 @@ def backed2():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "backed2":
     backed2()
+
+
+# --- Do spread-to-T firms also have regular T attempts? (2026-10-04) ----------------------------------------------
+# tkvrcount/hackcount count attempts SEPARATE from instances that led to fraud/ransomware -> for a breached firm
+# ticking T, count>0 = regular background attempts besides the breach. Among breached firms ticking T, split count
+# >0 / ==0 / missing, by spread-signature and costly status, and by fraud/ransomware (breach-linked instances likely).
+# Impersonation: Q53B/C 'all of them' (no regular spoofing) vs 'some of them' (mixed). Run: ... escalation.py regular
+
+def regular():
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    mid = np.where(hi == 0, 0.0, (lo + hi) / 2)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    br = ((oa == 1) | soft) & ~np.isnan(mid) & (nch >= 1)
+    nout = np.column_stack([nm(f"outcome{j}") == 1 for j in OUTC]).sum(1)
+    sig_ = (nm("outcome1") == 1) | (nm("outcome6") == 1) | (nout >= 3)
+    big = mid >= 5000
+    T = lambda t: X[:, SHORT.index(t)] == 1
+    fraud = (np.column_stack([cnum(r, c) for c in ("fraud1", "fraud2", "fraud3")]) >= 1).any(1)
+    linked = fraud | T("Ransm")
+    print("breached firms ticking T: regular separate attempts (count>0) / none (count=0) / count missing;")
+    print("rows: all breached | spread-signature | costly (>=5k) | breach-linked (fraud or ransomware present)")
+    for t, c in (("Takov", "tkvrcount"), ("BankH", "tkvrcount"), ("AcOut", "hackcount"), ("AcStf", "hackcount"), ("DoS", "doscount")):
+        n = cnum(r, c)
+        tk = br & T(t)
+        for lab, m in (("all breached", tk), ("signature", tk & sig_), ("costly", tk & big), ("breach-linked", tk & linked)):
+            if m.sum() == 0:
+                continue
+            print(f"  {t:5s} {lab:13s} n {m.sum():3d}: regular {int((m & (n > 0)).sum()):3d}  none {int((m & (n == 0)).sum()):2d}  missing {int((m & np.isnan(n)).sum()):2d}"
+                  f"   | median count if >0 {np.median(n[m & (n > 0)]) if (m & (n > 0)).any() else float('nan'):.0f}")
+    qh, qt = nm("impersonationhack"), nm("impersonationtkvr")
+    m = br & T("Imper") & (np.isin(qh, [1, 2]) | np.isin(qt, [1, 2]))
+    allb = (qh == 1) | (qt == 1)
+    print(f"  Imper breached+intrusive n {m.sum()}: 'all of them' {int((m & allb).sum())}, 'some of them' (also regular spoofing) {int((m & ~allb).sum())}")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "regular":
+    regular()

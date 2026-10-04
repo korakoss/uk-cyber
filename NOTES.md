@@ -1930,3 +1930,13 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      the raw curve's steep top (.55 at 4) partly reflects impersonation consequence-ticks and unverifiable
      ransomware/malware. Generator: attempted fronts -> modest rise in big chance; impersonation can be painted by a
      breach; ransomware/malware open.
+- DO SPREAD-TO-T FIRMS ALSO GET REGULAR T ATTEMPTS? (escalation.py regular, 2026-10-04). The fraud/ransomware exclusion
+  in tkvrcount/hackcount is the right instrument: count>0 = background attempts separate from the breach's instances.
+  Among breached firms ticking T (answered): regular attempts in Takov 33/39, AcOut 14/21, AcStf 18/22, DoS 32/32,
+  intrusive impersonation 'some of them' 28/31 -> YES, firms whose breach touched T normally ALSO face regular T
+  attempts (~65-100%). EXCEPTION: bank hacking in spread-signature firms: only 6/16 have separate regular attempts,
+  10/16 none -> money-reach is usually pure breach footprint, not background bank attacks. Consistent with the x9
+  bank-reach finding. Counts if >0 are small (median 1-2).
+  => Supports correlated exposure (one latent drives both background attempts and where breaches spread) for most
+     types, with bank hacking as the one footprint-dominated tick. Breadth-as-exposure reading strengthened; painting
+     negligible outside impersonation and bank hacking.
