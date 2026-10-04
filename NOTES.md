@@ -1940,3 +1940,13 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   => Supports correlated exposure (one latent drives both background attempts and where breaches spread) for most
      types, with bank hacking as the one footprint-dominated tick. Breadth-as-exposure reading strengthened; painting
      negligible outside impersonation and bank hacking.
+- FRAUD/RANSOMWARE vs BREACH (escalation.py fraudlink, 2026-10-04). Survey 'fraud' (Q88A fraud1-3) = money moved out of
+  bank account / card details misused / paid attackers on fake info. 1001 attacked firms: fraud 56, ransomware tick 68,
+  either 117. P(breached | fraud) .76, | ransomware tick .62, | either .69. P(either | breached) .35, | costly .68,
+  | not breached .04. Bank-hacking tickers: P(either | costly) .89.
+  => 'Led to fraud or ransomware' is NOT breach: it covers a third of breached firms and two-thirds of costly ones.
+     So the attempt-count exclusion removes breach instances only for those firms; for the other ~2/3 of breached
+     firms (~1/3 of costly) the breach's own takeover/access instances sit inside the 'regular attempts' count,
+     inflating 'regular attempts too'. Restricted to fraud/ransomware firms (where the exclusion bites): takeover
+     8/12, bank hacking 8/20, outsider access 6/9, staff access 7/10 still have separate attempts. DoS has no
+     exclusion at all. Conclusion of 'regular' check holds directionally but on ~10-20 firms per type.

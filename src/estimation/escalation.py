@@ -380,3 +380,44 @@ def regular():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "regular":
     regular()
+
+
+# --- How close is 'led to fraud or ransomware' to 'breach' / 'big breach'? (2026-10-04) ----------------------------
+# Fraud (Q88A fraud1-3: money moved out of bank account; card details misused; paid attackers on fake info) >= 1, or
+# ransomware tick (type1: devices targeted with ransomware). Among attacked firms: overlap with breached (W2), costly
+# (worst >= £5k), spread signature. Also among firms ticking takeover/bank hacking/outsider access. Weighted shares.
+# Run: ... escalation.py fraudlink
+
+def fraudlink():
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    mid = np.where(hi == 0, 0.0, (lo + hi) / 2)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    att = (nch >= 1) & ~np.isnan(mid)
+    br = ((oa == 1) | soft) & att
+    nout = np.column_stack([nm(f"outcome{j}") == 1 for j in OUTC]).sum(1)
+    sg = ((nm("outcome1") == 1) | (nm("outcome6") == 1) | (nout >= 3)) & att
+    big = (mid >= 5000) & br
+    F = np.column_stack([cnum(r, c) for c in ("fraud1", "fraud2", "fraud3")])
+    fraud = (F >= 1).any(1)
+    fr_ans = ~np.isnan(F).all(1)
+    rans = X[:, SHORT.index("Ransm")] == 1
+    link = fraud | rans
+    print(f"attacked firms {att.sum()}; fraud questions answered by {int((att & fr_ans).sum())}; fraud {int((att & fraud).sum())},"
+          f" ransomware tick {int((att & rans).sum())}, either {int((att & link).sum())}")
+    print(f"breached {br.sum()}, costly {big.sum()}, spread signature {sg.sum()}")
+    av = lambda x, m: np.average(x[m], weights=w[m]) if m.any() else float("nan")
+    for lab, g in (("all attacked", att), ("ticked takeover", att & (X[:, SHORT.index('Takov')] == 1)),
+                   ("ticked bank hacking", att & (X[:, SHORT.index('BankH')] == 1)), ("ticked outsider access", att & (X[:, SHORT.index('AcOut')] == 1))):
+        print(f"\n{lab} (n {g.sum()}):")
+        for nmx, x in (("fraud", fraud), ("ransomware tick", rans), ("fraud or ransomware", link)):
+            print(f"  {nmx:20s} P(breached | it) {av(br, g & x):.2f}  P(costly | it) {av(big, g & x):.2f}  P(sig | it) {av(sg, g & x):.2f}  [n {int((g & x).sum())}]"
+                  f"   P(it | breached) {av(x, g & br):.2f}  P(it | costly) {av(x, g & big):.2f}  P(it | not breached) {av(x, g & ~br):.2f}")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "fraudlink":
+    fraudlink()
