@@ -1968,3 +1968,19 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   Model implication: P(big) should not be driven by observed breadth; generate exogenous exposure from the latent
   (modest effect on big chance via targeted phishing/DoS entry), and let big breaches generate their footprint of
   spread-product ticks (incl. bank reach x9).
+- USER (2026-10-04): attempts must be modelled well because clean-up comes from every attempt (not once per type);
+  footprint ticks carry no attempts / clean-up of their own.
+- ATTEMPTS + CLEAN-UP ON NON-BREACHED FIRMS (handling_attempts.py, 2026-10-04). 755 attacked firms with W2 = 0; worst =
+  largest clean-up. N attacks from Q54 band (3 log-spaced points per band). Per attempt: zero w.p. h0, else lognormal
+  (channel-set + Small+ shifts, optional -beta log N); share psi of always-free firms.
+    H1 independent, volume-thinned zero share (psi 0): ll -806.9, AIC 1629.8; P(zero per attempt) .71/.97/.99/.999 at
+       N 1/12/52/1000; yearly clean-up phishing-only Micro £95 (N=1) .. £166 (N=1000); national £0.13bn.
+    H2 pure heterogeneity (psi, constant per-attempt cost): ll -991.1 -> REJECTED (predicts worst rising with volume).
+    H2b heterogeneity + per-attempt cost ~ N^-1.08: ll -814.2 (-7.3 vs H1, +2 params; AIC +18); always-free .67 Micro /
+       .59 Small+; yearly clean-up £331 (N=1) .. £190 (N=1000), roughly flat/declining; national £0.24bn.
+    H3 both: ll -805.2 (psi Micro .19); same as H1, £0.13bn.
+  Fit by frequency band OK except several-a-day (obs no-cost .47 vs pred .60-.66) and daily (obs .76 vs .62-.66), n 52/32.
+  => In every surviving version, a firm's YEARLY incident-attributed clean-up is roughly constant in attack volume
+     (~£100-300 for a phishing-only Micro firm); mechanism (thinning vs firm heterogeneity with cheaper attempts)
+     moves the level up to x2. National clean-up £0.13-0.24bn. Still incident-attributed only; non-breached firms
+     only (selection).
