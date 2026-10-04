@@ -1906,3 +1906,12 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      not significant in strict), but much of the steep top of the curve is paint (ticks without attempts, concentrated
      in big breaches). Generator should include BOTH: realised attempted breadth -> modest rise in big chance, and big
      compromises painting extra ticks (footprint). Ransomware/malware attribution remains the unresolved part.
+  !! WITHDRAWN (2026-10-04, user asked how attempts are known): tkvrcount (Q86A) and hackcount (Q85A) count attempts
+  'separate from instances that led to fraud and/or ransomware attacks' - a zero is EXPECTED for costly firms whose
+  attempts led to fraud/ransomware, so 'unbacked ticks concentrate in costly firms' is questionnaire design, not paint.
+  Also hackcount = unauthorised access to files/networks/IMs/calls, wrongly mapped to the bank-hacking tick (bank-
+  account attempts fall under tkvrcount). doscount (Q87A) has no exclusion; DoS ticks are never unbacked.
+  => The attempt-backed breadth analysis and the paint ORs are invalid; also the earlier 'takeover 36% / hacking 60%
+     unbacked in signature firms' (escalation.py test 3, broad_interaction.py T3) is uninterpretable. Valid paint/
+     co-labelling evidence: impersonation follow-ups only (consequence classification). Within-frailty result
+     (breadth matters beyond frailty) stands; realised fronts vs painting is OPEN again.
