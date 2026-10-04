@@ -263,3 +263,78 @@ def backed():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "backed":
     backed()
+
+
+# --- Attempt-backed breadth, CORRECTED (2026-10-04) ----------------------------------------------------------------
+# tkvrcount (Q86A: takeover of websites/social/email OR ONLINE BANK accounts) and hackcount (Q85A: unauthorised access to
+# files/networks/IMs/calls) exclude attempts that led to fraud or ransomware; doscount (Q87A) has no exclusion.
+# A checked tick is BACKED if its count > 0 or the firm had fraud (fraud1-3 >= 1) or ransomware (attempts counted
+# elsewhere); POSSIBLY PAINT if count == 0 and no fraud/ransomware; UNVERIFIABLE if count missing.
+#   takeover, bank hacking -> tkvrcount;  outsider access, staff access, eavesdropping -> hackcount;  DoS -> doscount.
+# Phishing backed; impersonation backed unless intrusive or caused by a breach (follow-up items; partly by construction).
+# Malware, ransomware: no attempt question -> GENEROUS counts them backed, STRICT unverifiable (dropped).
+# Run: ... escalation.py backed2
+
+def backed2():
+    import joint_five_channel as f
+    from scipy.optimize import minimize as _min
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    mid = np.where(hi == 0, 0.0, (lo + hi) / 2)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    br = ((oa == 1) | soft) & ~np.isnan(mid) & (nch >= 1)
+    big = mid >= 5000
+    freq = f.load_firms()["freq"].values
+    fg = np.where(freq <= 2, 0, np.where(freq <= 3, 1, np.where(freq <= 6, 2, -1)))
+    T = lambda t: X[:, SHORT.index(t)] == 1
+    fraud = (np.column_stack([cnum(r, c) for c in ("fraud1", "fraud2", "fraud3")]) >= 1).any(1)
+    elsewhere = fraud | T("Ransm")
+    status = {}
+    for t, c, excl in (("Takov", "tkvrcount", True), ("BankH", "tkvrcount", True), ("AcOut", "hackcount", True),
+                       ("AcStf", "hackcount", True), ("Eavsd", "hackcount", True), ("DoS", "doscount", False)):
+        n = cnum(r, c)
+        tk = T(t)
+        b_ = tk & ((n > 0) | (elsewhere if excl else False))
+        p_ = tk & (n == 0) & ~(elsewhere if excl else False)
+        u_ = tk & ~b_ & ~p_
+        status[t] = (b_, p_, u_)
+        print(f"  {t:5s} ticked {tk.sum():4d}: backed {b_.sum():4d}, possibly paint {p_.sum():3d}, unverifiable {u_.sum():3d}"
+              f"  | among breached costly: ticked {(tk & br & big).sum()}, possibly paint {(p_ & br & big).sum()}")
+    cons_i = (nm("disruptphish5") == 1) | (cnum(r, "fraud4") >= 1)
+    intr = (np.isin(nm("impersonationhack"), [1, 2])) | (np.isin(nm("impersonationtkvr"), [1, 2]))
+    I_b = T("Imper") & ~cons_i & ~intr
+    print(f"  Imper ticked {T('Imper').sum():4d}: backed (spoofing, not breach-caused) {I_b.sum()}, consequence/intrusive {(T('Imper') & ~I_b).sum()}")
+    S_checked_b = np.column_stack([status[t][0] for t in status]).any(1)
+    S_checked_u = np.column_stack([status[t][2] for t in status]).any(1)
+    variants = {"GENEROUS": np.column_stack([T("Phish"), I_b, T("Ransm"), S_checked_b | S_checked_u | T("Malwr")]),
+                "STRICT": np.column_stack([T("Phish"), I_b, np.zeros(len(X), bool), S_checked_b])}
+
+    def logit(y, Xr, ww):
+        Xc = np.column_stack([np.ones(len(y)), Xr])
+        o = _min(lambda b: -(ww * (y * (Xc @ b) - np.logaddexp(0, Xc @ b))).sum(), np.zeros(Xc.shape[1]), method="BFGS")
+        p = 1 / (1 + np.exp(-(Xc @ o.x)))
+        bread = np.linalg.inv((Xc * (ww * p * (1 - p))[:, None]).T @ Xc)
+        g_ = Xc * (ww * (y - p))[:, None]
+        return o.x, np.sqrt(np.diag(bread @ (g_.T @ g_) @ bread))
+    fmt = lambda b, s, j: f"{np.exp(b[j]):.2f} [{np.exp(b[j] - 1.96 * s[j]):.2f}-{np.exp(b[j] + 1.96 * s[j]):.2f}]"
+    for vlab, Cb in variants.items():
+        nb = Cb.sum(1)
+        rest = nch - nb
+        print(f"\n===== {vlab}: backed breadth among breached 0/1/2/3/4: " + "/".join(str(int((br & (nb == k)).sum())) for k in range(5)) +
+              f"; breached firms with any non-backed channel {int((br & (rest >= 1)).sum())} (costly {int((br & big & (rest >= 1)).sum())} of {int((br & big).sum())})")
+        cells = []
+        for b in range(5):
+            m = br & (nb == b)
+            cells.append(f"{np.average(big[m], weights=w[m]):.2f} [{m.sum():3d}]" if m.sum() >= 3 else f"  -  [{m.sum():3d}]")
+        print("  P(big | breached) by backed breadth 0-4: " + "  ".join(cells))
+        ok = br & (fg >= 0)
+        b, s = logit(big[ok].astype(float), np.column_stack([nb[ok], rest[ok], fg[ok] == 1, fg[ok] == 2, size[ok] >= 2]).astype(float), w[ok] / w[ok].mean())
+        print(f"  logit big ~ backed + non-backed channels + frequency + Small+ (n {ok.sum()}): backed OR {fmt(b, s, 1)}; non-backed OR {fmt(b, s, 2)}")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "backed2":
+    backed2()

@@ -1915,3 +1915,18 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      unbacked in signature firms' (escalation.py test 3, broad_interaction.py T3) is uninterpretable. Valid paint/
      co-labelling evidence: impersonation follow-ups only (consequence classification). Within-frailty result
      (breadth matters beyond frailty) stands; realised fronts vs painting is OPEN again.
+- ATTEMPT-BACKED BREADTH, CORRECTED (escalation.py backed2, 2026-10-04). Checked ticks backed if count > 0 OR firm had
+  fraud/ransomware (attempts counted elsewhere); possibly paint if count 0 and no fraud/ransomware.
+  Possibly-paint ticks are RARE: takeover 3/76, bank hacking 1/78, outsider access 4/35, staff access 1/52,
+  eavesdropping 1/11, DoS 0/76 (among breached costly firms: 2, 0, 4, 1, 1, 0). Impersonation: 87 of 557 ticks are
+  consequence/intrusive (breach-related by definition).
+  GENEROUS (malware/ransomware counted backed): non-backed channels = only breach-related impersonation; P(big) by
+    backed breadth 1-4 .09/.09/.28/.31; backed OR 1.83 [1.08-3.09]; non-backed OR 4.54 (by construction).
+  STRICT (malware/ransomware unverifiable): backed OR 1.81 [.99-3.32]; non-backed OR 2.30 [1.15-4.60] (mix of
+    breach-related impersonation and unverifiable types, not demonstrated paint).
+  => Where checkable, other-serious ticks are essentially all attempt-backed: no evidence of painting there. Painting
+     shows up only via impersonation (breach-caused / intrusive ticks), which does widen breached firms' breadth.
+     Attempted breadth still raises the big chance, ~x1.8 odds per front (generous significant, strict borderline);
+     the raw curve's steep top (.55 at 4) partly reflects impersonation consequence-ticks and unverifiable
+     ransomware/malware. Generator: attempted fronts -> modest rise in big chance; impersonation can be painted by a
+     breach; ransomware/malware open.
