@@ -421,3 +421,85 @@ def fraudlink():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "fraudlink":
     fraudlink()
+
+
+# --- Exogenous vs spread-product ticks: where does big-breach firms' breadth excess live? (2026-10-04) ---------------
+# Exogenous ticks (a breach inside the firm cannot generate them): receiving phishing (type6), DoS (type3), external
+# spoofing impersonation (Q53B/C both 'no' and not breach-caused); intensity: targeted phishing count (phishcon), DoS count.
+# Spread-product ticks (what an intrusion deploys/does inside): ransomware, malware, account takeover, bank-account
+# hacking, outsider access, eavesdropping, intrusive or breach-caused impersonation. Staff access reported separately.
+# Breached (W2) firms, big (worst >= £5k) vs cheap. Raw and stratified (attack frequency x Micro/Small+, strata weighted
+# by number of big firms) differences in each tick rate; logit big ~ #exogenous + #spread + frequency + Small+.
+# Run: ... escalation.py exospread
+
+def exospread():
+    import joint_five_channel as f
+    from scipy.optimize import minimize as _min
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    nch = channels(X).sum(1)
+    lo, hi = tightened(band)
+    mid = np.where(hi == 0, 0.0, (lo + hi) / 2)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    br = ((oa == 1) | soft) & ~np.isnan(mid) & (nch >= 1)
+    big = mid >= 5000
+    freq = f.load_firms()["freq"].values
+    fg = np.where(freq <= 2, 0, np.where(freq <= 3, 1, np.where(freq <= 6, 2, -1)))
+    T = lambda t: X[:, SHORT.index(t)] == 1
+    cons_i = (nm("disruptphish5") == 1) | (cnum(r, "fraud4") >= 1)
+    intr = np.isin(nm("impersonationhack"), [1, 2]) | np.isin(nm("impersonationtkvr"), [1, 2])
+    spoofI = T("Imper") & ~intr & ~cons_i
+    breachI = T("Imper") & (intr | cons_i)
+    pc = cnum(r, "phishcon")
+    cb = nm("phishcon_bands")
+    tgt = np.where(~np.isnan(pc), pc >= 1, (cb >= 2) & (cb <= 9)) & T("Phish")
+    dc = cnum(r, "doscount")
+    exo = {"phishing (received)": T("Phish"), "targeted phishing >=1": tgt, "DoS": T("DoS"), "spoofing impersonation": spoofI}
+    spr = {"ransomware": T("Ransm"), "malware": T("Malwr"), "account takeover": T("Takov"), "bank-account hacking": T("BankH"),
+           "outsider access": T("AcOut"), "eavesdropping": T("Eavsd"), "breach-linked impersonation": breachI}
+    other = {"staff access": T("AcStf")}
+    ok = br & (fg >= 0)
+    strata = [(k, s) for k in (0, 1, 2) for s in (0, 1)]
+
+    def diff(x):
+        raw_b, raw_c = np.average(x[ok & big], weights=w[ok & big]), np.average(x[ok & ~big], weights=w[ok & ~big])
+        num = den = 0.0
+        for k, s in strata:
+            m = ok & (fg == k) & ((size >= 2) == s)
+            mb, mc = m & big, m & ~big
+            if mb.sum() == 0 or mc.sum() == 0:
+                continue
+            num += mb.sum() * (np.average(x[mb], weights=w[mb]) - np.average(x[mc], weights=w[mc]))
+            den += mb.sum()
+        return raw_b, raw_c, num / den
+    print(f"breached firms with frequency answer {ok.sum()}: big {int((ok & big).sum())}, cheap {int((ok & ~big).sum())}")
+    print(f"  {'tick':30s} {'big':>6s} {'cheap':>6s} {'raw diff':>9s} {'stratified diff':>16s}")
+    for title, grp in (("EXOGENOUS", exo), ("SPREAD-PRODUCT", spr), ("OTHER", other)):
+        print(f"  -- {title}")
+        for k, x in grp.items():
+            b, c, d = diff(x.astype(float))
+            print(f"  {k:30s} {b:6.2f} {c:6.2f} {b - c:+9.2f} {d:+16.2f}")
+    for lab, x, grp in (("targeted phishing count (among targeted)", pc, tgt & ~np.isnan(pc)), ("DoS count (among DoS)", dc, T("DoS") & ~np.isnan(dc))):
+        mb, mc = ok & big & grp, ok & ~big & grp
+        print(f"  {lab}: median big {np.median(x[mb]) if mb.any() else np.nan:.0f} (n {mb.sum()}), cheap {np.median(x[mc]) if mc.any() else np.nan:.0f} (n {mc.sum()})")
+    ne_ = np.column_stack(list(exo.values())).sum(1)
+    ns_ = np.column_stack(list(spr.values())).sum(1)
+
+    def logit(y, Xr, ww):
+        Xc = np.column_stack([np.ones(len(y)), Xr])
+        o = _min(lambda b: -(ww * (y * (Xc @ b) - np.logaddexp(0, Xc @ b))).sum(), np.zeros(Xc.shape[1]), method="BFGS")
+        p = 1 / (1 + np.exp(-(Xc @ o.x)))
+        bread = np.linalg.inv((Xc * (ww * p * (1 - p))[:, None]).T @ Xc)
+        g_ = Xc * (ww * (y - p))[:, None]
+        return o.x, np.sqrt(np.diag(bread @ (g_.T @ g_) @ bread))
+    b, s = logit(big[ok].astype(float), np.column_stack([ne_[ok], ns_[ok], fg[ok] == 1, fg[ok] == 2, size[ok] >= 2]).astype(float), w[ok] / w[ok].mean())
+    f_ = lambda j: f"{np.exp(b[j]):.2f} [{np.exp(b[j] - 1.96 * s[j]):.2f}-{np.exp(b[j] + 1.96 * s[j]):.2f}]"
+    print(f"\n  logit big ~ #exogenous + #spread-product + frequency + Small+ (n {ok.sum()}): exogenous OR {f_(1)} per tick;"
+          f" spread-product OR {f_(2)} per tick")
+    print(f"  mean #exogenous big {np.average(ne_[ok & big], weights=w[ok & big]):.2f} vs cheap {np.average(ne_[ok & ~big], weights=w[ok & ~big]):.2f};"
+          f" #spread big {np.average(ns_[ok & big], weights=w[ok & big]):.2f} vs cheap {np.average(ns_[ok & ~big], weights=w[ok & ~big]):.2f}")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "exospread":
+    exospread()
