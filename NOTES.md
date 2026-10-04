@@ -1877,3 +1877,15 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
   => Composition matters, but NOT by carrying over univariate channel costs: ransomware adds nothing in broad breaches;
      the one strong component is bank-account hacking, which is cheap alone and ~9x costlier inside a broad breach
      (direct money theft as part of a spreading compromise). An interaction, not additivity. n=23 - thin but strong.
+- DOES FRAILTY ALONE EXPLAIN THE BIG-BY-BREADTH CURVE? (escalation.py within, 2026-10-04). Breached (W2) firms;
+  big = worst >= £5k. P(big) by breadth 1/2/3/4 within frailty level:
+    LCA tier (circular: built from ticks): mid .24(5)/.07/.19/-; high -/.08/.38/.55 (n 18/29/24).
+    Attack frequency (not built from ticks): rare .09/.05/.18/.37; monthly .05/.19/.35/.28; weekly+ .00/.03/.36/.56.
+  Logit big ~ breadth + frailty + Small+: breadth OR 2.49 [1.28-4.86] per extra channel with tier; 2.00 [1.19-3.37]
+    with frequency. Frailty given breadth: tier ORs .38 / .98, frequency 1.68 / 1.97 - all CIs include 1.
+    Spread signature: breadth OR 1.71 (tier, n.s.) / 1.67 [1.04-2.69] (frequency).
+  => NO: the steep rise with breadth persists within frailty levels, and frailty adds nothing once breadth is known.
+     Realised breadth (or something it carries) drives severity, not the latent dial. Two remaining readings:
+     (i) realised fronts matter (opportunity to spread this year), (ii) painting (big compromises add ticks). The
+     earlier recount (dropping attempt-less takeover/hacking/DoS ticks and consequence-type impersonation leaves 85% of
+     costly AND cheap broad firms broad) argues against (ii) where checkable; ransomware/malware/phishing uncheckable.

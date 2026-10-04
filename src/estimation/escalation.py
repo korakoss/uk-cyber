@@ -126,5 +126,68 @@ def main():
           " co-labelling there is invisible to this check.")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(__import__("sys").argv) == 1:
     main()
+
+
+# --- Does frailty alone explain the steep big-breach-by-breadth curve? (2026-10-04) --------------------------------
+# Breached firms (W2). 'Big' proxy = tightened worst-incident midpoint >= £5k (also spread signature).
+# Frailty measured two ways: (a) per-band latent-class tier (generator.exposure; inferred from the same ticks - circular);
+# (b) attack frequency Q54 (intensity; not built from the ticks). Within each frailty level, P(big | breached) by breadth;
+# logistic regression big ~ breadth + frailty (+ Small+), weighted, robust se.
+# Run: ... escalation.py within
+
+def within():
+    import joint_five_channel as f
+    from generator import exposure
+    from scipy.optimize import minimize as _min
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    mid = np.where(hi == 0, 0.0, (lo + hi) / 2)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    br = ((oa == 1) | soft) & ~np.isnan(mid) & (nch >= 1)
+    nout = np.column_stack([nm(f"outcome{j}") == 1 for j in OUTC]).sum(1)
+    sig_ = (nm("outcome1") == 1) | (nm("outcome6") == 1) | (nout >= 3)
+    big = mid >= 5000
+    _, post, _, _, _ = exposure()
+    tier = post.argmax(1)
+    freq = f.load_firms()["freq"].values
+    fg = np.where(freq <= 2, 0, np.where(freq <= 3, 1, np.where(freq <= 6, 2, -1)))   # rare / monthly / weekly+
+    print("breached firms by breadth (1/2/3/4): P(worst >= £5k) [n];  P(spread signature) in brackets after")
+
+    def table(lab, levels, g):
+        print(f"\n{lab}")
+        for k, name in levels:
+            cells = []
+            for b in (1, 2, 3, 4):
+                m = br & (g == k) & (nch == b)
+                cells.append(f"{np.average(big[m], weights=w[m]):.2f}/{np.average(sig_[m], weights=w[m]):.2f} [{m.sum():3d}]" if m.sum() >= 3 else f"   -      [{m.sum():3d}]")
+            print(f"  {name:9s} " + "   ".join(cells))
+    table("(a) latent-class tier", [(0, "low"), (1, "mid"), (2, "high")], tier)
+    table("(b) attack frequency", [(0, "rare"), (1, "monthly"), (2, "weekly+")], fg)
+
+    def logit(y, Xr, ww):
+        Xc = np.column_stack([np.ones(len(y)), Xr])
+        nll = lambda b: -(ww * (y * (Xc @ b) - np.logaddexp(0, Xc @ b))).sum()
+        o = _min(nll, np.zeros(Xc.shape[1]), method="BFGS")
+        p = 1 / (1 + np.exp(-(Xc @ o.x)))
+        bread = np.linalg.inv((Xc * (ww * p * (1 - p))[:, None]).T @ Xc)
+        g_ = Xc * (ww * (y - p))[:, None]
+        return o.x, np.sqrt(np.diag(bread @ (g_.T @ g_) @ bread))
+    for lab, fr, ok in (("tier", np.column_stack([tier == 1, tier == 2]), br),
+                        ("frequency", np.column_stack([fg == 1, fg == 2]), br & (fg >= 0))):
+        for ylab, y in (("worst >= £5k", big), ("spread signature", sig_)):
+            Xr = np.column_stack([nch[ok] - 1, fr[ok], size[ok] >= 2]).astype(float)
+            b, se = logit(y[ok].astype(float), Xr, w[ok] / w[ok].mean())
+            print(f"\nlogit {ylab} ~ breadth + {lab} + Small+ (n {ok.sum()}): breadth per extra channel OR {np.exp(b[1]):.2f}"
+                  f" [{np.exp(b[1] - 1.96 * se[1]):.2f}-{np.exp(b[1] + 1.96 * se[1]):.2f}];  {lab} level 2 OR {np.exp(b[2]):.2f}"
+                  f" [{np.exp(b[2] - 1.96 * se[2]):.2f}-{np.exp(b[2] + 1.96 * se[2]):.2f}], level 3 OR {np.exp(b[3]):.2f}"
+                  f" [{np.exp(b[3] - 1.96 * se[3]):.2f}-{np.exp(b[3] + 1.96 * se[3]):.2f}]")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "within":
+    within()
