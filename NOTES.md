@@ -1984,3 +1984,10 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      (~£100-300 for a phishing-only Micro firm); mechanism (thinning vs firm heterogeneity with cheaper attempts)
      moves the level up to x2. National clean-up £0.13-0.24bn. Still incident-attributed only; non-breached firms
      only (selection).
+  CORRECTION (user, 2026-10-04): yearly clean-up is NOT observed anywhere - only the single worst incident. Totals are
+  N x E[per-attack cost] under an assumed iid per-attack shape (zero mass + lognormal, sigma ~1.9). Identification of
+  'extra attacks cost nothing' comes from that shape: many wide-spread non-zero draws would raise the max. If per-attack
+  clean-ups are small and tightly bunched (e.g. always £10-50 of staff time), hundreds of them leave the worst
+  incident in the '<£100' band while the sum is large - invisible to the survey. So the data bound only clean-ups big
+  enough to be a firm's worst incident; the £0.13-0.24bn range is shape-assumption-driven, not a finding. Same
+  max-vs-sum issue as before.
