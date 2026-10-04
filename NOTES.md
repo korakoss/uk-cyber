@@ -1889,3 +1889,20 @@ Proposed order: 4 (narrow/handling cost model rebuild, foundation) -> 1 (worst v
      (i) realised fronts matter (opportunity to spread this year), (ii) painting (big compromises add ticks). The
      earlier recount (dropping attempt-less takeover/hacking/DoS ticks and consequence-type impersonation leaves 85% of
      costly AND cheap broad firms broad) argues against (ii) where checkable; ransomware/malware/phishing uncheckable.
+  CORRECTION (user asked what checkable evidence favours (i)): only the impersonation recount is informative (and its
+  consequence questions were asked of subsets); the takeover/hacking/DoS recount is structural (they sit inside other
+  serious); and paint clearly exists at type level in costly firms. 'Leans to (i)' was overstated.
+- ATTEMPT-BACKED BREADTH (escalation.py backed, 2026-10-04). Backed ticks: phishing; impersonation only external spoofing
+  not caused by a breach; takeover/hacking/DoS only with attempts > 0 (unanswered counted); ransomware/malware/access
+  types unverifiable -> GENEROUS counts them, STRICT drops them. Paint = observed minus backed channels.
+  GENEROUS: P(big | breached) by backed breadth 1/2/3/4 = .09/.09/.28/.31 (raw breadth curve rose to ~.5+ at 4).
+    Logit with frequency + Small+: backed breadth OR 1.83 [1.08-3.09] per channel; paint OR 4.54 [1.32-15.7] per
+    unbacked channel. Backed alone OR 1.68 [1.03-2.74]. 18 of 59 costly firms have paint.
+  STRICT: backed 1/2/3 = .08/.20/.23; backed OR 1.73 [.92-3.26] with paint, 1.36 [.76-2.41] alone; paint OR 2.35
+    [1.23-4.49]; 43 of 59 costly firms have an unbacked/unverifiable tick.
+  Caveat: 'paint' for impersonation is defined from breach-related items (intrusive, caused-by-breach), so part of its
+  association with big breaches is by construction.
+  => Mixed: realised attempted fronts still raise the big chance (~x1.7-1.8 odds per front in the generous variant,
+     not significant in strict), but much of the steep top of the curve is paint (ticks without attempts, concentrated
+     in big breaches). Generator should include BOTH: realised attempted breadth -> modest rise in big chance, and big
+     compromises painting extra ticks (footprint). Ransomware/malware attribution remains the unresolved part.

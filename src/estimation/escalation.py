@@ -191,3 +191,75 @@ def within():
 
 if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "within":
     within()
+
+
+# --- Attempt-backed breadth (2026-10-04) ---------------------------------------------------------------------------
+# Rebuild breadth from ticks with evidence of an attempt:
+#   phishing: tick counts (receiving phishing is an attempt, not something a breach paints);
+#   impersonation: only external spoofing (Q53B and Q53C 'no') not reported as caused by a breach (disruptphish5, fraud4);
+#   other serious: takeover / hacking / DoS only with attempts > 0 (unanswered attempt count -> counted);
+#     malware and the access/eavesdropping types have no attempt question;
+#   ransomware: no attempt question.
+# Variant GENEROUS: unverifiable ticks (ransomware, malware, access types) counted; STRICT: dropped.
+# Then P(big | breached) by backed breadth within attack-frequency levels; logit big ~ backed breadth + paint
+# (observed minus backed channels) + frequency + Small+.  Run: ... escalation.py backed
+
+def backed():
+    import joint_five_channel as f
+    from scipy.optimize import minimize as _min
+    X, size, band, D, oa, w = data()
+    r = aligned_raw()
+    nm = lambda c: pd.to_numeric(r[c], errors="coerce").values
+    C = channels(X)
+    nch = C.sum(1)
+    lo, hi = tightened(band)
+    mid = np.where(hi == 0, 0.0, (lo + hi) / 2)
+    soft = np.isin(nm("restore"), [3, 4, 5, 6]) | (nm("impact1") == 1) | (nm("impact4") == 1) | (nm("impact2") == 1)
+    br = ((oa == 1) | soft) & ~np.isnan(mid) & (nch >= 1)
+    big = mid >= 5000
+    freq = f.load_firms()["freq"].values
+    fg = np.where(freq <= 2, 0, np.where(freq <= 3, 1, np.where(freq <= 6, 2, -1)))
+    T = lambda t: X[:, SHORT.index(t)] == 1
+    cons_i = (nm("disruptphish5") == 1) | (cnum(r, "fraud4") >= 1)
+    spoof = (nm("impersonationhack") == 3) & (nm("impersonationtkvr") == 3)
+    I_b = T("Imper") & spoof & ~cons_i
+    att = lambda t, c: T(t) & ~(cnum(r, c) == 0)
+    S_checked = att("Takov", "tkvrcount") | att("BankH", "hackcount") | att("DoS", "doscount")
+    S_unver = T("Malwr") | T("AcOut") | T("AcStf") | T("Eavsd")
+    variants = {"GENEROUS": np.column_stack([T("Phish"), I_b, T("Ransm"), S_checked | S_unver]),
+                "STRICT": np.column_stack([T("Phish"), I_b, np.zeros(len(X), bool), S_checked])}
+
+    def logit(y, Xr, ww):
+        Xc = np.column_stack([np.ones(len(y)), Xr])
+        o = _min(lambda b: -(ww * (y * (Xc @ b) - np.logaddexp(0, Xc @ b))).sum(), np.zeros(Xc.shape[1]), method="BFGS")
+        p = 1 / (1 + np.exp(-(Xc @ o.x)))
+        bread = np.linalg.inv((Xc * (ww * p * (1 - p))[:, None]).T @ Xc)
+        g_ = Xc * (ww * (y - p))[:, None]
+        return o.x, np.sqrt(np.diag(bread @ (g_.T @ g_) @ bread))
+    fmt = lambda b, s, j: f"{np.exp(b[j]):.2f} [{np.exp(b[j] - 1.96 * s[j]):.2f}-{np.exp(b[j] + 1.96 * s[j]):.2f}]"
+    for vlab, Cb in variants.items():
+        nb = Cb.sum(1)
+        paint = nch - nb
+        print(f"\n===== {vlab}: breached firms {br.sum()}; backed breadth 0/1/2/3/4: " +
+              "/".join(str(int((br & (nb == k)).sum())) for k in range(5)) + f";  firms with paint >= 1: {int((br & (paint >= 1)).sum())}"
+              f" (costly {int((br & big & (paint >= 1)).sum())} of {int((br & big).sum())})")
+        print("  P(big | breached) by backed breadth 0/1/2/3/4 [n]:")
+        for k, name in [(-9, "all"), (0, "rare"), (1, "monthly"), (2, "weekly+")]:
+            g = br if k == -9 else br & (fg == k)
+            cells = []
+            for b in range(5):
+                m = g & (nb == b)
+                cells.append(f"{np.average(big[m], weights=w[m]):.2f} [{m.sum():3d}]" if m.sum() >= 3 else f"  -  [{m.sum():3d}]")
+            print(f"    {name:8s} " + "  ".join(cells))
+        ok = br & (fg >= 0)
+        Xr = np.column_stack([nb[ok], paint[ok], fg[ok] == 1, fg[ok] == 2, size[ok] >= 2]).astype(float)
+        b, s = logit(big[ok].astype(float), Xr, w[ok] / w[ok].mean())
+        print(f"  logit big ~ backed breadth + paint + frequency + Small+ (n {ok.sum()}): backed breadth OR {fmt(b, s, 1)};"
+              f" paint (per unbacked channel) OR {fmt(b, s, 2)}")
+        Xr2 = np.column_stack([nb[ok], fg[ok] == 1, fg[ok] == 2, size[ok] >= 2]).astype(float)
+        b2, s2 = logit(big[ok].astype(float), Xr2, w[ok] / w[ok].mean())
+        print(f"  logit big ~ backed breadth + frequency + Small+: backed breadth OR {fmt(b2, s2, 1)}")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "backed":
+    backed()
