@@ -345,3 +345,15 @@ Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells gi
   - Breadth enters only as a simple scale per type.
   - Only the worst incident is seen.
   - Bootstrap is short.
+
+### Current reading of the breadth effect (2026-10-05, summary of F5–F14; for discussion)
+- **What the data support:**
+  1. **Breach chance:** each ticked type carries roughly its own independent chance of leading to a breach. Broad firms are breached about as often as that predicts (F13). Breadth doesn't make a breach more likely beyond having more types.
+  2. **Breach cost:** given a breach, broad firms' worst incident is bigger than "the largest of independent breaches, each priced by its own type" (F14). The excess is small up to 3 types and large at 4+. It is better described as a jump than a smooth x1.6 per type.
+  3. The whole cost distribution moves up, not just a few extra big cases (F7). It doesn't depend on how often the firm was attacked (F5). It is strongest with ransomware, but not created by ransomware alone (F11, F14).
+  4. In one sentence: broad firms aren't breached more than expected, but when they are, the breach is bigger, as if it were one bigger event rather than more events.
+- **What the data don't settle:** the direction.
+  - (a) Facing more kinds of attack makes a breach worse (more routes for an intrusion to spread, a more capable attacker).
+  - (b) A worse breach makes the firm tick more types (the incident touched accounts, bank details, systems; or recall of a bad year).
+  
+  Both fit the facts above.
