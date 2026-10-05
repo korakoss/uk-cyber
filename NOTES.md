@@ -320,3 +320,28 @@ Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells gi
   Only the 4-type group departs (gap -0.21, n = 56). 5+ fits again, so this is plausibly noise.
 - **Fitting on firms with 2+ types only gives nearly the same rates** and predicts single-type firms well for phishing, takeover and bank hacking. Single-type malware firms are more often breached than predicted (53% vs 14%, n = 12), the same S-only oddity as F12, now small.
 - **Reading:** with a type-level, all-firm baseline, broad firms are breached about as often as independent per-type chances predict. The "breached below independence" result (F9) was the lumped-group, S-only-baseline artefact. On breach prevalence, nothing argues against story A (independent breach chances per type), and there is no sign of an excess that spreading would create.
+
+### F14. Breached-firm cost with per-type breach chances and per-type costs: a breadth effect remains, about x1.6 per extra type (`src/estimation/breach_cost_independence.py`, 2026-10-05)
+- **Method.** 244 breached firms with a cost answer. Which ticked types were breached is unknown; under independence each possible breached subset gets probability from the F13 per-type chances (held fixed). Each breach costs zero (probability z) or a lognormal draw with a type-specific median (the 4 thin access/other types share one) and one shared spread. Worst = largest breach cost. Non-breach clean-up costs are ignored. A breadth term multiplies every breach cost by a factor per extra type ticked. Fitted by weighted likelihood on the cost bands, with and without the breadth term.
+- **Result.** Adding the breadth term improves the fit by 9.5 log-likelihood points for 1 parameter (strong). Factor x1.62 per extra type, bootstrap 90% interval x1.25–x2.08 (60 resamples). Without the term, per-type medians are pushed up for types common in broad firms (e.g. ransomware £1,494 → £350 once breadth is allowed).
+- **Observed vs predicted shares** (independence = no breadth term):
+
+  | Types ticked | n | £500 or more: obs / independence / with term | £5k or more: obs / independence / with term |
+  |---|---|---|---|
+  | 1 | 60 | 32 / 42 / 34% | 5 / 12 / 6% |
+  | 2 | 62 | 51 / 49 / 47% | 8 / 16 / 12% |
+  | 3 | 57 | 57 / 50 / 51% | 13 / 16 / 15% |
+  | 4 | 26 | 55 / 54 / 61% | 38 / 18 / 23% |
+  | 5+ | 39 | 90 / 64 / 79% | 51 / 25 / 47% |
+  | 3+ no ransomware | 84 | 67 / 51 / 56% | 20 / 16 / 21% |
+  | 3+ with ransomware | 38 | 56 / 60 / 65% | 41 / 22 / 30% |
+
+  Independence over-predicts narrow firms and under-predicts broad ones, which is the signature of a breadth effect on cost. With the term the fit is good, except 4 types (n = 26).
+- **Reading:** even with each type's own breach chance and own breach cost, and the worst taken as the maximum, breached firms' cost rises with breadth beyond independence. The big-cost part of the excess is concentrated in 4+ types and in ransomware firms. Without ransomware, the excess at £5k or more is small (20% vs 16%), and at £500 or more it is clearer (67% vs 51%).
+- **Caveats:**
+  - Lognormal + zero shape assumed.
+  - Breach chances fixed (their uncertainty is not carried through).
+  - Non-breach costs ignored.
+  - Breadth enters only as a simple scale per type.
+  - Only the worst incident is seen.
+  - Bootstrap is short.
