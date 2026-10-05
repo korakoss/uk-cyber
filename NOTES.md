@@ -93,3 +93,20 @@ Attacked businesses only. Shares are weighted.
     - The fits depended on turning the frequency bands into attack counts, and that conversion fit badly (too few "once" answers).
     - In that old model, the national cost per firm barely changed across shapes (£729–732). The shape mattered for which firms carry the cost, not for the average.
 - Open: whether the "broad" firms are firms exposed to more kinds of attack, or one big incident ticking several boxes (old notes leaned towards the latter for costly firms). This is to be looked at with cost.
+
+### F4. More phishing goes with more other types (`src/estimation/phishing_volume_vs_breadth.py`, 2026-10-05)
+Phishing-ticking attacked businesses. Plain cross-tabs, weighted. "Serious" = any type other than phishing and impersonation.
+- **Yes, gradually and in both size groups.** By exact phishing count (`Cybercrime_phishsum`, 566 answers), the share with any serious type is:
+  - 1 attack: 32%
+  - 2–5: 38%
+  - 6–20: 42%
+  - 21–100: 52%
+  - over 100: about 70%
+  
+  The number of serious types and the impersonation share rise the same way. Micro and Small+ are nearly identical.
+- **The same holds by number of targeted phishing emails.** Any serious type: 21% for none, rising to about 65% for over 100.
+- **Overall attack frequency (`freq`) shows it only weakly and unevenly**, presumably because it is a coarse answer covering all types.
+- **Reverse view:** firms with 2 or more serious types have higher phishing counts, mostly in the upper part of the range. 75th percentile: Micro 41 vs 12 for phishing-only firms; Small+ 100 vs 15. Medians differ less: 6 vs 4, and 10 vs 3.
+- **Caveats:**
+  - Who answered the exact count is uneven: 39% of phishing-only firms vs 79% of firms with 2 or more serious types.
+  - Part of the link may be direct rather than shared exposure: phishing is a common way in for other attacks, so more phishing can itself lead to more of the other types.
