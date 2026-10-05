@@ -468,3 +468,11 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   - **"Not attacked on the spread facets":** what was measured is that costly broad firms are NOT more attacked on facets a breach cannot create (phishing volume, DoS, spoofing are lower or equal; overall frequency about equal). For the facets the breach spread to (the inside types), per-type attempt counts are about 1 everywhere and the zeros are ambiguous (F17). So the data can't say whether those facets were separately attacked.
   - **Cost uplift:** among breached firms, 58% are costly with 4+ types plus an inside type, against 1–14% elsewhere (F15). The core rests on 35 costly broad firms.
 - **Possible implication for the model (not decided):** breadth in costly firms is an OUTCOME of the incident, so it should not be an input. Instead, a breach (from any entry type) may escalate into a multi-facet compromise with a higher cost. The chance of escalating doesn't appear tied to outside exposure.
+
+## Open topics (as of 2026-10-05, not yet revisited in the fresh notes)
+1. **The top of the cost range.** No business reported over £500k. A handful at £100k–500k carry much of the total (old estimate: about a third of the national total from single losses over £500k). Size likely matters most here (the largest real-world UK incidents hit very large firms).
+2. **How cost scales with firm size, especially Medium/Large.** These are few in the sample, while Micro is about 80% of the weight.
+3. **Small costs adding up.** Only the worst incident is priced, so many small clean-ups per year are invisible. The old range (£0.13–0.24bn) is driven by an assumed cost shape.
+4. **More than one breach per firm per year.** The total exceeds the worst incident.
+5. **Firms that skipped the cost questions** (about 11% of attacked firms).
+6. **Spreading/escalation details for the model:** what drives the chance a breach escalates (entry type, size?), and the cost distribution of escalated compromises (this ties into 1).
