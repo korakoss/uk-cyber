@@ -79,3 +79,18 @@ for lab, drop in [('no ransomware, no bank hacking', ['ransom', 'bankhack']),
         t = s[(s.k >= lo) & (s.k <= hi)]
         if len(t):
             print(f'   {kl:3s} types n={len(t):3d}  costly {ws(t):.2f}  >= £500 {np.average(t.damage_bands >= 4, weights=t.weight):.2f}')
+
+print('\n=== 6. The four "inside" types in narrow (1-3 types) vs broad (4+) firms ===')
+print('(all attacked firms with cost answer; breached share; costly share among breached)')
+a = df.copy()
+for n in ['ransom', 'bankhack', 'outsider', 'staff', 'ANY']:
+    has = (a[['ransom', 'bankhack', 'outsider', 'staff']].sum(axis=1) > 0) if n == 'ANY' else (a[n] == 1)
+    for lab, m in [('narrow 1-3', a.k <= 3), ('broad 4+', a.k >= 4)]:
+        s = a[has & m]
+        br = s[s.breach == 1]
+        print(f'{n:9s} {lab:10s} firms {len(s):3d}  breached {ws(s, "breach"):.2f} ({len(br):3d})  '
+              f'costly among breached {ws(br) if len(br) else float("nan"):.2f}  '
+              f'>= £500 among breached {np.average(br.damage_bands >= 4, weights=br.weight) if len(br) else float("nan"):.2f}')
+print('\nshare of firms ticking any of the four that are narrow (1-3 types):',
+      f"{((a[['ransom', 'bankhack', 'outsider', 'staff']].sum(axis=1) > 0) & (a.k <= 3)).sum()} of "
+      f"{(a[['ransom', 'bankhack', 'outsider', 'staff']].sum(axis=1) > 0).sum()}")

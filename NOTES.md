@@ -381,3 +381,18 @@ Breached firms with a cost answer (244). Costly = worst incident £5k or more.
   - The four types were picked AFTER seeing which were over-represented (a risk of fitting noise). The 1% at 4+ without them rests on 12 firms.
   - Ransomware ticks include attempts.
   - Next check: whether the outcome items (systems corrupted, money stolen, files lost) line up with these four types in costly firms.
+- **Are the four types present in narrow firms? Yes, often; there they are cheap (same script, section 6).** Of 158 firms ticking any of the four, 89 are narrow (1–3 types). Narrow vs broad (4+):
+
+  | | Narrow | Broad |
+  |---|---|---|
+  | breached | 60% (44) | 72% (53) |
+  | costly among breached | 8% | 58% |
+  | £500 or more among breached | 47% | 87% |
+
+  Per type, costly among breached, narrow vs broad:
+  - bank hacking 5% (n = 21) vs 74% (n = 20)
+  - ransomware 16% (14) vs 57% (31)
+  - outsider access 0% (5) vs 64% (16)
+  - staff access 2% (6) vs 68% (16)
+
+  So the uplift is not "these types are absent from narrow firms". The same tick is common and often breached in narrow firms, but contained and cheap there. It is costly only together with breadth: an interaction, not either factor alone.
