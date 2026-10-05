@@ -259,3 +259,16 @@ User flagged this as a fact to pay attention to: it bears on WHY breadth matters
   - It is clearest in Small+ and in firms that ticked ransomware. Ransomware hardly appears outside broad firms (5 of 44 S-only firms tick it), so "ransomware is costly" and "breadth makes breaches costly" can't be cleanly separated.
   - Without ransomware the excess at £500 or more is still clear (70% vs 44%), while at £5k or more it is borderline.
 - **Baseline bias:** the comparison still uses single-group firms (breached pools: P 28, I 10, S 27). If S-only firms are "ticked because harmed" (F9/F10), their breach costs are, if anything, HIGHER than typical. That would make the baseline too high and the true excess larger, not smaller.
+
+### F11. Breadth matters without ransomware; ransomware adds on top (`src/estimation/ransomware_vs_breadth.py`, 2026-10-05)
+Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells give n, then £500 or more / £5k or more (weighted):
+
+| | 0–1 types | 2 types | 3 types | 4+ types |
+|---|---|---|---|---|
+| no ransomware | 59, 31% / 4% | 56, 52% / 8% | 50, 69% / 11% | 34, 63% / 34% |
+| ransomware | 7, 48% / 13% | 7, 17% / 17% | 10, 70% / 59% | 21, 92% / 55% |
+
+- **Without ransomware, cost still rises with breadth.** The £5k-or-more share jumps at 4+ types (34%), and £500 or more rises steadily. So there is a breadth fact beyond ransomware.
+- **At the same breadth, ransomware firms are costlier** (3 types: 59% vs 11%; 4+: 55% vs 34%). Within ransomware firms, breadth also matters: narrow ransomware firms are mostly cheap, though n is tiny. All ransomware firms (n = 67) are breached 54% / 47% / 71% / 84% across the breadth bands.
+- **Not-breached firms:** £500 or more rises with breadth (3% → 30%), but £5k or more stays at about 1% everywhere.
+- **Caveat:** this table shows that cost rises with breadth, not that it rises faster than independence would give. Independence also predicts a rise (the maximum of more draws). The earlier per-type independence check without ransomware was borderline at £5k (21% vs 9%, interval [-0.02, +0.27]). The steep jump at 4+ non-ransomware types (8–11% → 34%, n = 34) is the part most likely to exceed independence. Not yet tested against an independence prediction by breadth band.
