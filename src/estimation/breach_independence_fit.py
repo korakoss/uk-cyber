@@ -69,3 +69,19 @@ for lab, m in [('all sizes', df.sizeb > 0), ('Micro', df.sizeb == 1), ('Small+',
     for st, (n, o, f) in t.items():
         lo, hi = np.percentile(boots[st], [5, 95])
         print(f'{st:5s} {n:4d} {o:9.2f} {f:7.2f} {o - f:+10.2f}   [{lo:+.2f}, {hi:+.2f}]')
+
+# --- 2026-10-05: how solid is it? (1) S rate implied separately by each S-containing set, given the fitted P and I
+# rates; (2) how many S types firms in each set ticked (S lumps several types into one channel).
+print('\n=== S breach chance implied by each S-containing set (all sizes; P, I rates from the joint fit) ===')
+q = fit(df)
+for st in ['S', 'PS', 'IS', 'PIS']:
+    s = df[df['set'] == st]
+    o = np.average(s['breach'], weights=s['weight'])
+    other = np.prod([q['PIS'.index(g)] for g in st if g != 'S'])
+    print(f'{st:4s} n={len(s):3d}  observed breached {o:.2f}  implied S chance {1 - (1 - o) / other:.2f}')
+df['nS'] = (df[OTHER] == 1).sum(axis=1)
+print('\n=== number of S types ticked, by set (weighted share) ===')
+for st in ['S', 'PS', 'IS', 'PIS']:
+    s = df[df['set'] == st]
+    print(f'{st:4s} ' + '  '.join(f'{k}: {s.loc[s.nS == k, "weight"].sum() / s.weight.sum():.2f}' for k in [1, 2])
+          + f'  3+: {s.loc[s.nS >= 3, "weight"].sum() / s.weight.sum():.2f}   mean {np.average(s.nS, weights=s.weight):.2f}')
