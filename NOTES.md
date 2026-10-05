@@ -62,3 +62,15 @@ Attacked businesses (n = 1,101). Shares are weighted. "Targeted" phishing = at l
   This matches the user's ordering: mass phishing < targeted phishing ≈ impersonation < the rarer types < ransomware.
 - **Means by type are unreliable.** For impersonation, ransomware, DoS and bank hacking, a single firm (a £100k–500k incident) makes up 70–82% of the weighted mean. Without that firm, the means are about £1.3k, £8.8k, £1.4k and £2.1k.
 - **Firms that ticked only one type are cheaper** than firms whose worst incident is that type. For example, impersonation-only firms are 62% no cost and 1% at £5k or more. Big costs come with several types ticked; to be looked at separately.
+
+### F3. Which types occur together (`src/estimation/occurrence.py`, 2026-10-05)
+Attacked businesses only. Shares are weighted.
+- **One attack can tick several boxes (confirmed).** 40% of firms attacked "once" ticked 2 or more types, mostly phishing + impersonation (43 firms). Next come phishing + malware (8) and phishing + impersonation + bank hacking (5). The share ticking 2 or more is the same for "once" as for "less than monthly" or "monthly". It only rises for weekly or daily firms.
+- **Phishing and impersonation are about independent of everything else.** Their co-occurrence with other types is about what chance predicts (ratio 0.8–1.2). Phishing and impersonation together are slightly below chance (0.86). This is partly because every attacked firm must tick something.
+- **The rarer types go together.** Malware, ransomware, DoS, bank hacking, takeover, outsider access and staff access each co-occur with one another at about 2–4 times the rate chance predicts. This holds within Micro and within Small+ separately, so it isn't just a size effect. Outsider and staff access are especially tied (about 15 times chance, small n).
+- **Firms are either narrow or broad.** Compared with independent types (same rates):
+  - one type: 58% observed vs 41% expected
+  - two or three types: 35% vs 56%
+  - four or more: 7% vs 3%
+- **Roughly one main pattern, with caveats.** Each rare type's rate climbs steeply with the number of other types ticked; for example, ransomware is 2%, 7% and 20% at 1, 2 and 3+ other types. A correlation breakdown gives one leading direction (all the rare types together, phishing excluded). It is not very dominant (eigenvalues 1.82, 1.23, 1.14), but that tool is weak for rare yes/no flags. The second direction is just phishing vs impersonation (an artefact of looking only at attacked firms). The third is the small unauthorised-access cluster (outsider + staff) against malware/ransomware.
+- Open: whether the "broad" firms are firms exposed to more kinds of attack, or one big incident ticking several boxes (old notes leaned towards the latter for costly firms). This is to be looked at with cost.
