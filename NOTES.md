@@ -258,7 +258,7 @@ User flagged this as a fact to pay attention to: it bears on WHY breadth matters
   - The direction holds through every check. The size is uncertain: somewhere between about 1.5x and 4x at £5k or more.
   - It is clearest in Small+ and in firms that ticked ransomware. Ransomware hardly appears outside broad firms (5 of 44 S-only firms tick it), so "ransomware is costly" and "breadth makes breaches costly" can't be cleanly separated.
   - Without ransomware the excess at £500 or more is still clear (70% vs 44%), while at £5k or more it is borderline.
-- **Baseline bias:** the comparison still uses single-group firms (breached pools: P 28, I 10, S 27). If S-only firms are "ticked because harmed" (F9/F10), their breach costs are, if anything, HIGHER than typical. That would make the baseline too high and the true excess larger, not smaller.
+- **Baseline bias:** the comparison still uses single-group firms (breached pools: P 28, I 10, S 27). [Corrected 2026-10-05 by F12: an earlier claim that this bias makes the true excess larger is wrong. S-only breached firms are mostly CHEAP: often single events with an outcome but little cost. So the S pool may push the independence prediction DOWN and overstate the excess. Direction unclear.]
 
 ### F11. Breadth matters without ransomware; ransomware adds on top (`src/estimation/ransomware_vs_breadth.py`, 2026-10-05)
 Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells give n, then £500 or more / £5k or more (weighted):
@@ -282,3 +282,14 @@ Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells gi
 
   - **Without ransomware there is still an excess over independence.** In the middle range (£500 or more) it is clear at 3 types. In the big-cost range (£5k or more) it is clear only at 4+ types, resting on 34 breached firms.
   - Breached prevalence is again far below this independence prediction (28/35, 50/70, 55/89%). That is the S-only baseline problem from F9/F10, made worse by giving every S type the S-only breach rate. The cost prediction uses the same small pools, so treat the sizes as rough.
+
+### F12. What is odd about firms whose only ticks are "other" types (`src/estimation/s_only_firms.py`, 2026-10-05)
+47 firms. Firm-by-firm listing in the script output.
+- **Mostly a single event.** 45% were attacked "once", against 17% for firms that tick S along with phishing or impersonation. Most tick a single S type (mean 1.16).
+- **They don't report phishing**, which 85% of attacked firms do. They look like firms that report "the thing that happened", not their background of attempts.
+- **Often breached, but cheaply.** 61% breached (48% via an outcome item). The outcomes are things like temporary loss of access, services down, a third-party loss, or money stolen from a bank account. Of the 28 breached, only 3 cost £5k or more; most are under £500.
+- **Per type, breached share S-only vs S with phishing / impersonation:** malware 67% (n = 14) vs 39% (n = 211); ransomware 98% (5) vs 58% (75); bank hacking 79% (14) vs 68% (63); DoS 74% (7) vs 65% (68); takeover 35% (6) vs 61% (69).
+- **Reading:** nothing is wrong with the S types themselves. The S-only firms are a peculiar, small group whose single tick usually describes one actual incident. In broad firms, S ticks more often include attempts that did nothing. So S-only firms are a poor baseline for "what an S hit is like" in other firms:
+  - their breach RATE is too high (F9/F10);
+  - their breach COST is low, so cost-excess estimates built on them (F8, F11) may be overstated.
+- Implication: the independence comparisons so far all lean on this baseline. A baseline that doesn't depend on S-only firms is needed before the size of the breadth excess can be trusted.
