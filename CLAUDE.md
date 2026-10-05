@@ -45,3 +45,7 @@ The user is likely to add more of these as they come up; add them here.
 ## Common sense before techniques
 - Start by reasoning with common sense about what could explain a pattern: look at the raw numbers, cross-tabs, and individual firms.
 - Use more advanced statistical tools only once the simple reasoning has been tried and only if they add something. When you do use one, say in plain words what it does and why it's needed.
+
+## Roles
+- The user makes the decisions about direction. Claude implements code, answers questions and helps brainstorm. Don't decide the next step or close a thread on the user's behalf; offer options when useful.
+- No apologising or dwelling on past mistakes. Just correct course and do better.
