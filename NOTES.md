@@ -293,3 +293,30 @@ Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells gi
   - their breach RATE is too high (F9/F10);
   - their breach COST is low, so cost-excess estimates built on them (F8, F11) may be overstated.
 - Implication: the independence comparisons so far all lean on this baseline. A baseline that doesn't depend on S-only firms is needed before the size of the breadth excess can be trusted.
+
+### F13. Per-type breach chances from all firms: breach prevalence is consistent with independence at type level (`src/estimation/type_breach_rates.py`, 2026-10-05)
+- **Method.** P(no breach | ticked types) = product of per-type escape chances. 11 escape chances were fitted on all 1,101 attacked businesses (weighted), with bootstrap 90% intervals.
+- **Breach chance per tick:**
+  - phishing 6% [4–9]
+  - impersonation 9% [5–13]
+  - malware 19% [12–28]
+  - other 25% [7–44]
+  - ransomware 35% [18–53]
+  - takeover 36% [15–53]
+  - DoS 51% [28–68]
+  - outsider access 52% [0–82]
+  - bank hacking 59% [40–73]
+  - staff access and eavesdropping: undetermined
+- **Fit by number of types ticked (observed vs fitted):**
+
+  | Types | n | Observed | Fitted |
+  |---|---|---|---|
+  | 1 | 510 | 11% | 9% |
+  | 2 | 338 | 25% | 24% |
+  | 3 | 138 | 48% | 48% |
+  | 4 | 56 | 45% | 66% |
+  | 5+ | 59 | 79% | 83% |
+
+  Only the 4-type group departs (gap -0.21, n = 56). 5+ fits again, so this is plausibly noise.
+- **Fitting on firms with 2+ types only gives nearly the same rates** and predicts single-type firms well for phishing, takeover and bank hacking. Single-type malware firms are more often breached than predicted (53% vs 14%, n = 12), the same S-only oddity as F12, now small.
+- **Reading:** with a type-level, all-firm baseline, broad firms are breached about as often as independent per-type chances predict. The "breached below independence" result (F9) was the lumped-group, S-only-baseline artefact. On breach prevalence, nothing argues against story A (independent breach chances per type), and there is no sign of an excess that spreading would create.
