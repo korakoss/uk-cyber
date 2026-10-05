@@ -227,3 +227,13 @@ User flagged this as a fact to pay attention to: it bears on WHY breadth matters
   - Pooled over malware / takeover / DoS, the firm had any success among its ticked types: S-only 30% (6 of 22), S + one other 10% (7 of 98), P+I+S 17% (28 of 151).
   - Direction consistent with reading 2, but the S-only group is tiny (22 firms, 6 successes).
   - Also: per-type success is far below the firm-level breach marker everywhere (S-only 30% vs 61%). The marker is mostly set by other items (outcomes / soft consequences), not by these per-type successes.
+
+### F10. With all firms as the baseline, breach prevalence fits independence; the odd group is S-only firms (`src/estimation/breach_independence_fit.py`, 2026-10-05)
+- **Method (user's suggestion: don't use single-group firms as the baseline).** Under independence, P(no breach | set) = product of per-group escape chances. The three escape chances were fitted to all 7 sets at once (weighted binomial likelihood), then observed vs fitted breached share was compared per set. Bootstrap 90% intervals come from refitting on resampled firms. All attacked businesses (n = 1,101).
+- **Fitted per-channel breach chance:** phishing 6%, impersonation 9%, other types 43%. About the same in Micro and Small+.
+- **Observed vs fitted:**
+  - P, I, PI, IS and PIS all fit. PIS: observed 52% vs fitted 51%.
+  - S-only firms are breached MORE than fitted: 61% vs 43%, gap +0.18 [+0.04, +0.32]; Small+ 76% vs 43%.
+  - PS is somewhat less breached: 39% vs 46%, gap -0.08 [-0.14, -0.01]; Small+ -0.16.
+- **Reading:** the F9 "broad firms breached below independence" mainly reflects the S-only baseline. Firms whose only ticks are "other" types are unusually often breached, consistent with "ticked because it hurt". With a baseline drawn from all firms, breach prevalence in broad firms (including all three groups) is what independent per-channel breach chances predict. The PS shortfall is the one remaining departure (modest; strongest in Small+, n = 56).
+- **For the A vs B question:** prevalence is consistent with A (independent chances per channel). Prevalence alone doesn't rule out B. Spreading would push broad sets' breach rate UP, and no such excess is seen in PIS, which mildly argues against spreading being common, or at least against it creating broad firms out of narrow ones.
