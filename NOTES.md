@@ -183,3 +183,21 @@ Note: Q56A and Q57 ask about ALL breaches in the year, not just the worst one. S
 - **This looks like a whole-distribution shift, not a new high bump on top of an unchanged low part.** A 2-cluster story would leave broad firms' lower quantiles where narrow firms' are. They aren't. The band histograms show no clear second peak; the dip at £500–1k between £100–500 and £1–5k is most likely band width (the £1–5k band is 5 times wide).
 - **Caveats:** coarse bands; few broad breached firms (Micro 21, Small+ 88); 4-group firms only 26.
 - Reading: the data support "broader breaches are costlier across the board". Nothing here requires a separate class of big breaches.
+
+### F8. The breadth excess over independence: breached and non-breached firms (`src/estimation/breadth_vs_independence.py`, 2026-10-05)
+- **Method (plain simulation, no fitted model).** Three groups: P = phishing, I = impersonation, S = all other types incl. ransomware. For a firm hit by a set of groups, draw for each group a random firm hit by ONLY that group (by weight), and take its worst cost and breach flag. The simulated worst = the largest draw; the simulated firm is breached if any draw was. Pooled over sizes. Single-group pools: P 384, I 76, S 44 firms.
+- **Results** (observed vs independent):
+
+  | Groups hit | Firms | n | £500 or more | £5k or more |
+  |---|---|---|---|---|
+  | all three (PIS) | breached | 100 | 73% vs 39% | 29% vs 7% |
+  | all three (PIS) | not breached | 79 | 19% vs 6% | 1% vs 0% |
+  | two (PI / PS) | breached | 32 / 39 | | 10–12% vs 5–7% |
+  | two (PI / PS) | not breached | | 12–14% vs 3–6% | about 0 |
+
+  IS has only 15 firms.
+- **Reading:**
+  - The excess over independence is NOT limited to breaches. Non-breached broad firms also cost more than independent incidents would give, but only in the £500–5k range; they essentially never reach £5k.
+  - The excess at £5k or more, which is where the money is, is in breached firms. It is strongest with all three groups (about 4 times), and present but mild with two groups (about 2 times).
+- **Side observation:** broad firms are breached LESS often than independent groups predict (PIS 54% vs 68%; PS 45% vs 64%). The S-only pool is small and maybe unusual (61% of S-only firms are breached), so this is weak.
+- **Caveat:** the non-breached excess could partly be breaches the marker misses (outcome questions cover the whole year; soft items may be skipped).
