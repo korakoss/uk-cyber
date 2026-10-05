@@ -421,3 +421,17 @@ Breached firms with a cost answer (244). Outcomes = Q56A, which covers the year'
   - The costly event seems to be the same kind of thing (a compromise with many consequences). It is simply much more common among broad firms.
   - Costly narrow firms without an inside type (n = 14) are a different kind: about 0.9 outcomes, presumably staff time or disruption without a compromise.
 - **Reading:** number of ticks and number of outcomes both look like measures of how far one incident reached. This favours reading (b), the footprint of a big compromise, without proving it.
+
+### F17. Per-type counts for the "inside" types: they exist but can't separate spreading from separate attacks (`src/estimation/type_counts.py`, 2026-10-05)
+- **What exists:**
+  - ransomware: `Cybercrime_ranssum`; `ranssoft` (ransom demanded)
+  - malware: `Cybercrime_virussum`; `virussoft`
+  - unauthorised access: `hackcount`, which EXCLUDES instances that led to fraud or ransomware; `Cybercrime_hacksum`
+  - takeover attempts, including online bank accounts: `tkvrcount`, with the same exclusion; `tkvrsuc`
+  - DoS: `doscount`, no exclusion
+  
+  Coverage among ticking breached firms is mostly good, except `Cybercrime_virussum` and partly `ranssum`.
+- **Result** (breached firms; narrow/broad × cheap/costly): the median count is 1 in almost every cell, for every type. There is no "regular repeated attacks" baseline for these types to contrast with: one or two instances is the norm everywhere.
+- Zeros are more common in broad costly firms: ransomware ticked but no ransom demanded 53% (vs 20–43% elsewhere); takeover attempts 0 in 50% (vs 0% elsewhere); outsider access 0 in 40% (vs 20%). This fits "the tick was part of the incident, with no separate attempts". But for `tkvrcount`/`hackcount` a zero is EXPECTED when the instance led to fraud or ransomware (the exclusion rule), so it cannot be read as evidence. Cells hold 5–20 firms.
+- DoS (no exclusion, but an outside-entry type) has HIGHER counts in broad costly firms (median 2.5 vs 1).
+- **Reading:** per-type counts do not give a usable test of spreading. They are low everywhere, the zeros are ambiguous because of the exclusion rule, and the cells are small.
