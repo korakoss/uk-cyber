@@ -78,7 +78,13 @@ Attacked businesses only. Shares are weighted.
   - `latent_on_counts.py`: the same quantity also raises attack COUNTS. Firms hit by 2 or more other types have 2–3 times the phishing count at every quantile.
   - Caveat from `frailty_flag_structure.py`: grouping into 4 type-groups, a formal check for a single factor partly failed. Phishing + impersonation and ransomware + other serious types pair up beyond the one factor. This is plausibly because one incident ticks related boxes (a spoofed email is ticked as both phishing and impersonation; ransomware is also ticked as malware), not a second kind of exposure.
   - My attacked-only check (2026-10-05) is consistent: each rare type climbs steadily with the number of other types ticked (ransomware 2%, 7%, 20% at 1, 2, 3+ others).
-- **Shape of the hidden exposure (old model fits, 2026-09-24/26; not re-run).** These were model-based: attack rates per firm were fitted from the flags, the frequency bands and the phishing counts.
+- **Shape of the hidden exposure from the FLAGS ALONE (`frailty_shape_flags.py`, 2026-09-26; not re-run).**
+  - The flags can't tell separate levels from a smooth scale: two or three levels and a continuous scale explain about the same share of the co-occurrence.
+  - The best-fitting levels are ordered: every type's hit rate rises from one level to the next, so they are rungs of one scale.
+  - Micro: 2 levels are enough.
+  - Small+: 3 levels, 67% / 30% / 4%. The top 4% are hit by most types.
+  - The big "quiet" group needs no model to see: about half of all businesses (60% of Micro) report no attack at all.
+- **Shape with attack COUNTS added (joint model: flags + frequency bands + phishing counts + worst cost; old fits, 2026-09-24/26; not re-run).** Attack rates per year come from the counts and frequency bands, not from the flags.
   - **Across firms it is lumpy and skewed, not a smooth bell curve.** A free fit, with no shape assumed (`frailty_free_mixture.py`), settled on three levels: quiet 55% (about 0.03 attacks a year per kind, i.e. essentially never attacked), middle 37%, and hot 9%. Two levels fit clearly worse. A smooth bell-shaped (lognormal) spread also fit worse than three levels.
   - **It doesn't scale every type equally.** Going from middle to hot: targeted phishing x2.5, impersonation x4, mass phishing x7, serious types (malware, ransomware, DoS, hacking and so on) x9. Serious types for hot vs quiet firms: about x120. So the top level is mostly about serious attacks and phishing volume. (The "near-equal loadings" result is on a correlation scale; the two results are not in conflict.)
   - **The exposed share rises with size.** In the two-level version it is 37% Micro, 42% Small, 57% Medium and 66% Large.
