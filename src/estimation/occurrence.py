@@ -110,3 +110,18 @@ for i in [1, 2]:
     v = evec[:, order[i]]
     print(f'direction {i + 1} loadings:', dict(zip(main, np.round(v, 2))))
 print('note: in 3b the "0 others" column is always 1.00 by construction (attacked firms tick >= 1 type); ignore it.')
+
+# --- 2026-10-05, after user question: redo the pair table on ALL businesses (incl. not attacked).
+# Restricting to attacked firms hides the "attacked at all" part of the shared factor and forces
+# phishing/impersonation to look independent or negative.
+alldf = pd.read_csv('data/proc/data.csv', low_memory=False)
+alldf = alldf[(alldf['questtype'] == 1) & (alldf['type11'].isin([0, 1]))].copy()
+XA = (alldf[list(TYPES)] == 1).astype(int)
+XA.columns = list(TYPES.values())
+wa = alldf['weight'].values
+pa_ = {c: np.average(XA[c], weights=wa) for c in main}
+print(f'\n=== 2b. Pair ratios on ALL businesses (n={len(alldf)}) ===')
+print(f"{'':10s}" + ''.join(f'{c:>9s}' for c in main))
+for a in main:
+    print(f'{a:10s}' + ''.join(f"{'-':>9s}" if a == b else
+                               f'{np.average(XA[a] * XA[b], weights=wa) / (pa_[a] * pa_[b]):9.2f}' for b in main))
