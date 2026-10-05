@@ -110,3 +110,23 @@ Phishing-ticking attacked businesses. Plain cross-tabs, weighted. "Serious" = an
 - **Caveats:**
   - Who answered the exact count is uneven: 39% of phishing-only firms vs 79% of firms with 2 or more serious types.
   - Part of the link may be direct rather than shared exposure: phishing is a common way in for other attacks, so more phishing can itself lead to more of the other types.
+
+## Cost
+
+### F5. Worst-incident cost rises steeply with the number of types ticked (`src/estimation/cost_breadth.py`, 2026-10-05)
+Attacked businesses with a cost answer (n = 982). Shares are weighted.
+- **Share with no cost, and with £5k or more, by number of types ticked:**
+
+  | Types ticked | No cost | £5k or more |
+  |---|---|---|
+  | 1 | 66% | 1% |
+  | 2 | 44% | 3% |
+  | 3 | 25% | 7% |
+  | 4+ | 8% | 28% |
+
+  Same shape within Micro and within Small+.
+- **The same holds counting only serious types.** Ignoring phishing and impersonation, 3+ serious types gives 41–42% at £5k or more in both size groups.
+- **Concentration:** firms with 3 or more types are 15% of attacked firms but carry about 77% of the weighted cost (band midpoints). Firms with 1 type are 63% of firms and 7% of the cost.
+- **Within a given number of types, attack frequency doesn't matter.** For 3+ types, the share at £5k or more is 17% for "once", 15% for "less than monthly to monthly" and 15% for "weekly or more". For 1 type it is about 1% at every frequency. So what predicts a big loss is how broad the firm's attacks were, not how many attacks it had.
+- Means per group are again driven by single firms (25–90% from the top firm), so read the shares, not the means.
+- Open next: is breadth a cause (more exposed firms) or a result (one big incident ticking several boxes)?
