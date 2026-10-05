@@ -458,3 +458,13 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   1. heavily attacked from outside (cheap);
   2. compromised, with the incident's footprint showing as several types (costly).
 - **Caveats:** 30–35 firms per broad group; phishing count answered by 23–31; weighted shares on small cells.
+
+### User synthesis (2026-10-05), with qualifications
+- **User:** there is evidence of a spreading mechanism, which comes with a noticeable cost uplift. Firms where a breach spread are not especially attacked on the facets it spread to.
+- **Qualifications:**
+  - **"Spreading" is inferred, not seen directly.**
+    - For: costly broad breadth comes from "inside" types, not outside exposure (F15, F18); costly incidents carry about 3.5 distinct outcomes (F16); impersonation-with-takeover is tied to costly broad firms (F18).
+    - Not excluded: a capable attacker using several methods at once (the same in this data, and fine to treat together); a bad year making respondents tick more boxes (recall).
+  - **"Not attacked on the spread facets":** what was measured is that costly broad firms are NOT more attacked on facets a breach cannot create (phishing volume, DoS, spoofing are lower or equal; overall frequency about equal). For the facets the breach spread to (the inside types), per-type attempt counts are about 1 everywhere and the zeros are ambiguous (F17). So the data can't say whether those facets were separately attacked.
+  - **Cost uplift:** among breached firms, 58% are costly with 4+ types plus an inside type, against 1–14% elsewhere (F15). The core rests on 35 costly broad firms.
+- **Possible implication for the model (not decided):** breadth in costly firms is an OUTCOME of the incident, so it should not be an input. Instead, a breach (from any entry type) may escalate into a multi-facet compromise with a higher cost. The chance of escalating doesn't appear tied to outside exposure.
