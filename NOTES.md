@@ -242,3 +242,20 @@ User flagged this as a fact to pay attention to: it bears on WHY breadth matters
   - The informative check is whether one S rate fits all S-containing sets. S chance implied by each set, given the fitted P and I rates: S-only 61% (n = 47), PS 35% (n = 120), IS 46% (n = 19), PIS 43% (n = 212). They disagree.
   - S lumps several types. Mean number of S types ticked: S-only 1.16, PS 1.37, IS 1.28, PIS 1.94 (25% of PIS firms tick 3 or more). At the TYPE level, independence would give PIS firms a HIGHER S breach chance than S-only firms, yet theirs is lower (43% vs 61%). So at type level the "breached below independence" pattern partly comes back. It still leans on the small S-only group, but PS vs PIS (more S types, more breached: 35% vs 43%) is in the expected direction.
   - Net: breach prevalence data neither clearly fits nor clearly breaks independence. The grouping choice (lumping S) and the small S-only group decide the answer.
+- **How solid is the F8 cost excess? Moderately (checked 2026-10-05, `breadth_vs_independence.py`).** Breached PIS firms; observed vs independent; bootstrap 90% interval on the £5k-or-more gap:
+
+  | Variant | n breached | £500 or more | £5k or more | Gap |
+  |---|---|---|---|---|
+  | one draw per group | 100 | 73% vs 39% | 29% vs 7% | [+0.08, +0.34] |
+  | one draw per S TYPE ticked (accounts for broad firms ticking more S types) | 100 | 73% vs 46% | 29% vs 10% | [+0.04, +0.33] |
+  | without ransomware | 72 | 70% vs 44% | 21% vs 9% | [-0.02, +0.27] |
+  | with ransomware | 28 | 81% vs 54% | 51% vs 13% | [+0.09, +0.63] |
+  | Micro | 16 | | 24% vs 9% | interval includes 0 |
+  | Small+ | 84 | | 35% vs 10% | [+0.09, +0.40] |
+
+  PS (two groups): 12% vs 8%, no clear excess.
+- **Reading:**
+  - The direction holds through every check. The size is uncertain: somewhere between about 1.5x and 4x at £5k or more.
+  - It is clearest in Small+ and in firms that ticked ransomware. Ransomware hardly appears outside broad firms (5 of 44 S-only firms tick it), so "ransomware is costly" and "breadth makes breaches costly" can't be cleanly separated.
+  - Without ransomware the excess at £500 or more is still clear (70% vs 44%), while at £5k or more it is borderline.
+- **Baseline bias:** the comparison still uses single-group firms (breached pools: P 28, I 10, S 27). If S-only firms are "ticked because harmed" (F9/F10), their breach costs are, if anything, HIGHER than typical. That would make the baseline too high and the true excess larger, not smaller.

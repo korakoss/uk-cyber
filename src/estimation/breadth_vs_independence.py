@@ -110,3 +110,66 @@ for marker, mlab in [('breach', 'breach marker'), ('outcome_only', 'outcome item
     print()
 print('single-group breach rates (weighted):',
       {g: round(np.average(df[df.set == g].breach, weights=df[df.set == g].weight), 2) for g in 'PIS'})
+
+# --- 2026-10-05: is 'breached broad firms cost much more than independent breaches' solid? ---
+# Checks on PIS breached firms, share >= £5k and >= £500, observed vs independent prediction:
+#  (a) bootstrap interval (resample pools and observed firms);
+#  (b) one S draw per S TYPE ticked (S lumps types; PIS firms tick more of them);
+#  (c) PIS firms without ransomware (ransomware is nearly absent from the S-only pool: 2 firms);
+#  (d) Micro vs Small+.
+print('\n=== Robustness of the cost excess in breached broad firms ===')
+df['nS'] = (df[OTHER] == 1).sum(axis=1)
+df['R'] = (df['type1'] == 1).astype(int)
+single = {g: df[df['set'] == g] for g in 'PIS'}  # rebuild with the new columns
+print('S-only pool: firms', len(single['S']), ' with ransomware ticked', int(single['S'].R.sum()))
+
+
+def sim_pred(obs_firms, pools, per_type, sims=20000):
+    """Independent prediction for the observed firms' own group sets: for each simulated firm pick an observed firm
+    (by weight), draw per group (or per S type) from the single-group pools; keep simulated firms with any breach."""
+    ow = (obs_firms.weight / obs_firms.weight.sum()).values
+    pick = rng.choice(len(obs_firms), size=sims, p=ow)
+    cmax = np.zeros(sims, int)
+    bany = np.zeros(sims, bool)
+    for g in 'PIS':
+        has = obs_firms[g].values[pick] == 1
+        k = obs_firms['nS'].values[pick] if (g == 'S' and per_type) else np.ones(sims, int)
+        for j in range(int(k.max())):
+            m = has & (k > j)
+            s = pools[g]
+            idx = rng.choice(len(s), size=m.sum(), p=(s.weight / s.weight.sum()).values)
+            cmax[m] = np.maximum(cmax[m], s.c.values[idx])
+            bany[m] |= s.breach.values[idx] == 1
+    c = cmax[bany]
+    return (c >= 4).mean(), (c >= 6).mean()
+
+
+def obs_stats(o):
+    w_ = o.weight / o.weight.sum()
+    return w_[o.c >= 4].sum(), w_[o.c >= 6].sum()
+
+
+def check(lab, obs_all, per_type, boot=200):
+    ob = obs_all[obs_all.breach == 1]
+    o5, o5k = obs_stats(ob)
+    p5, p5k = sim_pred(obs_all, single, per_type)
+    gaps = []
+    for _ in range(boot):
+        pools_b = {g: single[g].iloc[rng.integers(0, len(single[g]), len(single[g]))] for g in 'PIS'}
+        ob_all_b = obs_all.iloc[rng.integers(0, len(obs_all), len(obs_all))]
+        obb = ob_all_b[ob_all_b.breach == 1]
+        gaps.append(obs_stats(obb)[1] - sim_pred(ob_all_b, pools_b, per_type, sims=4000)[1])
+    lo, hi = np.percentile(gaps, [5, 95])
+    print(f'{lab:44s} n breached {len(ob):3d}  >=£500 obs {o5:.2f} ind {p5:.2f}   >=£5k obs {o5k:.2f} ind {p5k:.2f}  '
+          f'gap [{lo:+.2f}, {hi:+.2f}]')
+
+
+pis = df[df['set'] == 'PIS']
+check('PIS, one S draw per group', pis, False)
+check('PIS, one S draw per S type', pis, True)
+check('PIS without ransomware, per S type', pis[pis.R == 0], True)
+check('PIS with ransomware, per S type', pis[pis.R == 1], True)
+check('PIS Micro, per S type', pis[pis.sizeb == 1], True)
+check('PIS Small+, per S type', pis[pis.sizeb >= 2], True)
+ps = df[df['set'] == 'PS']
+check('PS, per S type', ps, True)
