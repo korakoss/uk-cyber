@@ -435,3 +435,26 @@ Breached firms with a cost answer (244). Outcomes = Q56A, which covers the year'
 - Zeros are more common in broad costly firms: ransomware ticked but no ransom demanded 53% (vs 20–43% elsewhere); takeover attempts 0 in 50% (vs 0% elsewhere); outsider access 0 in 40% (vs 20%). This fits "the tick was part of the incident, with no separate attempts". But for `tkvrcount`/`hackcount` a zero is EXPECTED when the instance led to fraud or ransomware (the exclusion rule), so it cannot be read as evidence. Cells hold 5–20 firms.
 - DoS (no exclusion, but an outside-entry type) has HIGHER counts in broad costly firms (median 2.5 vs 1).
 - **Reading:** per-type counts do not give a usable test of spreading. They are low everywhere, the zeros are ambiguous because of the exclusion rule, and the cells are small.
+
+### F18. Exposure vs footprint: costly broad firms are NOT more exposed; cheap broad firms are (`src/estimation/spread_vs_exposure.py`, 2026-10-05)
+Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, broad (4+) cheap 30, broad costly 35. Shares weighted.
+- **Part 2: exposure on things a breach cannot create, broad costly vs broad cheap:**
+  - phishing count over 20: 10% vs 63% (31 / 23 answering); median count 12 vs 17
+  - targeted phishing 6 or more: 40% vs 49%
+  - DoS ticked: 27% vs 56%
+  - impersonation that was outside spoofing only (no access / takeover): 61% vs 90%
+  - attacked weekly or more: 50% vs 47%
+  - attacked once: 18% vs 12%
+  
+  So costly broad firms are no more exposed on outside-attack types than cheap broad firms, and on phishing volume, DoS and spoofing they are LESS exposed. Cheap broad firms are the heavily-attacked ones: lots of phishing, DoS and spoofing, so their breadth comes from exposure, and it stays cheap. Costly broad firms get their breadth from "inside" types (F15) with ordinary exposure.
+- **Part 1: direct linkage items (thin):**
+  - "Impersonation involved account takeover": broad costly 29% (n = 30) vs broad cheap 5% (n = 28), narrow 0–10%.
+  - "Impersonation involved unauthorised access": 14% vs 9%, a small difference.
+  - "Impersonation using information from the breach": asked of too few firms (2–12 per group).
+  - Any fraud: 35% vs 26%. Fraud attribution answered by 14 vs 4 firms. In costly broad firms frauds are attributed to varied sources (takeover 6, phishing 6, outsider access 5, bank hacking 4), but rarely to 2 or more types per firm (10%).
+  
+  Mild support for footprint via impersonation-with-takeover; otherwise too thin to read.
+- **Reading:** this favours reading (b), or at least rules against the simple version of (a). The breadth of costly firms is not the breadth of heavy exposure; it is breadth from compromise-type ticks. There appear to be two kinds of broad firm:
+  1. heavily attacked from outside (cheap);
+  2. compromised, with the incident's footprint showing as several types (costly).
+- **Caveats:** 30–35 firms per broad group; phishing count answered by 23–31; weighted shares on small cells.
