@@ -143,3 +143,43 @@ Attacked businesses with a cost answer (n = 982). Shares are weighted.
   - Bank hacking: x9 [3–26] among broad breached firms (n = 23), but not among narrow firms (x0.6; there it is often money stolen but cheap, median £350).
   - Later checks suggested the bank-hacking tick in these firms is mostly part of the incident itself, not separate bank attacks: 10 of 16 had no separate bank-attack attempts. So it reads as "the intrusion reached the money", not a separate attack type.
   - Weaker side note: broad firms with ransomware or malware but without phishing + impersonation looked bimodal (handled vs disaster), n = 12.
+
+### F6. A breach makes the worst incident much costlier, for every type with data (`src/estimation/breach_cost.py`, 2026-10-05)
+Breach marker (user decision 2026-10-02): any Q56A outcome (`outcome_any`), OR restore took a day or more, OR staff stopped from working / revenue loss / recovery costs. 244 of 982 attacked firms with cost answers (22% weighted).
+Note: Q56A and Q57 ask about ALL breaches in the year, not just the worst one. So the marker belongs to the firm's year, not strictly to the priced incident.
+- **By type of the worst incident** (no cost → no cost; share at £5k or more in brackets), not breached vs breached:
+
+  | Type | Not breached | Breached |
+  |---|---|---|
+  | phishing | 68% (0%) | 31% (8%) |
+  | impersonation | 52% (0%) | 7% (13%) |
+  | malware | 84% (0%) | 9% (19%) |
+  | takeover | 62% (0%) | 12% (6%) |
+  | bank hacking | 99% (0%) | 15% (12%) |
+
+  - DoS is weaker: 45% (9%) not breached vs 26% (3%) breached, n = 7 and 20.
+  - Ransomware worst incidents are nearly all breached (23 of 28): 0% no cost, 53% at £5k or more.
+  - The access types and "other" have under 10 firms each.
+- **Single-group firms show the same:**
+  - phishing only: 71% → 34% no cost;
+  - impersonation only: 67% → 28%;
+  - other serious only: 71% → 36%.
+- **The stricter marker (outcome item only) gives the same picture.**
+- **Caveat:** part of the marker is itself about cost (recovery costs, revenue loss, time to restore), so "breach → costlier" is partly built in. The outcome-only version avoids most of that and still shows it.
+- Not breached firms almost never reach £5k, whatever their breadth: 5 of 738 in total.
+
+### F7. No visible "big vs ordinary" split among breaches: broader breaches shift the whole cost distribution up (`breach_cost.py`, 2026-10-05)
+- The fact the old big/ordinary model was built to explain: among breached firms, the high-cost share rises with breadth much faster than independent breaches would give (old check: 34% vs 6% at £5k or more for 3+ groups). A simpler model (cost scale about x2 per extra group) explained it equally well.
+- **Breached firms, weighted quantiles of worst cost:**
+
+  | | q10 | q25 | median | q75 | q90 |
+  |---|---|---|---|---|---|
+  | narrow (1–2 groups), Micro | none | none | £100–500 | £1–5k | £1–5k |
+  | broad (3–4 groups), Micro | <£100 | £100–500 | £500–1k | £5–10k | £10–20k |
+  | narrow (1–2 groups), Small+ | none | <£100 | £100–500 | £1–5k | £5–10k |
+  | broad (3–4 groups), Small+ | <£100 | £500–1k | £1–5k | £10–20k | £20–50k |
+
+  Every quantile moves up by about one or two bands. "No cost" falls from 34% (1 group) to 5% (3+ groups).
+- **This looks like a whole-distribution shift, not a new high bump on top of an unchanged low part.** A 2-cluster story would leave broad firms' lower quantiles where narrow firms' are. They aren't. The band histograms show no clear second peak; the dip at £500–1k between £100–500 and £1–5k is most likely band width (the £1–5k band is 5 times wide).
+- **Caveats:** coarse bands; few broad breached firms (Micro 21, Small+ 88); 4-group firms only 26.
+- Reading: the data support "broader breaches are costlier across the board". Nothing here requires a separate class of big breaches.
