@@ -201,3 +201,23 @@ Note: Q56A and Q57 ask about ALL breaches in the year, not just the worst one. S
   - The excess at £5k or more, which is where the money is, is in breached firms. It is strongest with all three groups (about 4 times), and present but mild with two groups (about 2 times).
 - **Side observation:** broad firms are breached LESS often than independent groups predict (PIS 54% vs 68%; PS 45% vs 64%). The S-only pool is small and maybe unusual (61% of S-only firms are breached), so this is weak.
 - **Caveat:** the non-breached excess could partly be breaches the marker misses (outcome questions cover the whole year; soft items may be skipped).
+
+### F9. "Broad firms are breached less often than independence predicts": real, but it comes from the 'other types' group (`breadth_vs_independence.py`, 2026-10-05)
+User flagged this as a fact to pay attention to: it bears on WHY breadth matters. Breach counts are unknown, so the competing stories are (a) several independent breaches adding up and (b) one breach spreading across types. (a) predicts breached shares at or above independence; (b) allows below.
+- **Breached share, observed vs independent** (union of single-group rates); gap with bootstrap 90% interval:
+
+  | Set | Size | Observed | Independent | Gap |
+  |---|---|---|---|---|
+  | PI | all | 16% | 17% | -0.01 [-0.11, +0.07] (no gap) |
+  | PS | all | 45% | 63% | -0.19 [-0.37, -0.01] |
+  | PIS | all | 54% | 68% | -0.14 [-0.29, +0.01] |
+  | PS | Small+ | 37% | 80% | -0.42 [-0.64, -0.19] |
+  | PIS | Small+ | 54% | 83% | -0.29 [-0.43, -0.12] |
+  | PS / PIS | Micro | | | -0.10 to -0.14, intervals include 0 |
+
+  The outcome-item-only marker gives the same pattern.
+- **The gap appears ONLY in sets that include S (other types), and comes from S-only firms' very high breach rate.** Single-group breach rates: P 7%, I 12%, S 61% (S-only n = 44). Phishing + impersonation combine just as independence predicts.
+- **Two readings, not yet separated:**
+  1. Spreading / one incident ticking several boxes: in broad firms one breach accounts for several ticks, so the breach rate per tick is lower.
+  2. The S tick means different things in narrow and broad firms. A firm that ticks ONLY malware / takeover / etc. may tick it because it was harmed (blocked attempts go unnoticed or unreported), while heavily attacked broad firms also tick S for attempts. Then S-only firms are the wrong baseline.
+- Open: find a way to tell 1 from 2, e.g. through what S-only firms look like (attempt counts, frequency, outcomes) compared with S in broad firms.

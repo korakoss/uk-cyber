@@ -69,3 +69,44 @@ for st in ['PI', 'PS', 'IS', 'PIS']:
         print(f'{st:5s} {who:13s} {len(o):4d} {so[0]:9.2f} {ss[0]:9.2f} {so[1]:9.2f} {ss[1]:9.2f} '
               f'{so[2]:8.2f} {ss[2]:8.2f}')
     print(f'{"":5s} breached share: obs {np.average(obs.breach, weights=obs.weight):.2f}, ind {bany.mean():.2f}')
+
+# --- 2026-10-05: robustness of 'broad firms are breached less often than independence predicts' ---
+# (a) bootstrap: resample firms (single-group pools and the observed group) and recompute the gap;
+# (b) within size; (c) stricter marker (outcome item only).
+print('\n=== Breached share, observed minus independent prediction (bootstrap 90% interval) ===')
+
+
+def gap(data, marker, st, B=500):
+    def pred(d):
+        p_not = 1.0
+        for g in st:
+            s = d[d['set'] == g]
+            p_not *= 1 - np.average(s[marker], weights=s.weight)
+        return 1 - p_not
+
+    def obs(d):
+        s = d[d['set'] == st]
+        return np.average(s[marker], weights=s.weight)
+
+    point = obs(data) - pred(data)
+    boots = []
+    parts = [data[data['set'] == k] for k in list(st) + [st]]
+    for _ in range(B):
+        d = pd.concat([p.iloc[rng.integers(0, len(p), len(p))] for p in parts])
+        boots.append(obs(d) - pred(d))
+    return obs(data), pred(data), point, np.percentile(boots, [5, 95])
+
+
+df['outcome_only'] = (num('outcome_any') == 1).astype(int)
+for marker, mlab in [('breach', 'breach marker'), ('outcome_only', 'outcome item only')]:
+    for szlab, m in [('all sizes', df.index == df.index), ('Micro', df.sizeb == 1), ('Small+', df.sizeb >= 2)]:
+        for st in ['PI', 'PS', 'PIS']:
+            d = df[m]
+            if (d['set'] == st).sum() < 10 or min((d['set'] == g).sum() for g in st) < 10:
+                continue
+            o, p, g, ci = gap(d, marker, st)
+            print(f'{mlab:18s} {szlab:9s} {st:4s} n={(d["set"] == st).sum():3d}  obs {o:.2f}  ind {p:.2f}  '
+                  f'gap {g:+.2f} [{ci[0]:+.2f}, {ci[1]:+.2f}]')
+    print()
+print('single-group breach rates (weighted):',
+      {g: round(np.average(df[df.set == g].breach, weights=df[df.set == g].weight), 2) for g in 'PIS'})
