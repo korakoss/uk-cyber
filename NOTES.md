@@ -272,3 +272,13 @@ Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells gi
 - **At the same breadth, ransomware firms are costlier** (3 types: 59% vs 11%; 4+: 55% vs 34%). Within ransomware firms, breadth also matters: narrow ransomware firms are mostly cheap, though n is tiny. All ransomware firms (n = 67) are breached 54% / 47% / 71% / 84% across the breadth bands.
 - **Not-breached firms:** £500 or more rises with breadth (3% → 30%), but £5k or more stays at about 1% everywhere.
 - **Caveat:** this table shows that cost rises with breadth, not that it rises faster than independence would give. Independence also predicts a rise (the maximum of more draws). The earlier per-type independence check without ransomware was borderline at £5k (21% vs 9%, interval [-0.02, +0.27]). The steep jump at 4+ non-ransomware types (8–11% → 34%, n = 34) is the part most likely to exceed independence. Not yet tested against an independence prediction by breadth band.
+- **Independence test by breadth band, no ransomware (same script, 2026-10-05).** Pools: single-group firms without ransomware (P 384 / 28 breached, I 76 / 10, S 39 / 23); one S draw per S type ticked. Breached firms, observed vs independent, bootstrap 90% interval on the gap:
+
+  | Types ticked | n (breached) | £500 or more | £5k or more |
+  |---|---|---|---|
+  | 2 | 256 (56) | 52% vs 35% [-0.01, +0.40] | 8% vs 5% [-0.04, +0.14] |
+  | 3 | 109 (50) | 69% vs 36% [+0.08, +0.57] | 11% vs 5% [-0.06, +0.19] |
+  | 4+ | 53 (34) | 63% vs 44% [-0.14, +0.50] | 34% vs 7% [+0.04, +0.48] |
+
+  - **Without ransomware there is still an excess over independence.** In the middle range (£500 or more) it is clear at 3 types. In the big-cost range (£5k or more) it is clear only at 4+ types, resting on 34 breached firms.
+  - Breached prevalence is again far below this independence prediction (28/35, 50/70, 55/89%). That is the S-only baseline problem from F9/F10, made worse by giving every S type the S-only breach rate. The cost prediction uses the same small pools, so treat the sizes as rough.

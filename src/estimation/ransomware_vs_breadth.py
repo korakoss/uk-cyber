@@ -43,3 +43,66 @@ r = df[df.R == 1]
 print(pd.crosstab(r['c'].map(BL), r['kb']).reindex(list(BL.values())).fillna(0).astype(int))
 print('breached share of ransomware firms by breadth:',
       {c: f'{r[r.kb == c].breach.mean():.2f} (n={len(r[r.kb == c])})' for c in COLS})
+
+# --- 2026-10-05: independence comparison by breadth band, firms WITHOUT ransomware ---
+# Pools: firms hit by only one group (P phishing / I impersonation / S other types), no ransomware tick.
+# Prediction for a band: pick an observed firm of that band (by weight), draw its worst cost and breach flag
+# independently per group, with one S draw per S type it ticked; worst = largest draw; breached if any draw breached.
+# Keep breached simulated firms; compare with observed breached firms of the band. Bootstrap 90% interval on the gap
+# (resample pools and band firms).
+rng = np.random.default_rng(2)
+OTHER_S = ['type2', 'type3', 'type4', 'type16', 'type8', 'type7', 'type15', 'type9']
+nr = df[df.R == 0].copy()
+nr['P'] = (nr['type6'] == 1).astype(int)
+nr['I'] = (nr['type5'] == 1).astype(int)
+nr['nS'] = (nr[OTHER_S] == 1).sum(axis=1)
+nr['S'] = (nr['nS'] >= 1).astype(int)
+nr['set'] = nr.apply(lambda r: ''.join(g for g in 'PIS' if r[g] == 1), axis=1)
+nr = nr[nr['set'] != '']
+pools = {g: nr[nr['set'] == g] for g in 'PIS'}
+print('\n=== Independence by breadth band, no ransomware ===')
+print('pools (single-group firms, no ransomware): ' +
+      ', '.join(f'{g} n={len(p)} breached {int(p.breach.sum())}' for g, p in pools.items()))
+
+
+def predict(band, pl, sims):
+    ow = (band.weight / band.weight.sum()).values
+    pick = rng.choice(len(band), size=sims, p=ow)
+    cmax = np.zeros(sims, int)
+    bany = np.zeros(sims, bool)
+    for g in 'PIS':
+        has = band[g].values[pick] == 1
+        k = band['nS'].values[pick] if g == 'S' else np.ones(sims, int)
+        for j in range(int(k.max()) if has.any() else 0):
+            m = has & (k > j)
+            s = pl[g]
+            idx = rng.choice(len(s), size=m.sum(), p=(s.weight / s.weight.sum()).values)
+            cmax[m] = np.maximum(cmax[m], s.c.values[idx])
+            bany[m] |= s.breach.values[idx] == 1
+    c = cmax[bany]
+    return (c >= 4).mean(), (c >= 6).mean(), bany.mean()
+
+
+def observed(band):
+    b = band[band.breach == 1]
+    w = b.weight / b.weight.sum()
+    return w[b.c >= 4].sum(), w[b.c >= 6].sum(), np.average(band.breach, weights=band.weight)
+
+
+print(f"{'band':5s} {'n':>4s} {'n br':>5s} {'>=£500 obs':>11s} {'ind':>5s} {'gap 90%':>16s} "
+      f"{'>=£5k obs':>10s} {'ind':>5s} {'gap 90%':>16s} {'breached obs':>13s} {'ind':>5s}")
+for lab, ks in [('2', [2]), ('3', [3]), ('4+', [4, 5, 6, 7, 8, 9, 10])]:
+    band = nr[nr.k.isin(ks)]
+    o = observed(band)
+    p = predict(band, pools, 40000)
+    g500, g5k = [], []
+    for _ in range(300):
+        pb = {g: pools[g].iloc[rng.integers(0, len(pools[g]), len(pools[g]))] for g in 'PIS'}
+        bb = band.iloc[rng.integers(0, len(band), len(band))]
+        ob, pr = observed(bb), predict(bb, pb, 4000)
+        g500.append(ob[0] - pr[0])
+        g5k.append(ob[1] - pr[1])
+    a, b = np.percentile(g500, [5, 95])
+    c_, d = np.percentile(g5k, [5, 95])
+    print(f'{lab:5s} {len(band):4d} {int(band.breach.sum()):5d} {o[0]:11.2f} {p[0]:5.2f} [{a:+.2f}, {b:+.2f}] '
+          f'{o[1]:10.2f} {p[1]:5.2f} [{c_:+.2f}, {d:+.2f}] {o[2]:13.2f} {p[2]:5.2f}')
