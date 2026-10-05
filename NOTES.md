@@ -37,3 +37,28 @@ Businesses only (questtype = 1). Shares below are weighted.
 - **Being attacked more often doesn't mean a costlier worst incident.** There's no upward trend across frequency bands, within Micro or within Small+. If anything, firms attacked only once are slightly less often at "no cost".
 - **Reverse view:** Small+ firms with a worst incident of £5k–50k were more often attacked "once" or "less than monthly" (65%) than firms at "no cost" (42%). The samples are small.
 - **Top of the range:** no business is above £500k. Eight are at £100k–500k (2 Micro, 2 Small, 1 Medium, 3 Large).
+
+### F2. Crime types (`src/estimation/crime_types.py`, 2026-10-05)
+Attacked businesses (n = 1,101). Shares are weighted. "Targeted" phishing = at least one phishing email containing the recipient's personal details (`phishcon_bands`). This is the survey's own measure of "specifically targeted".
+- **How common:** phishing 85% of attacked firms, impersonation 35%, malware 18%. Ransomware, DoS, bank hacking and takeover are about 6–7% each. Outsider access, staff access, eavesdropping and other are each 4% or less. About half of phishing firms ticked nothing else.
+- **Phishing counts:**
+  - About half of phishing firms had at least one targeted email (answered by 822 of 957 phishing firms).
+  - 14% had someone engage with a phishing email at least once. Engagement more than 3 times is almost never reported.
+- **High attack frequency vs mass phishing (user's recollection not confirmed).**
+  - Firms attacked daily or several times a day are no more often phishing-only than firms attacked monthly or weekly (about half in each).
+  - They report MORE targeted phishing. 30–38% of them had 21 or more targeted emails, against 2–3% of firms attacked less than monthly.
+  - Caveat: "contains personal details" may include mass emails that just insert the recipient's name, so the survey's "targeted" may partly be bulk mail.
+  - Firms attacked only once are the least phishing-heavy (59% phishing, 49% impersonation).
+- **Cost by the type of the worst incident** (`disrupta`; the share costing £5k or more is given in brackets):
+  - mass phishing: 74% no cost (0%)
+  - targeted phishing: 52% no cost (2%)
+  - impersonation: 41% no cost (3%)
+  - takeover: 35% no cost (3%)
+  - DoS: 32% no cost (5%)
+  - bank hacking: 27% no cost (10%)
+  - malware: 38% no cost (12%)
+  - ransomware: 3% no cost (41%)
+  
+  This matches the user's ordering: mass phishing < targeted phishing ≈ impersonation < the rarer types < ransomware.
+- **Means by type are unreliable.** For impersonation, ransomware, DoS and bank hacking, a single firm (a £100k–500k incident) makes up 70–82% of the weighted mean. Without that firm, the means are about £1.3k, £8.8k, £1.4k and £2.1k.
+- **Firms that ticked only one type are cheaper** than firms whose worst incident is that type. For example, impersonation-only firms are 62% no cost and 1% at £5k or more. Big costs come with several types ticked; to be looked at separately.
