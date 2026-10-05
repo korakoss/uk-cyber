@@ -357,3 +357,27 @@ Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells gi
   - (b) A worse breach makes the firm tick more types (the incident touched accounts, bank details, systems; or recall of a bad year).
   
   Both fit the facts above.
+
+### F15. The big-cost breadth uplift needs breadth AND an "intruder inside" type (`src/estimation/breadth_composition.py`, 2026-10-05)
+Breached firms with a cost answer (244). Costly = worst incident £5k or more.
+- **Combinations are diverse.** The 35 costly breached firms with 4+ types show 33 different type combinations. The 30 non-costly ones are equally varied. No single recipe.
+- **Size and attack frequency don't differ** between costly and non-costly broad breached firms.
+- **Types over-represented in costly broad firms:** ransomware (60% vs 33%), bank hacking (40% vs 20%), outsider access (31% vs 17%), staff access (29% vs 20%). Takeover goes the other way (34% vs 53%). Phishing, impersonation, malware and DoS are about equal.
+- **Splitting breached firms on whether they ticked ANY of ransomware / bank hacking / outsider access / staff access** (costly share by number of types ticked):
+
+  | Types ticked | none of the four | at least one |
+  |---|---|---|
+  | 1 | 4% (n = 52) | 10% (n = 8) |
+  | 2 | 10% (n = 51) | 1% (n = 11) |
+  | 3 | 11% (n = 32) | 14% (n = 25) |
+  | 4+ | 1% (n = 12) | 58% (n = 53) |
+
+  - Without any of the four, there is no big-cost uplift with breadth at all. The share at £500 or more rises to 3 types (28% → 67%), then falls back at 4+ (28%, n = 12).
+  - With one of the four but narrow (1–3 types), firms are not costly either.
+  - The uplift sits where a firm is broad (4+) AND has one of these four.
+- **What the four have in common:** an intruder actually inside the firm's systems or accounts (encrypting data, in the bank account, accessing files or networks). Phishing, impersonation, DoS, takeover and malware attempts can all happen from outside.
+- **Reading:** costly broad breaches look like intrusions that got inside and reached many things. This fits reading (b), where the incident's footprint ticks many boxes, at least as well as (a).
+- **Caveats:**
+  - The four types were picked AFTER seeing which were over-represented (a risk of fitting noise). The 1% at 4+ without them rests on 12 firms.
+  - Ransomware ticks include attempts.
+  - Next check: whether the outcome items (systems corrupted, money stolen, files lost) line up with these four types in costly firms.
