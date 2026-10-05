@@ -396,3 +396,28 @@ Breached firms with a cost answer (244). Costly = worst incident £5k or more.
   - staff access 2% (6) vs 68% (16)
 
   So the uplift is not "these types are absent from narrow firms". The same tick is common and often breached in narrow firms, but contained and cheap there. It is costly only together with breadth: an interaction, not either factor alone.
+
+### F16. Outcomes line up with the "inside" types; costly incidents are multi-outcome events, narrow or broad (`src/estimation/outcomes_vs_types.py`, 2026-10-05)
+Breached firms with a cost answer (244). Outcomes = Q56A, which covers the year's breaches, not only the worst.
+- **The ticks match the consequences** (share with the outcome, firms ticking the type vs breached firms not ticking it):
+  - ransomware (n = 45): systems corrupted 36% vs 10%; temporary loss of access 66% vs 26%; services down 49% vs 22%; third-party loss 35% vs 12%.
+  - bank hacking (n = 41): money stolen 45% vs 4%; accounts misused 14% vs 5%.
+  - outsider access (n = 21): systems corrupted 29% vs 13%; temporary loss of access 60% vs 31%; services down 44% vs 25%.
+  - staff access (n = 22): money stolen 43% vs 10%; paid attackers 43% vs 5%; accounts misused 20% vs 6%. Possibly staff tricked into paying, rather than file access.
+  
+  So the type ticks are not noise: each goes with the consequences you'd expect.
+- **Matching outcome, narrow vs broad:**
+  - Ransomware matches throughout (57–98%).
+  - Bank hacking: narrow cheap 54%, broad costly only 42%, broad cheap 0%. So in many broad firms the bank-hacking tick comes WITHOUT money stolen; "the intrusion reached the money" is not the general story.
+- **Mean number of distinct outcomes:**
+
+  | | Narrow, cheap | Narrow, costly | Broad, cheap | Broad, costly |
+  |---|---|---|---|---|
+  | with an inside type | 1.2 (n = 36) | 3.5 (n = 8) | 1.4 (n = 19) | 3.5 (n = 34) |
+  | without | 1.15 (n = 121) | 0.9 (n = 14) | 1.4 (n = 11) | |
+
+  Systems corrupted is about 46–48% in both costly inside groups, and money stolen about 30%.
+  - The few costly NARROW firms with an inside type look just like the costly BROAD ones: about 3.5 outcomes, a similar mix.
+  - The costly event seems to be the same kind of thing (a compromise with many consequences). It is simply much more common among broad firms.
+  - Costly narrow firms without an inside type (n = 14) are a different kind: about 0.9 outcomes, presumably staff time or disruption without a compromise.
+- **Reading:** number of ticks and number of outcomes both look like measures of how far one incident reached. This favours reading (b), the footprint of a big compromise, without proving it.
