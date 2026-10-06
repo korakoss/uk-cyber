@@ -489,3 +489,12 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
 4. **More than one breach per firm per year.** The total exceeds the worst incident.
 5. **Firms that skipped the cost questions** (about 11% of attacked firms).
 6. **Spreading/escalation details for the model:** what drives the chance a breach escalates (entry type, size?), and the cost distribution of escalated compromises (this ties into 1).
+- **Refinement (2026-10-06): is "costly broad firms get less phishing volume" a selection effect?**
+  - Partly. Comparing within 4+ firms selects on breadth: a firm can reach 4+ through outside exposure or through inside (footprint) ticks, so within that group the two look negatively related even if they aren't overall.
+  - Check without selecting on breadth (breached firms, by exact phishing count 1 / 2–5 / 6–20 / over 20):
+    - share with an inside type is flat: 33% / 43% / 36% / 42%. So the chance of a compromise isn't tied to phishing volume.
+    - costly share, with an inside type: 20% / 52% / 55% / 23% (n = 15 / 18 / 12 / 23).
+    - costly share, without an inside type: 12% / 11% / 4% / 1%.
+  - So, even without selecting on breadth, the most heavily phished breached firms are less often costly. The costliest sit at moderate volume.
+  - Possible reason: for heavily attacked firms, the year-level breach marker may come from many small incidents. Not checked. Cells are about 20 firms.
+  - Revised statement: the costliest firms are not the most heavily attacked. Very heavy phishing goes with cheaper breaches, not dearer ones.

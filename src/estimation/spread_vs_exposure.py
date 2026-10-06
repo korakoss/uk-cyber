@@ -84,3 +84,22 @@ for lab, ok, val in [
 print('\nmedian exact phishing count (answering):  ' + '   '.join(
     f'{g}: {np.median(ps[b.index[(b.grp == g) & (ps.loc[b.index] >= 0)]]):.0f} '
     f'({int(((b.grp == g) & (ps.loc[b.index] >= 0)).sum())})' for g in G))
+
+# --- 2026-10-06: is 'costly broad firms get less phishing volume' real, or an artefact of selecting on breadth?
+# Comparing within 4+ firms conditions on breadth: a firm can reach 4+ through outside exposure OR through inside
+# (footprint) ticks, so the two routes look negatively related there even if they are unrelated overall.
+# Check without conditioning on breadth: costly share among breached firms by phishing volume.
+print('\n=== 3. Breached firms: costly share by exact phishing count (no conditioning on breadth) ===')
+INSIDE = ['ransom', 'bankhack', 'outsider', 'staff']
+b['inside'] = (b[INSIDE].sum(axis=1) > 0).astype(int)
+bands = [(1, 1, '1'), (2, 5, '2-5'), (6, 20, '6-20'), (21, 1e9, '>20')]
+for lab, m in [('all breached', b.index == b.index), ('breached with an inside type', b.inside == 1),
+               ('breached without an inside type', b.inside == 0)]:
+    cells = []
+    for lo, hi, bl in bands:
+        s = b[m & (ps.loc[b.index] >= lo) & (ps.loc[b.index] <= hi)]
+        cells.append(f'{bl}: {np.average(s.costly, weights=s.weight):.2f} ({len(s)})' if len(s) else f'{bl}: -')
+    print(f'{lab:34s} ' + '   '.join(cells))
+print('\nshare with an inside type, by phishing count (breached firms):  ' + '   '.join(
+    f'{bl}: {np.average(b.inside[(ps.loc[b.index] >= lo) & (ps.loc[b.index] <= hi)], weights=b.weight[(ps.loc[b.index] >= lo) & (ps.loc[b.index] <= hi)]):.2f}'
+    for lo, hi, bl in bands))
