@@ -518,3 +518,28 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   - Small cells at high volume.
   - The exact count is answered selectively: phishing firms without a count are very cheap, 0.8% costly.
   - "Costly compromise" uses the inside-type definition from F15.
+
+## Breach counts
+
+### F20. Evidence on repeat breaches: costly repeats look rare (`src/estimation/breach_counts_evidence.py`, 2026-10-06)
+- **Per-type success counts** (breached firms ticking the type; share with 2+ among those with 1+):
+  - phishing engaged with: 25% (n = 186). Costly firms 59%, but few with 1+. Engagement is not a breach.
+  - successful takeover: 2% (n = 36)
+  - successful malware: 2% (n = 90)
+  - successful DoS: 39% (n = 33; only about 13 with 1+)
+  - ransom demanded: 22% (n = 38). Costly ransomware firms: all exactly 1 (n = 22).
+  
+  So for the inside / costly types, 2+ successes are rare. Repeats show up mainly for DoS and phishing engagement, which are mostly cheap.
+- **Yearly total (`crimecost_bands`, same 13-band scale) vs worst incident** (154 firms answered both; breached firms answer much more often, 46% vs 6%):
+  - The total is LOWER than the worst in 55–65% of firms, so it is a narrower cost concept (likely direct costs only) and cannot serve as the yearly total.
+  - Total HIGHER than worst: breached 3%, costly 1%, not breached 16%. Of 14 such firms, only 4 rise to £10–50k.
+  - Because the concept is narrower, "higher" is a lower bound on extra cost, but it is rare.
+- **Implication for the count model:**
+  - Independent random arrivals at the fitted per-type breach chances (bank hacking 59%, DoS 51%, takeover 36%) would imply 25–35% of breached firms with 2+ breaches of that type. The success counts show about 2% for takeover and malware.
+  - So per-type breach occurrence behaves more like yes/no per year than like repeated independent arrivals, at least for the costly types.
+  - Simplest candidate: per type at most one breach per year. Incidents can bundle several types (spreading). The yearly cost of breaches is roughly the worst incident, plus a small allowance for repeats of the cheap kinds (DoS, phishing engagement).
+- **Caveats:**
+  - Success is not the same as breach (F9).
+  - Count questions are answered by subsets.
+  - The total-cost question has a narrower concept and is answered selectively.
+  - Rare repeats in a sample of about 1,000 can still matter across 1.4M firms (user point from 2026-10-02): this says repeats are rare, not absent.
