@@ -4,6 +4,19 @@ Started fresh on 2026-10-05. The old notes are in `archive/NOTES_old_2026-07_to_
 
 This file is being filled in by going through the project together with the user, one topic at a time.
 
+## Summary of findings so far (2026-10-06; details in F1–F18 below)
+- **Size and frequency (F1):** bigger firms are attacked more often (40% Micro → 68% Large). Among attacked firms, how often they're attacked barely changes with size. Worst-incident cost rises clearly with size. Being attacked more often does not mean a costlier worst incident.
+- **Types (F2):** phishing 85% of attacked firms, impersonation 35%, malware 18%, others about 6% each. Cost order: mass phishing < targeted phishing ≈ impersonation < other types < ransomware. Average costs per type are mostly single firms.
+- **Co-occurrence (F3, F4):** one attack can tick several boxes. All types co-occur more than chance, mostly through one shared exposure level: a quiet majority and a small heavily attacked group. More phishing goes with more other types.
+- **Cost is concentrated in broad firms (F5):** the 15% of attacked firms with 3+ types carry about 77% of cost. Breadth predicts a big loss; attack frequency doesn't.
+- **Breaches (F6, F7):** a breach makes the worst incident much costlier for every type. Without one, £5k or more is almost never reached. There is no separate "big breach" cluster; broader breaches shift the whole cost distribution up.
+- **Breach chance (F9–F13):** with per-type chances fitted on all firms, broad firms are breached about as often as independent per-type chances predict. The earlier "breached below independence" result was an artefact of lumping types together and of a small, odd baseline of S-only firms (F12).
+- **Cost beyond independence (F8, F11, F14):** given a breach, broad firms cost more than independent breaches priced by type would give: about x1.6 per extra type, mainly at 4+ types.
+- **What carries it (F15, F16):** the big-cost uplift needs breadth AND an "inside" type (ransomware, bank hacking, outsider or staff access): 58% costly vs 1–14% otherwise. Inside types are common in narrow firms too, but cheap there. Outcomes match the ticked types, and costly incidents have about 3.5 different consequences, narrow or broad.
+- **Exposure vs footprint (F18):** costly broad firms are NOT more attacked from outside (less phishing volume, DoS and spoofing). Cheap broad firms are the heavily attacked ones. So breadth in costly firms looks like the footprint of a spreading compromise, not heavy exposure. This is inferred: one multi-method attacker and recall effects aren't excluded.
+- **Dead ends (F9 test, F17):** per-type "success" items measure something different from breaches. Per-type attack counts are about 1 everywhere, with ambiguous zeros, so they can't test spreading.
+- **Open:** see "Open topics" at the end.
+
 ## Goal (agreed 2026-10-05)
 - Estimate the total yearly cost of cybercrime incidents to UK businesses. Sole traders are left out because the survey doesn't include them.
 - "Cybercrime" and "cost" mean whatever the survey asks about. We don't redefine them.
