@@ -498,3 +498,23 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   - So, even without selecting on breadth, the most heavily phished breached firms are less often costly. The costliest sit at moderate volume.
   - Possible reason: for heavily attacked firms, the year-level breach marker may come from many small incidents. Not checked. Cells are about 20 firms.
   - Revised statement: the costliest firms are not the most heavily attacked. Very heavy phishing goes with cheaper breaches, not dearer ones.
+
+### F19. Mass and breachy sources: no sign they avoid each other's firms (`src/estimation/sources_targeting.py`, 2026-10-06)
+- **The question (user's dilemma):** do the volume source (mass phishing etc.) and the breachy source target firms independently given shared factors (H1), or prefer different firms (H2)?
+- **Test:** per-firm shares among ALL attacked firms (no conditioning on the breach marker), by phishing volume. H2 predicts the per-firm chance of a costly compromise falls with volume; H1 predicts flat or rising.
+- **By exact phishing count** (1 / 2–5 / 6–20 / 21–100 / over 100; n = 132 / 153 / 124 / 75 / 26):
+  - costly compromise (costly + inside type): 2.0% / 5.5% / 4.8% / 3.9% / 4.1%
+  - costly at all: 4.5% / 7.2% / 5.5% / 4.3% / 4.1%
+  - inside type ticked: 16% / 15% / 18% / 20% / 33%
+  - breached: 30% / 24% / 24% / 35% / 57%
+  - Small+ alone: costly compromise 2.9% / 6.4% / 10.9% / 3.9% / 18% (n = 19 at the top).
+- **By targeted phishing count** (1–5 / 6–20 / 21+): costly compromise 3.3% / 4.1% / 3.7%.
+- **By overall frequency:** noisy, no consistent direction.
+- **Reading:**
+  - The per-firm chance of a costly compromise is roughly flat across phishing volume (about 4–5% after the lowest band), not falling. No sign of H2.
+  - Breach markers and inside ticks DO rise with volume, but the extra breaches are cheap. So among BREACHED firms the costly share falls at high volume: dilution, as H1 allows (F18 refinement).
+  - Current view: the sources target firms roughly independently given shared factors. Heavy-volume firms collect more cheap breach markers.
+- **Caveats:**
+  - Small cells at high volume.
+  - The exact count is answered selectively: phishing firms without a count are very cheap, 0.8% costly.
+  - "Costly compromise" uses the inside-type definition from F15.
