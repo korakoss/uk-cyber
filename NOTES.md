@@ -646,3 +646,13 @@ User's suggestion: mark spread breaches mainly by the cost uplift, with breadth 
 - **Cost below £5k:** broad cheap firms are a bit costlier than narrow inside-type breaches (42% vs 23% in £1k–5k), but no "none"-heavy pattern. Roughly ordinary.
 - **Mixture reading:** if broad+inside breaches are a mix of ordinary breaches (8% costly, like narrow ones) and spread ones, the spread share is 55% if spread breaches are always costly, 61% at 90%, 70% at 80%.
 - **Reading:** the cost-plus-breadth marker agrees with the consequence count, the cleanest independent indicator. Linkage items and count data add nothing either way.
+
+### F24. What sets the chance a breach spreads, and how far it spreads (`src/estimation/escalation_drivers.py`, 2026-10-07)
+Spread marker as F23 (breached, 4+ types, inside type, >= £5k). 244 breached firms, 34 spread. 90% bootstrap intervals.
+- **Size matters.** Spread share of breached firms: Micro 6% [2–11], Small 9% [3–15], Medium+Large 18% [12–25].
+  - It is the breadth step that rises with size (4+ types with an inside type: 10% / 18% / 28%); costly given that is flat (62% / 48% / 66%).
+  - Caveat: bigger firms tick more types anyway (separate attacks), so they meet the breadth precondition more easily. Part of the size effect may be the marker, not spreading.
+- **Entry type can't be recovered.** The worst-incident type (disrupta) names an inside type for 61% of spread firms vs 20% of broad cheap firms (ransomware alone: 11 of 34), so it mostly names where the incident ended up. The outside types ticked are nearly the same in spread and broad cheap firms (phishing 99% vs 94%, malware 77% vs 76%, takeover 56% vs 52%), except impersonation (74% vs 99%). No sign of a particular way in. Practical reading: one spread chance for all entry types, varying by size.
+- **How far it spreads.** Inside types among spread firms: 1: 58%, 2: 35%, 3+: 8% (mean 1.5); broad cheap firms: 1: 90%, 2: 7%, 3+: 4% (mean 1.1). Medium+Large spread firms reach more (mean 1.9, n = 23) than Micro/Small (about 1.5, n = 11).
+- **Spread firms do NOT tick more types in total** (mean 5.1 vs 5.0 for broad cheap). They tick more inside types and fewer others.
+- **The extra inside type is mostly bank hacking:** spread 69% vs broad cheap 35%; ransomware 57% vs 61%, outsider 13% vs 10%, staff 12% vs 8%. So "more inside types" and "bank hacking" are tangled again here (see F22 decision): they can't be separated with this data.
