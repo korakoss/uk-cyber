@@ -622,6 +622,15 @@ Per firm-year:
 - **Agreed working view:** a breach either stays in its lane, or spreads to involve other ("inside") types. A spreading breach shows up as extra type ticks AND a much higher cost (F15, F16, F18). This is inferred, not proven: one attacker using several methods, or recall, aren't ruled out.
 - **"Two kinds" shows in footprint and consequences, not in the cost numbers alone.** There is no visible two-cluster split in breach costs (F7): broader breaches shift the whole cost distribution up.
 - **"Uplift is about the same whatever the spreading profile, except bank hacking is costlier" is NOT established in the fresh work.** It comes from the old notes (bank hacking x9 [3–26], n = 23; ransomware no effect) and was not re-checked. Fresh results partly disagree:
-  - Ransomware does seem to add cost at a given breadth (F11: costly 59% vs 11% at 3 types, 55% vs 34% at 4+; F14: 3+ with ransomware 41% observed vs 22% predicted).
+  - Ransomware seemed to add cost at a given breadth (F11, F14), but those comparisons include broad firms with NO inside type. Among spread firms only, ransomware adds nothing (F22). So the old "no ransomware effect" stands.
   - Bank hacking: costly among breached 74% in broad firms (n = 20) vs 5% in narrow, but in costly broad firms the bank-hacking tick comes with money stolen / accounts misused only 42% of the time (F16). So "the intrusion reached the money" is not the general story.
-  - Open: a fresh check of how the cost of spread breaches varies by which inside types are involved (small n; expect wide intervals).
+  - Fresh check done: F22 below.
+
+### F22. Cost of spread breaches by which inside types are involved (`src/estimation/escalation_profiles.py`, 2026-10-07)
+Spread proxy: breached, 4+ types, at least one inside type (n = 53, 58% at £5k or more). Gaps are with minus without the type, bootstrap 90% intervals. Small n throughout.
+- **Ransomware: no difference** (57% vs 61%, gap -0.05 [-0.37, +0.31]). Firms whose only inside type is ransomware are on the cheap side (32%, n = 13).
+- **Bank hacking: costlier, but not firmly** (74% vs 40%, gap +0.34 [-0.03, +0.59]; n = 20 vs 33). Same direction as the old x9, weaker.
+- **Outsider / staff access: small gaps, wide intervals** (+0.07, +0.11). Staff access firms have more at £20k or more (43% vs 13%, n = 16).
+- **Number of inside types matters more than which one:** 1 inside type 48% (n = 30), 2 types 88% (n = 17), 3+ types 75%, with 63% at £20k or more (n = 6). Part of the bank-hacking gap may be this, since bank hacking often comes with other inside types (not separated; n too small).
+- **Narrow breached firms with an inside type stay cheap whatever the type** (8% at £5k or more, n = 44). Small+ 27% vs Micro 4% there.
+- **Reading:** the uplift is not clearly homogeneous. The clearest pattern is "more inside types, costlier", which fits spreading: a bigger footprint, a bigger cost. Bank hacking may add on top; it's unclear.
