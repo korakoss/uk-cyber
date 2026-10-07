@@ -699,3 +699,14 @@ The 53 broad breached firms with an inside type, by size:
 - **By firm count, the costly ones are mostly Medium and Large:** 9 of the 12 firms at £20k+. Share at £20k+: Micro 12% (1 firm), Small 23%, Medium 18%, Large 32%; share at £5k+: Large 85% vs 48–62% for the others.
 - **By weight, the top is one Micro firm.** Micro firms are 57% of the set's weight. The 8% weighted share at £100k+ is almost all one Micro firm (6.6% of the set's weight); the other three £100k+ firms (Medium, Large, Large) add about 1% together.
 - **Reading:** the heavy top end in F27 is mostly driven by that one Micro firm. Two things are mixed: cost rising with size (seen in firm counts), and one costly Micro firm (seen in weights). Open checks: fit with cost scaling by size; refit without that firm to see how much the heavy shape depends on it.
+
+### F29. Heavy top end of spread cost: size scaling and the one costly Micro firm (`spread_cost_shapes.py` checks, 2026-10-07)
+Ordinary reference: all narrow breached firms. Means capped at £1m.
+- **Dropping the one Micro firm at £100k–500k changes the picture.**
+  - With it: steepness alpha 0.5–1.0 fit best; 1.5 is 2.6 points worse; 2 or more is ruled out.
+  - Without it: alpha 0.7 to 2.0 all fit about equally (within 0.9 points); only 3 is borderline (2.0–2.6 worse). The lognormal is still about 4 points worse than the heavier shapes.
+  - Means without it: lognormal £17k, power-law top £24k (£15k–37k across alpha 0.7–3), log-t £57k (it keeps a very heavy top).
+  - So the "very heavy top end" finding (F27) rests mainly on that one firm.
+- **Cost growing with size: no clear effect in this fit.** Size step x0.99–1.06 per size band with all firms, x1.10–1.26 without the Micro firm; fit gains are under 1 point.
+  - Caveat: the fit uses survey weights, so Medium and Large firms (weights about 0.05–0.13) count for very little next to Micro (about 1.5). The size effect seen in firm counts (F28) barely enters. A fairer test would use weights normalised within each size band.
+- Runtime about 30 minutes (many restarts per fit).
