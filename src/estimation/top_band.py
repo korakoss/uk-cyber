@@ -58,3 +58,19 @@ for _, r in df[df.c >= 9].sort_values(['c', 'sizeb']).iterrows():
     tot = CB.get(int(cc[_]), '-') if cc[_] == cc[_] else '-'
     print(f"{BL[int(r.c)]:10s} size {int(r.sizeb)}  weight {r.weight:6.2f}  breach {int(r.breach)}  spread {int(r.spread)}  "
           f"freq {FQ[int(r.freq)]:11s} worst {DIS.get(int(r.disrupta), str(r.disrupta)):9s} total {tot:9s} types {ty}")
+
+# --- 2026-10-07: which firms do the spread-cost fits miss at the top? Among the 53 broad breached firms with an
+# inside type (the set used in spread_cost_shapes.py): cost by size, and the firms at £50k+ with their weights.
+bi = df[(df.breach == 1) & (df.k >= 4) & (df.n_inside >= 1)]
+print('\n=== 4. Broad breached firms with an inside type, by size ===')
+for lab, m in SIZES:
+    s = bi[m.loc[bi.index]]
+    if len(s) == 0:
+        continue
+    w = s.weight / s.weight.sum()
+    print(f'{lab:7s} n={len(s):3d}  weight share {s.weight.sum() / bi.weight.sum():.2f}  '
+          f'>=£5k {w[s.c >= 6].sum():.2f}  >=£20k {w[s.c >= 8].sum():.2f}  >=£100k {w[s.c >= 10].sum():.2f}  '
+          f'(firms >=£20k: {int((s.c >= 8).sum())})')
+print('firms at £20k+ in this set (band, size, weight, share of the set\'s weight):')
+for _, r in bi[bi.c >= 8].sort_values(['c', 'sizeb']).iterrows():
+    print(f'   band {int(r.c):2d}  size {int(r.sizeb)}  weight {r.weight:5.2f}  ({r.weight / bi.weight.sum():.3f})')

@@ -693,3 +693,9 @@ Same mixture set-up as F25 (53 broad breached firms with an inside type; ordinar
   - Mean at £1m cap: about £20k (alpha 1.5), £30k–33k (1.0), £46k–50k (0.7), £66k–73k (0.5). At £5m cap: £21k to £158k.
 - **The empty bands above £500k don't constrain it:** with about 32 spread breaches in the sample, the heavy shapes expect only about 0.3–1.6 above £500k, so seeing none is unsurprising.
 - **Reading:** the data rules out a thin top end, but can't say how heavy it is. The spread mean then depends on alpha and on the largest credible single loss, which needs outside information or a stated range. Possible tightening: fit alpha on all costly firms together (26 firms at £20k+, assuming one shared top-end shape across cost parts).
+
+### F28. Which firms the spread-cost fits chase at the top (`src/estimation/top_band.py` section 4, 2026-10-07)
+The 53 broad breached firms with an inside type, by size:
+- **By firm count, the costly ones are mostly Medium and Large:** 9 of the 12 firms at £20k+. Share at £20k+: Micro 12% (1 firm), Small 23%, Medium 18%, Large 32%; share at £5k+: Large 85% vs 48–62% for the others.
+- **By weight, the top is one Micro firm.** Micro firms are 57% of the set's weight. The 8% weighted share at £100k+ is almost all one Micro firm (6.6% of the set's weight); the other three £100k+ firms (Medium, Large, Large) add about 1% together.
+- **Reading:** the heavy top end in F27 is mostly driven by that one Micro firm. Two things are mixed: cost rising with size (seen in firm counts), and one costly Micro firm (seen in weights). Open checks: fit with cost scaling by size; refit without that firm to see how much the heavy shape depends on it.
