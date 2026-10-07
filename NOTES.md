@@ -603,3 +603,7 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   - There is no group with a high enough breach rate to separate them.
   - What the costs CAN do is rule out MANY repeats (strong firm-to-firm variation, F21).
   - Practical consequence: 0/1 vs Poisson is not decidable from this data, and at sample-level rates it changes cost by only 1–3%. The open lever for the population is firm-to-firm variation, bounded by F21 at about +15%.
+- **Options for handling breach counts in the model (proposed 2026-10-07, user to decide):**
+  1. Poisson breaches per firm, with the rate depending on what we can observe: size and the shared exposure level (F3). That already gives firms different breach-proneness, grounded in data.
+  2. Leftover firm-to-firm variation beyond that, which the survey can't see, as an interval: plain Poisson up to the F21 bound. Simplest form: a multiplier of about 1.01–1.15 on breach costs.
+  3. A rare repeat-prone tail (e.g. 1 in 1,000 firms with many breaches) as a stated sensitivity scenario. It is invisible in the sample, so it is assumed, not estimated.
