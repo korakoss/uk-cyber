@@ -597,3 +597,9 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   - G is assumed the same everywhere. Heavy-volume firms' extra breaches seem cheaper (F19), so G-like repeats are the costly case.
   - G rests on 85 firms. Phishing-count groups can include once-attacked firms. Small groups. Sizes are pooled.
   - Bounds repeats that cost like G; much cheaper repeats are not bounded but add little.
+- **Can the cost distribution tell 0/1 breaches from Poisson repeats? No (2026-10-07).**
+  - At the observed breach rates (breached share 14–40% by group), Poisson gives only 1.08–1.28 breaches per breached firm.
+  - Its predicted worst-cost distribution is almost the same as 0/1 (= G): "no cost" 14–17% vs 18%; £5k or more 11–13% vs 10%. A shift of 1–4 points, well inside the noise for groups of 46–109 firms.
+  - There is no group with a high enough breach rate to separate them.
+  - What the costs CAN do is rule out MANY repeats (strong firm-to-firm variation, F21).
+  - Practical consequence: 0/1 vs Poisson is not decidable from this data, and at sample-level rates it changes cost by only 1–3%. The open lever for the population is firm-to-firm variation, bounded by F21 at about +15%.
