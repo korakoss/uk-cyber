@@ -543,3 +543,15 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   - Count questions are answered by subsets.
   - The total-cost question has a narrower concept and is answered selectively.
   - Rare repeats in a sample of about 1,000 can still matter across 1.4M firms (user point from 2026-10-02): this says repeats are rare, not absent.
+
+### Simplest breach-count model: concrete sketch (proposed 2026-10-07, not decided)
+- **Per firm-year:**
+  1. **Hits:** which attack types reach the firm (exposure; depends on size and the shared exposure level).
+  2. **Breach per hit type:** yes/no with chance b_t (F13), at most one per type per year (F20).
+  3. **Escalation:** each breach turns into a spreading compromise with chance e (one number, maybe by size). A compromise adds "inside" type ticks (its footprint) and takes its cost from a compromise cost distribution (costlier, many consequences, F16). Otherwise the breach takes an ordinary cost by type.
+  4. **Yearly cost:** the breaches' costs (in practice usually one breach, so about the worst incident), plus clean-up for non-breach hits.
+- **To pin from data:** b_t for the outside/entry types; e; ordinary and compromise cost distributions. Checks: per-firm costly-compromise share of about 4–5% of attacked firms (F19); breadth and outcome patterns of costly firms; rarity of repeats (F20).
+- **Simpler alternative (descriptive):** take the firm's ticked types as given, per-type yes/no breaches with b_t, one cost draw for the firm's breach-year scaled x1.6 per extra type (F14). Easier to fit, but it treats breadth as a cause, although for costly firms breadth looks like an outcome.
+- **Open choices:**
+  - Does e depend on size or on how many types hit the firm? Not on outside volume (F18/F19).
+  - Are several breached types in one year one incident or several? Repeats look rare (F20), so one is the simplest.
