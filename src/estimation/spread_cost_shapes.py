@@ -70,8 +70,14 @@ def spliced_cdf(x, m, s, q, a):
     return np.where(x <= U, below, above)
 
 
+def body_params(th):
+    """Body median and log-sd, clipped (median <= £1m, log-sd <= 5) to keep the numbers finite. The fit tends to
+    push the body towards 'rising up to £20k', which these limits still allow."""
+    return np.exp(min(th[0], np.log(1e6))), np.exp(min(th[1], np.log(5.0)))
+
+
 def shape_C(th, a_fixed=None):
-    m, s = np.exp(th[0]), np.exp(th[1])
+    m, s = body_params(th)
     q = 1 / (1 + np.exp(-th[2]))
     a = a_fixed if a_fixed is not None else np.exp(th[3])
     return cats_from_cdf(spliced_cdf(EDGES, m, s, q, a))
@@ -85,11 +91,12 @@ def capped_mean(name, th, cap):
         m, s, nu = np.exp(th[0]), np.exp(th[1]), 0.5 + np.exp(th[2])
         tz = tdist.ppf(norm.cdf(Z), nu)
         return np.minimum(np.exp(np.log(m) + s * tz), cap).mean()
-    m, s = np.exp(th[0]), np.exp(th[1])
+    m, s = body_params(th)
     q = 1 / (1 + np.exp(-th[2]))
-    a = np.exp(th[3]) if len(th) > 3 else th[-1]
-    mu = np.log(m)
-    body = np.exp(mu + s ** 2 / 2) * norm.cdf((np.log(U) - mu - s ** 2) / s) / ln_cdf(U, m, s)  # E[X | X < U]
+    a = np.exp(th[3])
+    lx = np.linspace(0, np.log(U), 4000)              # E[X | X < U] by numerical integration in log scale
+    wgt = norm.pdf((lx - np.log(m)) / s)
+    body = (np.exp(lx) * wgt).sum() / wgt.sum()
     tail = U + (U * np.log(cap / U) if abs(a - 1) < 1e-9 else U / (1 - a) * ((cap / U) ** (1 - a) - 1))
     return (1 - q) * body + q * tail
 
@@ -136,7 +143,8 @@ def describe(name, x):
         return f'median £{np.exp(th[0]):,.0f}, log-sd {np.exp(th[1]):.2f}'
     if name == 'B':
         return f'median £{np.exp(th[0]):,.0f}, log-scale {np.exp(th[1]):.2f}, df {0.5 + np.exp(th[2]):.2f}'
-    return (f'body median £{np.exp(th[0]):,.0f}, log-sd {np.exp(th[1]):.2f}, share above £20k '
+    m, sd = body_params(th)
+    return (f'body median £{m:,.0f}, log-sd {sd:.2f} (clipped), share above £20k '
             f'{1 / (1 + np.exp(-th[2])):.2f}, alpha {np.exp(th[3]):.2f}')
 
 
@@ -149,12 +157,14 @@ bi = b[(b.k >= 4) & (b.n_inside >= 1)]
 REFS = [('narrow breached with an inside type', b[(b.k <= 3) & (b.n_inside >= 1)]),
         ('all narrow breached', b[b.k <= 3])]
 BOOT = 100
+import sys
+SHAPES_TO_RUN = sys.argv[1:] or ['A', 'B', 'C']
 for rlab, r in REFS:
     O = cat_dist(r)
     print(f'\n##### Ordinary reference: {rlab} (n={len(r)})')
     print('        ' + ''.join(f'{c:>10s}' for c in CLAB))
     print('obs     ' + ''.join(f'{x:10.2f}' for x in cat_dist(bi)))
-    for name in ['A', 'B', 'C']:
+    for name in SHAPES_TO_RUN:
         res = fit(bi, O, name)
         x = res.x
         e = 1 / (1 + np.exp(-x[0]))
