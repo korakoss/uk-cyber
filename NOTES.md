@@ -636,3 +636,13 @@ Spread proxy: breached, 4+ types, at least one inside type (n = 53, 58% at £5k 
 - **Reading:** the uplift is not clearly homogeneous. The clearest pattern is "more inside types, costlier", which fits spreading: a bigger footprint, a bigger cost. Bank hacking may add on top; it's unclear.
 - **DECISION (user, 2026-10-07):** for now, model the cost of a spread breach as rising with the number of inside types involved, with no separate bank-hacking effect: nothing clearly sets bank hacking apart, so the simpler form wins.
 - **Next (user, 2026-10-07):** sort out escalation questions: (1) what sets the chance a breach spreads (size, entry type), (2) how many inside types a spread breach reaches, (3) how to mark spread firms when fitting (footprint vs consequence count).
+
+### F23. Marking spread breaches: cost plus breadth, checked against other indicators (`src/estimation/escalation_marker.py`, 2026-10-07)
+User's suggestion: mark spread breaches mainly by the cost uplift, with breadth (4+ types and an inside type) as a precondition. Breached firms; broad costly n = 34, broad cheap 19, narrow with inside type 44, narrow without 135.
+- **Consequences line up strongly.** Broad costly: 3.5 outcomes on average, 69% with 3+, restore a day or more 74%, 1.7 of 3 impact items. Broad cheap look like ordinary narrow breaches: 1.4 outcomes, 13% with 3+, restore 31%, 0.65 impact items (narrow with inside type: 1.37, 10%, 47%, 0.59).
+  - Caveat: impact items (recovery costs, revenue loss) are partly cost by construction; the outcome items less so. Outcomes cover all the year's breaches.
+- **Number of inside types:** broad costly 1.5, broad cheap 1.1, narrow 1.1. Cheap broad firms again look ordinary.
+- **Weak or no signal:** impersonation involving access (40% vs 14%, small n); any fraud (35% vs 30%); inside ticks with count <= 1 (69% vs 61%): these don't separate the groups.
+- **Cost below £5k:** broad cheap firms are a bit costlier than narrow inside-type breaches (42% vs 23% in £1k–5k), but no "none"-heavy pattern. Roughly ordinary.
+- **Mixture reading:** if broad+inside breaches are a mix of ordinary breaches (8% costly, like narrow ones) and spread ones, the spread share is 55% if spread breaches are always costly, 61% at 90%, 70% at 80%.
+- **Reading:** the cost-plus-breadth marker agrees with the consequence count, the cleanest independent indicator. Linkage items and count data add nothing either way.
