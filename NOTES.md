@@ -728,3 +728,11 @@ Ordinary reference: all narrow breached firms. Means capped at £1m.
 Counts (weighted share). Spread n = 34 (all >= £5k by definition): £5k–10k 8 (16%), £10k–20k 14 (56%), £20k–50k 5 (8%), £50k–100k 3 (7%), £100k–500k 4 (13%).
 Breached, not spread n = 210: none 34 (19%), <£100 34 (14%), £100–500 53 (22%), £500–1k 20 (13%), £1k–5k 46 (25%), £5k–10k 8 (3%), £10k–20k 3 (1%), £20k–50k 9 (2%), £100k–500k 3 (1%).
 Not breached n = 738: none 446 (64%), <£100 140 (19%), £100–500 81 (11%), £500–1k 21 (2%), £1k–5k 39 (4%), £5k+ 11 firms (about 0.4%), incl. 1 at £100k–500k.
+
+### Exact definitions of the breach and spread markers (checked against the codebook, 2026-10-07)
+- **Breached** = any of:
+  - any Q56A outcome (`outcome_any`; "which of these happened as a result", all the year's breaches): systems corrupted, personal data lost, files permanently lost, temporary loss of access, assets/IP stolen, money stolen, online services taken down, lost access to third-party services, money paid to attackers, devices damaged, accounts or systems used for illicit purposes;
+  - Q71 restore time (`restore`) a day or more, or "still not back to normal" (codes 3–6);
+  - Q57 impacts: staff stopped from day-to-day work (`impact1`), loss of revenue or share value (`impact2`), other repair or recovery costs (`impact4`). (`impact3`, extra staff time, is NOT used.)
+- **Spread** = breached AND 4 or more of the 11 attack-type ticks AND at least one inside type (ransomware `type1`, bank hacking `type4`, outsider access `type8`, staff access `type7`) AND worst incident £5k or more.
+- Caveats: Q56A and Q57 cover all the year's breaches, not just the priced worst one; restore, revenue loss and recovery costs are partly cost; spread requires £5k+ by construction.
