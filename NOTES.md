@@ -555,3 +555,12 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
 - **Open choices:**
   - Does e depend on size or on how many types hit the firm? Not on outside volume (F18/F19).
   - Are several breached types in one year one incident or several? Repeats look rare (F20), so one is the simplest.
+- **User decision (2026-10-07):** no hard "at most one breach" cap. That is an a priori limit with no justification. Use a Poisson count of breaches. Repeats being absent or rare in the sample is fine, but for the 1.4M-firm population this matters, so carry an interval on the rate through to the national results.
+- **Correction to F20's implication (2026-10-07).** The "25–35% of breached firms would have 2+" figure used per-TICK breach chances (e.g. 59% for bank hacking among firms that ticked it). That is the wrong unit: the tick itself is partly selected by the breach. At the firm level:
+  - 22% of attacked firms are breached → Poisson rate about 0.25 → about 12% of breached firms with 2+ breaches;
+  - costly compromise about 4.5% of attacked firms → rate about 0.046 → about 2% of compromised firms with 2+.
+  
+  These are not clearly contradicted by the success counts (2+ in about 2% for takeover/malware, 22% ransom, 39% DoS). With Poisson, the rate is fixed by the breached share; repeats are not a free parameter. The real open question is firm-to-firm heterogeneity: some firms being repeatedly breached would give more repeats than Poisson.
+- **What is known about repeat breaches and the worst cost (status 2026-10-07):**
+  - "The worst cost is too stable for repeated iid draws" is established for ATTACKS: the worst cost doesn't rise with attack frequency (F1, F5).
+  - For BREACHES the old work (2026-10-02) found the repeat rate weakly identified; nothing clearly contradicts Poisson repeats. Hints both ways: firms with several ransom demands are cheaper (handled attempts); several phishing successes look like one bigger event; no dose-response of cost with number of successes in broad firms.
