@@ -671,3 +671,13 @@ Mixture fit on all 53 broad breached firms with an inside type: a share e are sp
 - **Number of inside types:** with 2+ inside types, a much larger share is spread (e 0.82 vs 0.36 for 1 type). The cost given spread is similar (median £15k vs £13k). The £100k+ firms are mostly in the 1-type group. So in this fit, more inside types mainly raise the chance that a broad breach is a spread one, not the cost of a spread breach.
 - **Reading:** the bulk of spread costs is well pinned (about £5k–20k). The mean (£15k–60k) depends on the top band, i.e. on the tail question, which this data can't settle.
 - **DECISION (user, 2026-10-07):** drop the inside-count effect on spread cost. Spread breaches get one cost distribution. The number of inside types stays only as the footprint (how many extra ticks a spread breach adds, F24). Replaces the earlier decision after F22.
+
+### F26. The top of the cost range: who the costly firms are (`src/estimation/top_band.py`, 2026-10-07)
+Attacked firms with a cost answer (n = 982). Band 10 = £100k–500k; bands above £500k exist and no firm chose them.
+- **Only 8 firms at £100k+** (Micro 2, Small 2, Medium 1, Large 3); 11 at £50k+; 26 at £20k+.
+  - Weighted share at £100k+: Micro 0.5%, Small 0.7%, Medium 0.4%, Large 2.1%. Each rests on 1–3 firms.
+- **They carry most of the mean** (band midpoints, £300k for band 10): 64% of the all-firm weighted mean (Micro 72%, Small 53%, Medium 38%, Large 58%). Without them the all-firm mean drops from £2,361 to £842.
+  - The two Micro firms have ordinary weights (1.4, 1.5), so they're not weighting artefacts.
+- **What they are:** 4 of 8 are spread breaches; 3 are breaches that didn't spread (Micro ransomware, Small bank hacking, Large ransomware); 1 is not breached (Small, DoS, attacked once).
+- **Two of the 8 contradict themselves:** worst incident £100k–500k but yearly total "none" (the non-breached Small DoS firm, and the Medium spread firm). Another (Large) gives a total lower than its worst. These may be misreported.
+- **Above £500k:** nothing observed. With 8 firms above £100k, that is weak evidence about how heavy the tail is (old notes, tail_ceiling_pareto.py: the empty bands can't bound it).
