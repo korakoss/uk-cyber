@@ -710,3 +710,16 @@ Ordinary reference: all narrow breached firms. Means capped at £1m.
 - **Cost growing with size: no clear effect in this fit.** Size step x0.99–1.06 per size band with all firms, x1.10–1.26 without the Micro firm; fit gains are under 1 point.
   - Caveat: the fit uses survey weights, so Medium and Large firms (weights about 0.05–0.13) count for very little next to Micro (about 1.5). The size effect seen in firm counts (F28) barely enters. A fairer test would use weights normalised within each size band.
 - Runtime about 30 minutes (many restarts per fit).
+
+### F30. Top end pooled over all costly firms; size effect with fairer weights (`src/estimation/tail_pooled.py`, 2026-10-07)
+**Part 1: one shared steepness above £20k.** If costs above £20k follow a power law (P(X > x | X > £20k) = (x / £20k)^-alpha), the split of £20k+ firms across bands depends on alpha only, whatever the size or cost part. 26 attacked firms at £20k+: 15 in £20k–50k, 3 in £50k–100k, 8 in £100k–500k, 0 above.
+- **alpha about 0.8–1.0:** survey weights 0.77 [0.58–1.28]; weights balanced within size 0.98 [0.77–1.28]; no weights 0.95 [0.74–1.35].
+- **Not driven by one firm:** dropping any single firm moves it within 0.72–0.90 (survey weights) or 0.93–1.03 (others). Dropping the 2 Micro firms at £100k+: 1.06–1.18.
+- **Steeper tails are disfavoured:** alpha 1.5 is 2.5–6.6 log-likelihood points worse; 2 is 7–15 worse.
+- **Similar across groups:** spread firms 0.68–0.82 vs other firms 0.84–1.20; Micro+Small 0.72–0.92 vs Medium+Large 1.02–1.18.
+- **Imperfect fit:** the fit expects 4–9% of £20k+ firms above £500k (about 1–2.4 firms); none observed (a 9–37% chance). It also under-fits £100k–500k and over-fits £50k–100k. So a plain power law with no bend is only roughly right; a bend or ceiling somewhere above £500k is possible but not shown.
+- **What alpha means for cost:** average cost of a £20k+ incident, capped at a largest single loss: alpha 1.0: £84k (cap £500k), £98k (£1m), £130k (£5m); alpha 0.7: £128k / £169k / £303k.
+**Part 2: spread cost and size, weights balanced within size band.**
+- **Plain look** (marked spread firms, share at £20k+): Micro 19% (1 firm), Small 48%, Medium 31%, Large 37%. No trend.
+- **Mixture fit:** size step x1.0–1.16 per band; no gain in fit. Steps of x2 per band or more are somewhat disfavoured (0.6–2.7 points worse; x3: 3.8–5 worse).
+- **Reading:** spread cost doesn't clearly grow with size. Size affects how often a breach spreads (F24) more than what a spread breach costs.
