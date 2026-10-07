@@ -723,3 +723,8 @@ Ordinary reference: all narrow breached firms. Means capped at £1m.
 - **Plain look** (marked spread firms, share at £20k+): Micro 19% (1 firm), Small 48%, Medium 31%, Large 37%. No trend.
 - **Mixture fit:** size step x1.0–1.16 per band; no gain in fit. Steps of x2 per band or more are somewhat disfavoured (0.6–2.7 points worse; x3: 3.8–5 worse).
 - **Reading:** spread cost doesn't clearly grow with size. Size affects how often a breach spreads (F24) more than what a spread breach costs.
+
+### F31. Cost bands: spread vs other breached vs not breached (`src/estimation/cost_by_group.py`, 2026-10-07)
+Counts (weighted share). Spread n = 34 (all >= £5k by definition): £5k–10k 8 (16%), £10k–20k 14 (56%), £20k–50k 5 (8%), £50k–100k 3 (7%), £100k–500k 4 (13%).
+Breached, not spread n = 210: none 34 (19%), <£100 34 (14%), £100–500 53 (22%), £500–1k 20 (13%), £1k–5k 46 (25%), £5k–10k 8 (3%), £10k–20k 3 (1%), £20k–50k 9 (2%), £100k–500k 3 (1%).
+Not breached n = 738: none 446 (64%), <£100 140 (19%), £100–500 81 (11%), £500–1k 21 (2%), £1k–5k 39 (4%), £5k+ 11 firms (about 0.4%), incl. 1 at £100k–500k.
