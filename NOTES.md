@@ -617,3 +617,11 @@ Per firm-year:
 4. **Cost per breach.** An ordinary breach cost by type, and a compromise cost. No separate "big breach" cluster beyond this (F7). STATUS: not yet fitted. Open: the top end above about £100k and how cost scales with firm size.
 5. **Clean-up of attacks that didn't breach.** Small costs; the yearly total is unobserved (only the worst incident is priced). STATUS: open; the old range is assumption-driven.
 6. **Yearly cost** = breach costs + clean-up; national = scaled by ONS business counts per size band. Firms that skipped the cost questions: old estimate about +5%.
+
+### Escalation: what we currently claim (checked with the user, 2026-10-07)
+- **Agreed working view:** a breach either stays in its lane, or spreads to involve other ("inside") types. A spreading breach shows up as extra type ticks AND a much higher cost (F15, F16, F18). This is inferred, not proven: one attacker using several methods, or recall, aren't ruled out.
+- **"Two kinds" shows in footprint and consequences, not in the cost numbers alone.** There is no visible two-cluster split in breach costs (F7): broader breaches shift the whole cost distribution up.
+- **"Uplift is about the same whatever the spreading profile, except bank hacking is costlier" is NOT established in the fresh work.** It comes from the old notes (bank hacking x9 [3–26], n = 23; ransomware no effect) and was not re-checked. Fresh results partly disagree:
+  - Ransomware does seem to add cost at a given breadth (F11: costly 59% vs 11% at 3 types, 55% vs 34% at 4+; F14: 3+ with ransomware 41% observed vs 22% predicted).
+  - Bank hacking: costly among breached 74% in broad firms (n = 20) vs 5% in narrow, but in costly broad firms the bank-hacking tick comes with money stolen / accounts misused only 42% of the time (F16). So "the intrusion reached the money" is not the general story.
+  - Open: a fresh check of how the cost of spread breaches varies by which inside types are involved (small n; expect wide intervals).
