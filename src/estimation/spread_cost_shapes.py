@@ -159,12 +159,12 @@ REFS = [('narrow breached with an inside type', b[(b.k <= 3) & (b.n_inside >= 1)
 BOOT = 100
 import sys
 SHAPES_TO_RUN = sys.argv[1:] or ['A', 'B', 'C']
-for rlab, r in REFS:
+for rlab, r in (REFS if any(n in SHAPES for n in SHAPES_TO_RUN) else []):
     O = cat_dist(r)
     print(f'\n##### Ordinary reference: {rlab} (n={len(r)})')
     print('        ' + ''.join(f'{c:>10s}' for c in CLAB))
     print('obs     ' + ''.join(f'{x:10.2f}' for x in cat_dist(bi)))
-    for name in SHAPES_TO_RUN:
+    for name in [n for n in SHAPES_TO_RUN if n in SHAPES]:
         res = fit(bi, O, name)
         x = res.x
         e = 1 / (1 + np.exp(-x[0]))
@@ -186,6 +186,8 @@ for rlab, r in REFS:
               f'[{np.percentile(bs[:, 1], 5):,.0f}-{np.percentile(bs[:, 1], 95):,.0f}], £5m £{means[2]:,.0f}')
         print('fit     ' + ''.join(f'{v:10.2f}' for v in fitted))
 
+    if 'C' not in SHAPES_TO_RUN:
+        continue
     print('\n  C with alpha held fixed (loglik relative to the best; a drop of about 2 or more counts against it):')
     best_ll = -fit(bi, O, 'C').fun
     for a in [0.5, 0.7, 1.0, 1.5, 2.0, 3.0]:
@@ -193,3 +195,90 @@ for rlab, r in REFS:
         th = np.r_[res.x[1:4], np.log(a)]
         print(f'   alpha {a:3.1f}: loglik {-res.fun - best_ll:6.2f}   share above £20k {1 / (1 + np.exp(-res.x[3])):.2f}   '
               f'mean capped £1m £{capped_mean("C", th, 1e6):,.0f}, £5m £{capped_mean("C", th, 5e6):,.0f}')
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# 2026-10-07: two checks on what drives the heavy top end (F28).
+#  (1) let spread cost grow with firm size: cost = g^(size-1) x (curve), one extra setting g (size 1..4);
+#  (2) drop the one Micro firm at £100k-500k that carries most of the weighted top end.
+# Ordinary reference: all narrow breached firms, pooled over sizes (too few to split by size; caveat).
+# No bootstrap here; compare fits by log-likelihood, and show the alpha profile for shape C in each setting.
+def run_checks():
+    O = cat_dist(b[b.k <= 3])
+    top_micro = bi[(bi.sizeb == 1) & (bi.c >= 10)].index
+    print(f'\n\n##### Checks: size scaling and dropping the top Micro firm (n dropped = {len(top_micro)})')
+
+    def curve_cdf(name, th, x, a_fixed=None):
+        if name == 'A':
+            return ln_cdf(x, np.exp(th[0]), np.exp(th[1]))
+        if name == 'B':
+            return tdist.cdf((np.log(x) - th[0]) / np.exp(th[1]), 0.5 + np.exp(th[2]))
+        m, s = body_params(th)
+        q = 1 / (1 + np.exp(-th[2]))
+        a = a_fixed if a_fixed is not None else np.exp(th[3])
+        return spliced_cdf(x, m, s, q, a)
+
+    npar = {'A': 2, 'B': 3, 'C': 4}
+
+    def fit2(s, name, scale, a_fixed=None):
+        w = (s.weight / s.weight.mean()).values
+        cats = s.cat.values.astype(int)
+        size = s.sizeb.values.astype(int)
+        k = npar[name] - (1 if a_fixed is not None else 0)
+
+        def nll(x):
+            e = 1 / (1 + np.exp(-x[0]))
+            th = x[1:1 + k]
+            g = np.exp(x[-1]) if scale else 1.0
+            ll = 0.0
+            for z in range(1, 5):
+                mz = size == z
+                if not mz.any():
+                    continue
+                sp = cats_from_cdf(curve_cdf(name, th, EDGES / g ** (z - 1), a_fixed))
+                p = (1 - e) * O + e * sp
+                ll += (w[mz] * np.log(np.clip(p[cats[mz]], 1e-12, 1))).sum()
+            return -ll
+
+        best = None
+        for x0 in starts_for(name):
+            x0 = list(x0)[:k]
+            for e0 in [0.0, 1.5]:
+                for g0 in ([0.0, 0.7] if scale else [None]):
+                    st = np.array([e0] + x0 + ([g0] if scale else []))
+                    r = minimize(nll, st, method='Nelder-Mead',
+                                 options={'maxiter': 8000, 'xatol': 1e-5, 'fatol': 1e-7})
+                    if best is None or r.fun < best.fun:
+                        best = r
+        return best
+
+    def mean_by_size(name, x, scale, cap=1e6, a_fixed=None):
+        k = npar[name] - (1 if a_fixed is not None else 0)
+        th = np.array(x[1:1 + k])
+        if a_fixed is not None:
+            th = np.r_[th, np.log(a_fixed)]
+        g = np.exp(x[-1]) if scale else 1.0
+        return [g ** (z - 1) * capped_mean(name, th, cap / g ** (z - 1)) for z in range(1, 5)]
+
+    for lab, s in [('all 53 firms', bi), ('without the top Micro firm', bi.drop(top_micro))]:
+        print(f'\n=== {lab} (n={len(s)}) ===')
+        for scale in [False, True]:
+            print(f'-- {"cost grows with size" if scale else "same cost curve for all sizes"}')
+            for name in ['A', 'B', 'C']:
+                r = fit2(s, name, scale)
+                x = r.x
+                k = npar[name] + 1 + (1 if scale else 0)
+                ms = mean_by_size(name, x, scale)
+                gtxt = f'  size step x{np.exp(x[-1]):.2f}' if scale else ''
+                print(f'   {name}: loglik {-r.fun:7.2f}  AIC {2 * k + 2 * r.fun:6.1f}  e {1 / (1 + np.exp(-x[0])):.2f}{gtxt}'
+                      f'   mean (cap £1m) Micro/Small/Medium/Large: ' + ' / '.join(f'£{v:,.0f}' for v in ms))
+            print('   C with alpha fixed (loglik vs best C; mean cap £1m Micro / Large):')
+            best_ll = -fit2(s, 'C', scale).fun
+            for a in [0.7, 1.0, 1.5, 2.0, 3.0]:
+                r = fit2(s, 'C', scale, a_fixed=a)
+                ms = mean_by_size('C', r.x, scale, a_fixed=a)
+                print(f'      alpha {a:3.1f}: {-r.fun - best_ll:6.2f}   £{ms[0]:,.0f} / £{ms[3]:,.0f}')
+
+
+if 'checks' in SHAPES_TO_RUN:
+    run_checks()
