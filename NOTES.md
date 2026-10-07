@@ -617,7 +617,7 @@ Per firm-year:
    - Marker: breached, 4+ types, an inside type, worst >= £5k (agrees with the consequence count).
    - Spread chance: one chance for all entry types (entry type can't be recovered), rising with size: 6% / 9% / 18% of breached Micro / Small / Medium+Large firms. Caveat: bigger firms pass the breadth condition more easily, so part of this may come from the marker.
    - How far: inside types reached 1: 58%, 2: 35%, 3+: 8%; somewhat further in bigger firms.
-   - Cost: rises with the number of inside types; no separate bank-hacking effect (decision; but bank hacking is the main extra inside type in spread firms, so the two are tangled).
+   - Cost: one spread cost distribution, the same whatever the number or kind of inside types (DECISION 2026-10-07, replaces the earlier 'rises with inside count'; F25: the inside count raises the chance a broad breach is a spread one, not its cost). Typical spread breach about £14k; the mean (£15k–60k) depends on the top band.
    - Open: fitting the spread cost distribution (the £5k cutoff in the marker needs undoing, e.g. the mixture reading in F23), its top end, and whether the size effect is real.
 4. **Cost per breach.** An ordinary breach cost by type, and a compromise cost. No separate "big breach" cluster beyond this (F7). STATUS: not yet fitted. Open: the top end above about £100k and how cost scales with firm size.
 5. **Clean-up of attacks that didn't breach.** Small costs; the yearly total is unobserved (only the worst incident is priced). STATUS: open; the old range is assumption-driven.
@@ -670,3 +670,4 @@ Mixture fit on all 53 broad breached firms with an inside type: a share e are sp
 - **Raw marked spread firms (n = 34), band midpoints:** weighted mean £57k; one Micro firm at £100k–500k carries 60% of it, and the mean is £25k without it. None above £500k.
 - **Number of inside types:** with 2+ inside types, a much larger share is spread (e 0.82 vs 0.36 for 1 type). The cost given spread is similar (median £15k vs £13k). The £100k+ firms are mostly in the 1-type group. So in this fit, more inside types mainly raise the chance that a broad breach is a spread one, not the cost of a spread breach.
 - **Reading:** the bulk of spread costs is well pinned (about £5k–20k). The mean (£15k–60k) depends on the top band, i.e. on the tail question, which this data can't settle.
+- **DECISION (user, 2026-10-07):** drop the inside-count effect on spread cost. Spread breaches get one cost distribution. The number of inside types stays only as the footprint (how many extra ticks a spread breach adds, F24). Replaces the earlier decision after F22.
