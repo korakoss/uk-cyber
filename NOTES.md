@@ -661,3 +661,12 @@ Spread marker as F23 (breached, 4+ types, inside type, >= £5k). 244 breached fi
 - **How far it spreads.** Inside types among spread firms: 1: 58%, 2: 35%, 3+: 8% (mean 1.5); broad cheap firms: 1: 90%, 2: 7%, 3+: 4% (mean 1.1). Medium+Large spread firms reach more (mean 1.9, n = 23) than Micro/Small (about 1.5, n = 11).
 - **Spread firms do NOT tick more types in total** (mean 5.1 vs 5.0 for broad cheap). They tick more inside types and fewer others.
 - **The extra inside type is mostly bank hacking:** spread 69% vs broad cheap 35%; ransomware 57% vs 61%, outsider 13% vs 10%, staff 12% vs 8%. So "more inside types" and "bank hacking" are tangled again here (see F22 decision): they can't be separated with this data.
+
+### F25. Cost of spread breaches, fitted without the £5k cutoff (`src/estimation/spread_cost_fit.py`, 2026-10-07)
+Mixture fit on all 53 broad breached firms with an inside type: a share e are spread breaches (lognormal cost), the rest ordinary (cost like a reference group of narrow breached firms). Small n; wide intervals.
+- **The spread share depends on the reference group:** e = 0.49 [0.34–0.92] with narrow inside-type breaches as reference, 0.67 [0.41–1.00] with all narrow breaches.
+- **The typical spread breach costs about £14k** (median £13.9k–14.2k in both fits).
+- **The lognormal shape fits badly.** Marked spread firms pile up in £10k–20k (14 of 34 firms, 56% of weight), yet 4 firms sit at £100k–500k. A lognormal can't do both: one fit goes narrow (mean £15k, misses the top), the other goes wide (mean £28k).
+- **Raw marked spread firms (n = 34), band midpoints:** weighted mean £57k; one Micro firm at £100k–500k carries 60% of it, and the mean is £25k without it. None above £500k.
+- **Number of inside types:** with 2+ inside types, a much larger share is spread (e 0.82 vs 0.36 for 1 type). The cost given spread is similar (median £15k vs £13k). The £100k+ firms are mostly in the 1-type group. So in this fit, more inside types mainly raise the chance that a broad breach is a spread one, not the cost of a spread breach.
+- **Reading:** the bulk of spread costs is well pinned (about £5k–20k). The mean (£15k–60k) depends on the top band, i.e. on the tail question, which this data can't settle.
