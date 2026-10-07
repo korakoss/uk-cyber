@@ -572,3 +572,28 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   - The range of variation the band distributions allow gives the interval to carry to the national estimate.
   - Known so far: cost doesn't rise with attack frequency at fixed breadth (F5), and heavily phished firms are breached more but cheaper (F18/F19). Both hint that extra breaches in heavily exposed firms are cheap, or rare.
   - Limit: the largest of a few draws moves slowly, so this may only give a wide bound.
+
+### F21. Repeats bounded from cost distributions: extra cost from repeat breaches roughly +1% to +15% (`src/estimation/breach_counts_from_costs.py`, 2026-10-07)
+- **Method.**
+  - Single-breach cost distribution G = worst-cost bands of breached firms attacked ONCE (n = 85; one attack, one breach). G: none 18%, <£100 11%, £100–500 24%, £500–1k 10%, £1–5k 27%, £5k+ 10%.
+  - Breach counts are negative binomial with shape k (k = infinity is plain Poisson; small k = firms differ a lot, more repeats). The mean is set so that P(N ≥ 1) matches each group's breached share.
+  - Predicted worst = largest of N draws from G. Compared with observed worst bands of breached firms in groups that should have more breaches. Weighted log-likelihood across k.
+- **Results** (log-likelihood relative to the best k; a drop of about 2 or more counts against):
+
+  | Group (breached share, n breached) | Poisson: mean N / extra cost | Lowest k not ruled out | Extra cost there |
+  |---|---|---|---|
+  | attacked less than monthly to monthly (18%, 109) | 1.10 / +1% | about 0.5 (k = 0.2: -5.5) | +4% |
+  | attacked weekly or more (14%, 50) | 1.08 / +1% | about 0.1 | +17% |
+  | phishing count 2–20 (24%, 73) | 1.14 / +2% | best at k = 0.2 (Poisson -6.2) | +17% |
+  | phishing count over 20 (40%, 46) | 1.28 / +3% | about 0.5 (k = 0.2: -9.5) | +13% |
+
+  k = 0.1 or below is ruled out in 3 of 4 groups (extra cost +25% to +70%).
+- **Reading:**
+  - Plain Poisson implies few repeats (1.1–1.3 breaches per breached firm) and adds about 1–3% to breach cost.
+  - The cost distributions allow at most moderate firm-to-firm variation, which adds up to about +15%.
+  - Working interval for the repeat add-on: about +1% to +15% of breach cost.
+- **Caveats:**
+  - The phishing 2–20 group "prefers" more repeats only because its worst costs are higher (26% vs 11% at £5k or more). That is more likely the costly-compromise concentration at moderate volume (F19) than repeats. The same confound could inflate the upper bound generally.
+  - G is assumed the same everywhere. Heavy-volume firms' extra breaches seem cheaper (F19), so G-like repeats are the costly case.
+  - G rests on 85 firms. Phishing-count groups can include once-attacked firms. Small groups. Sizes are pooled.
+  - Bounds repeats that cost like G; much cheaper repeats are not bounded but add little.
