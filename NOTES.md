@@ -608,3 +608,12 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
   2. Leftover firm-to-firm variation beyond that, which the survey can't see, as an interval: plain Poisson up to the F21 bound. Simplest form: a multiplier of about 1.01–1.15 on breach costs.
   3. A rare repeat-prone tail (e.g. 1 in 1,000 firms with many breaches) as a stated sensitivity scenario. It is invisible in the sample, so it is assumed, not estimated.
 - **DECISION (user, 2026-10-07):** breach counts are Poisson per firm, with the rate from size and exposure, as long as nothing in the data contradicts it, and nothing does (F21: Poisson fits within noise). No rare repeat-prone tail: there is no evidence for one, so it is dropped (options 2–3 above withdrawn as defaults). The interval comes from uncertainty in the rates themselves. The F21 bound on extra firm-to-firm variation (up to about +15%) is kept only as a note, not built in.
+
+## Model status (2026-10-07)
+Per firm-year:
+1. **Which attack types reach the firm.** Depends on size and one shared exposure level (F3: a quiet majority, a middle group and a small heavily attacked group; or a smooth scale). The volume source and the breachy source target firms roughly independently given these (F19). STATUS: structure agreed; not refitted in the fresh work (old fits exist).
+2. **Breaches.** Poisson count per firm, rate from size and exposure (DECIDED 2026-10-07). STATUS: open how the rate is built. Per-type chances (F13) exist, but "inside" ticks are partly the footprint of a breach, so breaches should be generated from the entry types.
+3. **Escalation.** Each breach may spread into a compromise: extra inside-type ticks, many consequences, a costly cost distribution (F15, F16, F18). AGREED in principle. STATUS: open what the escalation chance depends on (not outside attack volume; size and breadth untested).
+4. **Cost per breach.** An ordinary breach cost by type, and a compromise cost. No separate "big breach" cluster beyond this (F7). STATUS: not yet fitted. Open: the top end above about £100k and how cost scales with firm size.
+5. **Clean-up of attacks that didn't breach.** Small costs; the yearly total is unobserved (only the worst incident is priced). STATUS: open; the old range is assumption-driven.
+6. **Yearly cost** = breach costs + clean-up; national = scaled by ONS business counts per size band. Firms that skipped the cost questions: old estimate about +5%.
