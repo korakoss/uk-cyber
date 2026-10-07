@@ -564,3 +564,11 @@ Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, b
 - **What is known about repeat breaches and the worst cost (status 2026-10-07):**
   - "The worst cost is too stable for repeated iid draws" is established for ATTACKS: the worst cost doesn't rise with attack frequency (F1, F5).
   - For BREACHES the old work (2026-10-02) found the repeat rate weakly identified; nothing clearly contradicts Poisson repeats. Hints both ways: firms with several ransom demands are cheaper (handled attempts); several phishing successes look like one bigger event; no dose-response of cost with number of successes in broad firms.
+- **User steer (2026-10-07):** don't lean on the per-type "success" counts for breach counts; the concept overlaps too little with breach (F9). Reason primarily from cost distributions instead.
+- **Proposed way to use cost distributions (not run yet).**
+  - The worst incident is the largest of the year's breach costs. If some firms have more breaches, their worst cost shifts up and their "no cost" share falls by a predictable amount (largest of N draws).
+  - So, among breached firms, compare worst-cost distributions across groups whose expected breach count should differ, using measures a breach cannot create: phishing volume, DoS, overall frequency, size.
+  - Compare with what largest-of-N predicts under Poisson, from no firm-to-firm variation up to strong variation.
+  - The range of variation the band distributions allow gives the interval to carry to the national estimate.
+  - Known so far: cost doesn't rise with attack frequency at fixed breadth (F5), and heavily phished firms are breached more but cheaper (F18/F19). Both hint that extra breaches in heavily exposed firms are cheap, or rare.
+  - Limit: the largest of a few draws moves slowly, so this may only give a wide bound.
