@@ -860,3 +860,10 @@ Ordinary breach = breached and not (4+ types with an inside type); n = 191. Mean
 - Not breached (handling): clear rise. Mean £161 / £335 / £636 / £887 (Micro / Small / Medium / Large); no cost 66 / 60 / 56 / 47%.
 - Ordinary breach: Micro lower, then flat. Mean £1.4k / £3.9k / £3.6k / £3.5k; £5k+ 5 / 16 / 9 / 20%. Same pattern within phishing/impersonation-entry breaches (£1.7k / £3.4k / £2.7k / £3.8k).
 - Spread: no trend (median £10k–20k at every size; means £13k–34k, noisy, n = 5–14).
+
+### F44. Re-run of the old factor analysis of the type flags (`src/estimation/factor_rerun.py`, 2026-10-08)
+All 2,179 businesses, survey weights, 11 types. Tetrachoric correlations (each flag as a cut-off continuous scale); eigenvalues; one-factor fit (pair r predicted as product of loadings) with leftover r per pair; clustering.
+- **Reproduces the old result.** Pooled: correlations 0.2–0.74, mostly 0.4–0.65. Eigenvalues 5.91, 1.09, 0.91, ... (first = 53%). First eigenvector near-equal across types (0.24–0.35). Micro: 5.47, 1.47, 1.07 (48%). Small+: 6.66, 0.96, 0.85 (60%).
+- **One-factor loadings similar:** 0.54 (other) to 0.85 (eavesdropping), most 0.66–0.76 pooled.
+- **Leftovers:** mean |leftover r| 0.08 pooled, 0.11 Micro, 0.06 Small+. The largest rest on 0–12 firms (eavesdropping, staff/outsider access; Micro cells with 0–5 firms), so unreliable. Leftovers on decent counts: phishing+impersonation +0.19 in Small+ (372 firms; the double tick); phishing+ransomware +0.14 pooled (75); phishing+bank hacking -0.13 (61).
+- **Second dimension:** eigenvalue about 1 pooled and Small+ (noise level); Micro 1.47, contrasting the access types/eavesdropping (cells of 0–5 firms) with phishing/malware/ransomware. Not trustworthy given the cell sizes.
