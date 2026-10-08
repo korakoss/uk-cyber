@@ -1,936 +1,869 @@
 # Project Notes
 
-> **See `docs/technical_summary.md`** for a standalone technical executive summary (how the simulation works, where each component's values come from, the bridge dead-ends, and the robustness/sensitivity arguments). This file remains the detailed running record.
-
-## Handoff (as of 2026-07-14 — supersedes the 2026-07-07 handoff below, kept for history)
-
-**What this session did**: resolved the non-phishing bridge problem that the 2026-07-07 handoff left open. Started with 4 types solved via censored-MLE fits (Malware, DoS, Hacking, Takeover) and 2 fully stuck (Ransomware, Impersonation — every attempted model degenerate or contradictory). Ended with all 7 types having either a validated model or a defensible estimate.
-
-**Per-type bridge status, weighted £/business (the population-representative figures):**
-
-| Type | Figure | Status |
-|---|---|---|
-| Phishing | £102.21 | Solid (validated mixture model) |
-| Other malware | £160.33 | Solid (censored MLE) |
-| Hacking (broad) | £244.09 | Solid (censored MLE) |
-| Denial of service | £52.25 | Solid weighted (unweighted refit degenerate — don't use that column) |
-| Website/takeover | £201.05 | Solid weighted (unweighted refit degenerate — don't use that column) |
-| Ransomware | £605.71 | Solid — passed a tail-plausibility check (outlier well-predicted by lognormal fit to the rest of the data) |
-| Impersonation | **£950–£1,900 (range, not point)** | Real progress but fragile — leave-one-out on its reference sample moves the estimate by 50%; present as a range in the final estimate, not a point figure |
-
-**Total across all 7: ~£3,274/business (Impersonation point estimate) or ~£2,316–£3,274/business (Impersonation range).**
-
-**How Ransomware and Impersonation got unstuck** (see "Follow-up (2026-07-13)" sections below for full detail): found a real, previously-unloaded per-attack count variable for Ransomware (`ranssoft_bands`) and a large "impersonation was the only thing that happened all year" clean subsample for Impersonation. Both let us isolate a subgroup where `damage_bands` IS the exact total (no bridging ambiguity), build an empirical per-attack cost distribution from it, and Monte-Carlo-simulate totals for the smaller multi-incident remainder — instead of forcing one smooth lognormal curve over all the evidence at once (which is what kept breaking). Caught and fixed a real bug along the way (simulated totals coming in below a firm's own observed worst-incident cost — logically impossible, fixed with an explicit floor). Stress-tested the result properly: outlier-vs-fitted-tail consistency checks (Ransomware passed, Impersonation didn't), and a leave-one-out check that quantified exactly how fragile Impersonation's figure is.
-
-**Update (2026-07-14, same day): `bridge_specification.py` integration done.** Ransomware added to `BEST_ESTIMATE_BRIDGE` as a solid 2.21x multiplier (on the naive/freq=1-anchored per-firm base); Impersonation added as a genuine range (`IMPERSONATION_BRIDGE_LOW=3.11`, `IMPERSONATION_BRIDGE_HIGH=6.25`, applied per-firm via `best_total_low`/`best_total_high` columns rather than a single `best_total`). Rerun results:
-- Coverage: 99.4% of attacked-firm weight now has a genuine best-estimate bridge (up from ~0% for non-phishing freq>1 firms before this session). Only the tiny untested "Any other" bucket (0.7 weight) still falls back to conservative.
-- (a) fully conservative: £904.02/business. (b) fully pessimistic: £116,914.89/business (dominated by K_IMPLIED on high-freq firms — a known artifact, see existing pessimistic-tier caveats). (c) current best available: **£1,841.89–£2,707.93/business**, with the entire width attributable to Impersonation's range (every other resolved type is a point estimate).
-- `censored_bounds_only.py` (also new this session): a model-free companion check computing hard floor/naive figures directly from the censored records with zero distributional assumptions — confirms Impersonation's difficulty is a genuine data-coverage gap (55.8% of its weight is unresolved lower-censored, vs. 8.1% for Ransomware, and it has zero exact cost observations at all), not something more modeling effort would fix.
-
-**Update (2026-07-15): Steps 1 AND 6 done — we now have a national total.**
-- Step 1 (ONS business counts): `src/estimation/ons_business_counts.py`. Employer-frame N(size): Micro 1,150,875 / Small 220,085 / Medium 38,435 / Large 8,335.
-- Step 6 (national simulation): `src/estimation/national_simulation.py`. **Headline (corrected 2026-07-15): ≈£2.2bn/yr (type-based mean; median £2.1bn, 90% interval ~£0.8–4.4bn).** The freq-based variant gives ~£1.0bn — they DIVERGE 2.3x (not the "0.99x agreement" first reported; see correction below). Engine: bootstrap the survey (resample firms within size band, weighted) → per-size cost/business samples → emitted into Squiggle `.squiggle` files in `src/estimation/build/` → run headless via the squiggle-lang CLI, which scales by N(size) and sums. Python computes the same as a cross-check.
-- **CORRECTION (2026-07-15): the top cost band was being treated as open-ended.** `damage_bands`=10 is **£100k–£500k per the CSBS codebook** (bands 11/12/13 up to £5m+ exist and NO firm selected them). national_simulation.py originally used band-10 bounds (100k, ∞), inflating the total ~28% (£3.1bn→£2.2bn) and — critically — making the type/freq methods spuriously agree (the inflated shared tail drowned out their differing bridges). With band 10 bounded at (100k, 500k), the methods diverge 2.3x, revealing the bridge decomposition as a MAJOR lever. Type-based (validated per-type multipliers) is preferred; freq-based (flat 1.02 bridge on all types) is a lower variant. This aligns national_simulation with the rest of the project, which always used band-10 midpoint £300k.
-- Two modeling calls worth remembering (both forced by heavy tails): (a) cost per firm uses the lognormal's *analytic within-band conditional mean* (incl. a finite £100k+ tail mean), NOT a single point draw — a single uncapped draw made the replicate mean explode; (b) sparse `(size,freq)` cost cells (esp. all Large cells) fall back to the well-populated per-size lognormal shape when n_nonzero<20 or fitted σ>3.5, because sparse-cell σ is garbage and the open-tail mean is hyper-sensitive to it.
-- Tooling note: the squiggle-lang CLI (v0.10.0, `@quri/squiggle-lang`, needs `date-fns` added manually — undeclared dep) was installed into the session scratchpad `sqtool/`; the script auto-discovers it. If scratchpad is wiped, reinstall with `npm install @quri/squiggle-lang date-fns` and re-point. Squiggle gotchas found: variable names must be lowercase-initial; `SampleSet.fromList` needs ≥~10 samples.
-
-**What's NOT done yet:**
-1. Charities untouched — business-side only.
-2. Possible refinement: propagate uncertainty in the fitted lognormal *shapes* themselves (currently μ,σ held fixed across bootstrap; dominant uncertainties — prevalence, band mix, Impersonation bridge — ARE captured). Also the freq-based bridge m(freq) is a flat 1.02 for freq>1 (phishing-validated); could be refined per-freq.
-4. A data-quality wrinkle flagged but not fixed: `proc.py`'s `TYPE_COLNAMES` includes `type9/10/11/12`, which are actually Q53A meta-response codes ("any other"/"don't know"/"none"/"refused"), not real attack-type flags — may have subtly inflated "n_types" counts in a couple of earlier scripts (`type_specific_bridge.py`, `impersonation_investigation.py`).
-
-**Recommended next step**: switch tracks to Step 1 (ONS business counts) or the Squiggle simulation build — both pure forward progress not yet touched. The bridge-specification thread is now closed out.
-
----
-
-## Handoff (as of 2026-07-07, updated same day)
-
-**What the last session did:** Two threads. (1) Step 3 exploratory pass — examined P(freq|size), found Large firms have a genuinely different frequency profile than Micro/Small/Medium. (2) A deep validation pass on the phishing mixture model (F_T/F_M), using real per-attack count variables (`phishcon_bands`, `phisheng_bands`) discovered mid-session and now loaded via `proc.py`.
-
-**This session added:** a further dig into the freq=6 anomaly (see item 2 below and the dated follow-up under "Freq=6 anomaly investigated"). Also produced `HANDOFF.md` — a comprehensive, non-code-oriented synthesis of all findings for handing the analytical narrative to a paper-writing collaborator or another instance without needing to re-derive from scripts/NOTES.
-
-**Results, most to least important:**
-1. **The phishing mixture model survived independent validation.** Regrouping the SVD rank-2 test by real engagement counts instead of freq band reproduces almost the same targeted (F_T) component and gives clean, monotonic mixing weights — strong evidence the targeted/mass-market structure is real, not an SVD artifact. Not yet wired into `mixture_bridge.py` (still uses freq-based weights).
-2. **The freq=6 bridge anomaly: confirmed real, then its mechanism dug into further and found to be mixed, not resolved.** It's confirmed real (survives raw-data, weight, and outlier checks; replicates across 3 analyses). First engagement-based check suggested the targeted-attack mechanism didn't apply (engagement not elevated). Follow-up found the *targeted-rate* variable (`phishcon_bands`) IS elevated at freq=6 and a strong cost predictor there — but 2 of the 3 extreme-cost outliers driving the tail are multi-vector incidents (phishing plus other attack types), not pure phishing. So the anomaly is real but reflects a blend of mechanisms, not one clean story — still the single highest-leverage open item determining whether the phishing bridge is ~1.02 or higher. See `src/estimation/freq6_anomaly.py`.
-3. **Step 3 pooling decision is still open**: Micro/Small/Medium share one freq distribution (statistically indistinguishable); Large is distinct (p=0.014). Not yet decided how to structure this for sampling.
-
-**Recommended next step:** the freq=6 subgroup (item 2) is very unlikely to resolve further with more analysis of this same n=47 (n=3 for the outliers specifically) — treat it pragmatically (a bounded sensitivity range around the bridge multiplier) rather than continuing to chase it, and switch to a more tractable item: the Step 3 pooling decision, or starting the ONS business-count fetch (Step 1), both of which are pure forward progress toward the Squiggle simulation. If instead the priority is deepening the phishing bridge work, the natural next move is promoting the engagement-based mixing weights into `mixture_bridge.py`'s actual multiplier calculation.
-
-**Full list of open decisions:** see "Open Decisions (quick reference)" below. **Full technical detail:** see the dated subsections under Mixture Model Test and Freq Distribution by Size.
-
-**Orientation:** all scripts run via `source .venv/bin/activate && python3 <path>` from project root; data via `proc.get_business_data()`. Read this whole file before diving in — it's the authoritative record, not a summary of it.
-
----
-
-## Goal
-
-Produce a synthetic estimate of **total annual cybercrime costs across all UK businesses**. Charities are not the primary target but the charity dataset may be used as supporting evidence for modeling assumptions shared with the business side.
-
----
-
-## Core Findings (high-level summary)
-
-These are the central empirical and modeling conclusions. Details and scripts are in the sections below.
-
-**1. i.i.d. bridge model is rejected.**
-The survey records cost of the single most disruptive attack, not total annual cost. The natural bridge (recover per-attack distribution from observed maxima via order statistics) requires E[cost] to increase with attack frequency. It does not — the relationship is reversed in all 4 size bands, and within every individual attack type. The negative freq–cost correlation is a genuine feature of the data, not a compositional artefact.
-
-**Correction/refinement (2026-07-09):** the original "mean damage_band declines with freq" and "P(damage≥high band) declines with freq" statistics (`attack_type_breakdown.py`) are computed *unconditionally* — the denominator includes "no cost" (damage_bands=1) firms, so a rising no-cost share mechanically drags those statistics down on its own. Decomposed this in `consistency_checks.py` (new section, "DECOMPOSITION"): separated the no-cost share (which does climb cleanly with freq: 38.5%→58.7% pooled) from the mean cost *conditional on having any cost at all* (which does NOT show a clean decline — it's noisy/flat, e.g. 3.68→3.47→3.76→3.36→4.22 pooled; similar for phishing alone). So "costly incidents get less costly as frequency rises" is not well-supported once you strip out the no-cost-share effect — that part of the original claim was overstated. What remains solid: (a) a majority of frequently-attacked firms have literally zero cost across everything that happened that year (near-tautological, since a zero maximum requires every incident to be zero), and (b) among the minority with a nonzero year, the severity of that worst incident doesn't get systematically cheaper with frequency (roughly flat, not declining). This is actually a cleaner basis for "extra attacks are mostly free" than the original framing — a uniform whole-distribution downshift would have predicted the conditional mean to *also* decline with frequency, and it doesn't. Still cannot directly verify what the non-maximal incidents look like for a firm that DID have a costly year — that remains an assumption, not a measured fact, especially for non-phishing types where no independent validation (like phishing's engagement/targeting data) exists. Also confirmed via re-run: the freq-cost anticorrelation holds in all 4 size bands individually (not just Large) — Large firms differ only in their freq *distribution shape* (Step 3 finding, a separate question), not in whether this anticorrelation applies to them specifically.
-
-**2. For phishing, a 2-component mixture model is well-supported.**
-Phishing is the most common attack type (~57% of incidents by disrupta). Within each size band, the (freq group × cost band) distribution matrix has rank ≈ 2 (variance explained by 2 SVD components: Micro 99.6%, Small 99.0%, Medium 94.2%). The two extracted components are interpretable: F_T (targeted/spear-phishing — near-zero no-cost, extends to high bands) and F_M (mass-market spam — ~60% no-cost, concentrated in cheap bands). For impersonation, rank-2 holds but the two components are nearly identical — no real mixture signal. Other attack types untested.
-
-**3. freq=1 firms need no bridge.**
-~20% of attacked firms reported exactly one incident. For these, the reported damage_bands cost IS the total annual cost. They are a clean anchor with no modeling ambiguity.
-
-**4. Lognormal fits cost well within cells, but sigma is not stable.**
-A zero-inflated lognormal fits the banded cost distribution reasonably (chi-sq 1–11, df≈6) within individual (size, freq) cells. Both mu and sigma vary across cells (sigma range 1.3–3.8); a shared-shape model won't work. P(cost > £500k) is negligible in most cells (< 0.2%) — the open-ended top band is not a major source of uncertainty except for Large firms where data is too sparse.
-
-**5. Prevalence follows a logistic-in-log-size curve.**
-Fraction of businesses attacked: 40% (Micro) → 51% (Small) → 66% (Medium) → 69% (Large). A logistic regression in log(employees) fits the four points with RMSE 2.2%. Weighted and unweighted estimates are nearly identical. Within the four known strata, empirical proportions are sufficient; the parametric model adds nothing in practice.
-
-**6. Data quality note.**
-damage_bands contains a non-integer SPSS special code (999.62004) that must be filtered with `>= 100`, not exact value matching. Fixed in proc.py. Also: freq encodes periodicity bands (once/monthly/weekly/daily), not literal attack counts — analyses treating freq values as counts are invalid.
-
-**7. Phishing's mixture model survives an independent validation attempt, using real (not inferred) attack data.**
-Phishing is both the dominant attack type (~57% of incidents) and the *only* type with high-coverage per-attack count data: `phishcon_bands` (# targeted/personalised attacks, 76% coverage) and `phisheng_bands` (# attacks someone engaged with, 83% coverage) — other types have equivalent count variables but only 6-20% coverage, too sparse to use. Regrouping the SVD rank-2 test by real engagement counts (instead of freq band, which was the only grouping used originally) reproduces essentially the same F_T (targeted) component and gives a clean, monotonic mixing-weight curve (0% → 20% → 65% targeted as engagement rises) — freq-based mixing weights were noisy and non-monotonic. This is real evidence the 2-component structure isn't an SVD artifact. It does *not* resolve the single biggest open question driving bridge uncertainty — the freq=6 ("several times a day") targeted anomaly (n=47, see Open Questions #2) — which still swings the overall phishing bridge multiplier between ~1.02 and ~1.7. See the "Real per-attack count data" subsection under Mixture Model Test for full detail.
-
----
-
-## Open Decisions (quick reference)
-
-Consolidated list of things "on the table" — genuine open choices, not yet settled. Each links to fuller detail elsewhere in this file.
-
-1. **Freq=6 targeted anomaly (n=47)** — investigated and confirmed real (not noise/artefact), but the mixture model's targeted-attack mechanism doesn't match it (engagement isn't elevated there). Still highest-leverage open question: what's the correct bridge multiplier for this subgroup, given the ~7x type-T formula may not actually apply? See Open Questions #2, `freq6_anomaly.py`.
-2. **Step 3 pooling decision — DECIDED (2026-07-08):** pool Micro/Small/Medium into one empirical freq distribution (they're statistically indistinguishable, p=0.014 only Large differs); Large stays separate. Applies to the freq marginal only — cost distributions remain per (size, freq) cell, unpooled. See Freq Distribution by Size section.
-3. **Promote engagement-based grouping (`phisheng_bands`) into the bridge calculation** — `mixture_bridge.py` still uses freq-based π_f; the engagement-based mixing weights are cleaner (monotonic) but not yet integrated. See Mixture Model Test → "Real per-attack count data".
-4. **Scope of the mixture model — CLOSED (2026-07-08, re-confirmed 2026-07-09):** validated for phishing only (57% of incidents); attempted for ransomware/DoS/hacking/malware and found infeasible (each type has only 21-33 attacked firms, too few once split across 6 freq bands to run the rank-2 test at all — not a power issue fixable by threshold tuning). A later full inventory of the 12-category `disrupta` variable found one more testable type — website/social takeover (n=31) — that had been skipped by oversight; tested 2026-07-09 and found degenerate (technically passes rank-2 at 98.6% but F_T≈F_M, same failure mode as Impersonation), so the phishing-specific conclusion stands. Non-phishing bridge treatment will need a different approach (e.g. `bridge_multiplier.py`'s empirical multiplier, or conservative/pessimistic bounds only). See Open Questions #3.
-5. **ONS business counts by size** — external data fetch, not started; blocks Step 6 (simulation) entirely.
-6. **Minor/optional:** weighted variant of the mixture model (currently unweighted only); per-size-band mixture rerun using engagement instead of freq.
-
----
-
-## Does cyber damage scale with GDP share? (`gdp_scaling_test.py`, 2026-07-15) — NO
-
-Tested the "damages ∝ share of GDP" extrapolation premise, per sector and per size band. Damage share = survey-weighted type-based expected cost; economic-size share = GVA (sector, ≈GDP) / turnover (size, GDP proxy, from BPE).
-
-**Both cuts refute proportionality:**
-- **Sector:** corr(damage share, GVA share) = **0.30** (proportional ⇒ 1.0). Ratios span 0.02× (Education) to 7.0× (Info/comms). Info/comms takes **44.8% of all business cyber damage on 6.4% of GVA** — but this rests on just 2 top-band firms (tail-fragile). Finance 0.03× and Education 0.02× are artefactually low (finance turnover excluded / public-sector GVA confound). Even discounting the Info/comms tail, the relationship is weak.
-- **Size:** corr = **−0.58** — NEGATIVE. Damage share *falls* as turnover share rises. Micro 67.9% of damage on 13.7% of turnover (ratio 4.96×); Large 2.2% of damage on 52.6% of turnover (0.04×). GDP-proportional scaling isn't just wrong here, it's backwards — small firms bear wildly disproportionate cyber damage relative to economic size (per-firm damage is sublinear in size, turnover super-linear, so damage/turnover collapses with size).
-
-**Implication for the methodology:** a GDP-proportional bridge would massively over-attribute cyber damage to large/high-GVA entities and under-attribute to small ones. For cybercrime specifically it's a biased bridge; the bias is quantified and directional. **Caveats:** sector result is tail-fragile (Info/comms = 2 firms); turnover is a proxy (excludes finance); Education/Health GVA includes public provision outside the business survey; GVA section values partly apportioned from ONS 10-group data (documented in script). But the core signals — weak sector correlation, *negative* size correlation — are strong enough to survive these.
-
-**UPDATE (2026-07-17) — sector test rerun with REAL private-sector aGVA (TEST 1b in the same script).** Replaced the apportioned 10-group GVA with direct ONS **Annual Business Survey** section-level aGVA (2023, non-financial *business* economy — the same frame the CSBS measures). Source xlsx saved at `data/external/ons_abs_sections_a_to_s_2023.xlsx`. This fixes the two biggest caveats of the first cut: values are direct (not apportioned) and private-sector (no public-provision confound). **Conclusion is unchanged and if anything slightly firmer: corr(damage share, aGVA share) = 0.25** (was 0.30 on apportioned total GVA). Notable shifts from the cleaner frame: Education stays genuinely low (ratio 0.06, so its low damage was NOT just the public-sector confound — it's a real under-representation); Health *flips high* (1.03→2.91 — private health takes far more cyber damage than its private economic size); Info/comms drops 7.0×→4.2× (J aGVA larger on ABS) but is still the top private-sector outlier and still rests on 2 top-band firms. Two ABS-specific caveats: Finance/insurance (K) is out of frame (ABS = non-financial) so it's dropped from 1b; Agriculture has partial ABS coverage (aGVA £3.1bn vs ~£17.8bn total GVA) so its 12.4× ratio is an artefact and flagged. **Net: the GDP-proportional premise is refuted on the best available (direct, private-sector) sector data, not just on the apportioned proxy.**
-
----
-
-## Quantified upward sensitivities — the "inflator" case (`upward_sensitivity.py`, 2026-07-15)
-
-Baseline ~£2.2bn is built from deflationary choices, so reasonable-argument room is mostly upward. Quantified scenarios (deterministic, on the type-based baseline):
-- **Sole-trader frame:** include the 4.27M zero-employee businesses at 20–40% of Micro's ~£1,325/business → **+£1.1–2.3bn** (new total ~£3.4–4.5bn). Biggest clean lever; data can't refute.
-- **Missing catastrophic (>£500k) tail:** 0 firms reported >£500k, but 0/982-with-valid-band only bounds the population rate to ≲0.14% (rule-of-three) ≈ up to ~1,950 unseen firms. At 0.05–0.14% × £1–5M → **+£0.7–3.9bn**. Note this partly reclaims the ~£0.9bn the open-tail *correction* removed — truth is between "open tail" and "hard £500k cap". Same bound also caps it.
-- **Indirect:direct uplift ×1.3–1.5** → £2.9–3.4bn; ×2 aggressive.
-- **Bridges-to-high-end / prevalence:** small (~+£0.2–0.4bn / ~+£0.1bn).
-- **Combined fair-inflator stack** (indirect multiplies expanded base): central ~£7.0bn, aggressive ~£13bn. Stacking best-cases is the overreach point.
-- **Net honest range: ~£1.0bn (freq/flat bridge) to ~£7bn (fair central inflator)**, preferred ~£2.2bn at the low end. The two upward levers our data can't close (sole-trader frame, unobservable catastrophic tail) = the top-2 next steps. Hard limits an inflator must respect: >£500k rate ≲ rule-of-three bound; prevalence already 40–69%; phishing bridge ~1.02 validated (body well-pinned).
-
----
-
-## Body vs. tail: the total is DEPTH-driven (`body_vs_tail.py`, 2026-07-15)
-
-Decomposed the national total by observed worst-incident band. **~64% of the (corrected) £2.26bn comes from the top band (£100k–£500k), which holds only 8 firms in the whole sample** (2 Micro, 2 Small, 1 Medium, 3 Large); ~36% comes from the body of sub-£100k incidents. Most extreme for Micro: ~86% of its contribution is those 2 top-band firms scaled by weight × 1.15M. So "Micro dominates" is true but NOT because of breadth of small incidents — it's a few large Micro incidents extrapolated across the population. This corrects an earlier loose claim that the total was breadth-driven; it is the opposite. (Pre-correction, with the open top band, this was ~74% of £3.1bn — the open-tail bug both inflated the total and exaggerated the tail's dominance.) The top-band rate rests on 1–3 firms per size band (~60–100% relative sampling error), though the Micro tail firms carry ordinary weights (~1.5), not extreme-weight artifacts. Top-band tail model is the #1 sensitivity to run. See `tail_sample_diagnostics.py` for per-band sample sizes and the codebook band definitions.
-
----
-
-## National Simulation — methodology & choices (`national_simulation.py`, 2026-07-15)
-
-The final aggregation. Headline (corrected): **≈£2.2bn/yr type-based mean, median £2.1bn, 90% interval ~£0.8–4.4bn; freq-based variant ~£1.0bn.** (Pre-correction the open top band gave ~£3.1bn with a spurious type/freq agreement — see the Step-6 correction note above.) This section documents the nontrivial choices, what else was tried/considered, and what the alternatives would have done — so the number can be defended and revisited.
-
-**Overall structure.** For each size band s: bootstrap-resample the survey firms in s (weighted by survey weight, sample size = n_s), compute each resampled firm's total annual cost (0 if not attacked), average to a cost-per-business for s. Repeat B=500 times → a bootstrap distribution of cost-per-business per band. Squiggle then multiplies each by the fixed ONS N(s) and sums → distribution of the national total. Prevalence enters implicitly (non-attacked firms contribute 0, so the band mean already blends prevalence × conditional cost).
-
-**Two decompositions run in parallel (cross-check, not either/or).** Both convert the survey's *single-worst-incident* cost (`damage_bands`) into a firm's *total annual* cost via a bridge multiplier, but slice the multiplier differently:
-- *Type-based:* bridge indexed by attack type (`disrupta`) — this session's per-type multipliers (Ransomware 2.21×, Impersonation 3.11–6.25× drawn per replicate, Malware 1.93×, DoS 0.36×, Hacking 1.01×, Takeover 5.50×, Phishing 1.02×; freq=1 → 1.0 exactly; unresolved/minor types → 1.0).
-- *Freq-based:* bridge = m(freq), flat 1.02 for freq>1 and 1.0 for freq=1 (the mixture-model-validated phishing figure, used as the project's representative freq-based best estimate).
-- (Note: the two also differ in the *cost-shape* stratification — type-based draws the incident cost from a per-SIZE lognormal, freq-based from a per-(SIZE,FREQ) cell with sparse-cell fallback. But the bridge is the dominant driver of the 2.3× gap: type-based applies large validated multipliers where freq-based flattens everything to 1.02.)
-- They **diverge 2.3×** (type-based ~£2.2bn vs freq-based ~£1.0bn) once the top band is correctly bounded — the bridge decomposition is a major lever. (The initially-reported "0.99× agreement" was an artifact of the open-top-band error inflating the shared tail until it swamped the bridge difference.) Type-based is preferred (validated per-type multipliers); freq-based flat-1.02-on-all-types is a lower variant.
-
-**CHOICE 1 — within-band cost: analytic lognormal conditional mean (chosen) vs. single point draw (tried, rejected) vs. band midpoint (considered).**
-- *Midpoint (simplest):* assign each band its fixed midpoint (top band a capped value). Rejected because it truncates the tail — and the tail is exactly what dominates a total-cost estimate. Would understate the total and, worse, hide the tail uncertainty entirely.
-- *Single point draw from the fitted lognormal, conditioned on the band, top band uncapped (first implementation):* faithful to "draw a continuous value," but catastrophically unstable — with σ≈2.8 and an open £100k+ tail, one firm drawing far into the tail dominated an entire replicate's mean. Produced nonsense (freq-based national mean of £1,733bn on the first run, £64,459bn after a partial fix) while the *median* stayed sane (~£2.5bn). Diagnosis: the per-replicate mean over a small number of Large firms is a heavy-tailed estimator; a single draw per firm is pure lottery noise, not real uncertainty.
-- *Analytic within-band conditional mean E[X | L≤X<U] under the fitted lognormal (chosen):* uses the lognormal's own shape to place the cost within each band exactly, including a *finite* conditional mean E[X | X≥£100k] for the open top band. Removes the single-draw lottery while still being "lognormal within-band interpolation" and still letting the fitted tail set how heavy the top-band contribution is. Remaining uncertainty comes from band-mix resampling (how many firms land in the top band) + the Impersonation bridge draw — i.e. genuine parameter/sampling uncertainty, not draw noise.
-- *Note on the user's "no cap, follow the fitted tail" instruction:* honored in spirit — the top band uses the untruncated lognormal conditional mean (finite because a lognormal has finite mean), NOT a hard cap. What we did NOT do is let a single sample wander to arbitrarily large values. An explicit tail cap or a Pareto-tail alternative remains available if a different tail model is preferred.
-
-**CHOICE 2 — sparse (size,freq) cost cells: fall back to per-size pooled shape (chosen) vs. use the raw cell fit (rejected).** The freq-based model wants a lognormal per (size,freq) cell, but many cells — *all* Large cells especially — are too thin to fit σ reliably, and the open-tail conditional mean is hyper-sensitive to σ (a garbage σ≈5 makes E[X|X>100k] astronomically large; this is what produced the £7.7bn/business Large figure mid-development). Chosen rule: trust a cell's own fit only if it has ≥20 non-zero-cost obs AND fitted σ≤3.5; otherwise use the well-populated per-size pooled shape. Result: 11/24 cells use their own shape, the rest fall back. Consistent with the earlier project finding (freq_distribution.py) that sparse (size,freq) cells are unsafe to use directly. Alternative not taken: a hierarchical/shrinkage fit that partially pools σ toward the size-level estimate — cleaner in principle, more machinery; the hard fallback is a pragmatic stand-in.
-
-**CHOICE 3 — fitted shapes held fixed across the bootstrap (simplification, flagged).** μ,σ are estimated once on the full data and held constant across replicates; the bootstrap varies firm composition, not the fitted shape. So *parameter uncertainty in μ,σ themselves is not propagated*. Judged acceptable because the dominant uncertainties — prevalence, band mix (esp. top-band membership, only 8 firms), and the Impersonation bridge — ARE captured by resampling. Refitting per replicate was rejected for the sparse cells (unstable) and would be the natural refinement if tighter uncertainty accounting is wanted (would widen intervals somewhat, especially via σ on the top band).
-
-**CHOICE 4 — N(size) frame: ONS employer businesses (1+ employees), excluding the 4.27M zero-employee businesses.** See `ons_business_counts.py` — the survey's Micro band is 1–9 employees, so zero-employee sole traders are out of frame. Including them would require assuming the 1–9 prevalence/cost figures extend to sole traders, which they almost certainly don't. This is a *large* lever on the headline (see sensitivity notes) and a deliberate, documented scope choice.
-
-**CHOICE 5 — bootstrap B=500, weighted resampling.** Weighted bootstrap (sample firms ∝ survey weight) approximates the sampling distribution of the weighted mean. B=500 is enough for stable 5th/50th/95th percentiles here; not a sensitive knob.
-
-**Engine.** Squiggle-lang CLI (v0.10.0) run headless via `tools/squiggle/run.sh`. Generated models live in `src/estimation/build/*.squiggle` (per-size bootstrap samples × N(size)). Python reproduces the same aggregation as an independent cross-check (matches Squiggle to ~2 s.f.). Squiggle gotchas: lowercase-initial variable names only; `SampleSet.fromList` needs ≥~10 samples; the published CLI needs `date-fns` added manually.
-
----
-
-## Estimation Pipeline — Current Status
-
-**Formula:** Total annual UK cybercrime cost = Σ_size N(size) × P(attacked|size) × E[total annual cost | attacked, size]
-
-| Step | What | Status |
-|------|------|--------|
-| 1 | N(size): UK business count per size band | **Done** (`src/estimation/ons_business_counts.py`, 2026-07-15). ONS BPE 2025, employer frame (1+ employees, matches survey's Micro=1-9 band): Micro 1,150,875 / Small 220,085 / Medium 38,435 / Large 8,335 (= 1,417,730 employers). Excludes 4.27M zero-employee businesses (outside survey frame). |
-| 2 | P(attacked\|size): prevalence | **Done.** Micro 40%, Small 51%, Medium 66%, Large 69%. Use empirical values directly. |
-| 3 | P(freq\|size, attacked): freq distribution by size | **Decided.** Pool Micro/Small/Medium into one shared empirical freq distribution; Large kept separate. Cost distribution (Step 4) stays per (size, freq) cell, not affected by this pooling. Large's own thin ~daily cell (n=6) still unresolved. |
-| 4 | P(damage_bands\|freq, size): cost distribution | **Analysis done.** Lognormal fits well within cells; per-cell (mu, sigma). Handles within-band interpolation and top-band tail. |
-| 5 | Bridge: damage_bands → total annual cost | **Done for phishing.** Bridge ≈ 1.02 for type M (~95% of firms); close to 1 for type T at low freq. Conservative lower bound (total = max) quantitatively supported. |
-| 6 | Squiggle simulation and aggregation | **Done** (`src/estimation/national_simulation.py`, 2026-07-15). Bootstrap → per-size cost/business → Squiggle CLI (headless) scales by N(size). **Result (corrected): ~£2.2bn/yr type-based mean, ~£2.1bn median, 90% interval ~£0.8–4.4bn; freq-based ~£1.0bn (methods diverge 2.3x — bridge choice is a major lever).** |
-
----
-
-## Estimation Approach (high-level, agreed)
-
-### Decomposition
-Estimate per stratum (business size band):
-1. **Prevalence** — fraction of businesses attacked (empirical weighted proportions per stratum)
-2. **Frequency × Cost (joint)** — conditional on being attacked, sample (freq, cost_band) pairs from the *joint* empirical distribution per stratum (not independently, since freq and cost are correlated — confirmed by prior analysis)
-
-### Multiple estimates in parallel
-- **Conservative (lower bound):** minimal assumptions, mostly empirical; count only the largest attack per entity (ignoring freq−1 other attacks); use band lower bounds or midpoints for within-band cost
-- **Pessimistic (upper bound):** treat the observed cost (which is actually the maximum attack) as if it were the typical attack cost, then multiply by freq — this overestimates by construction
-- **Best estimate:** sample from the empirical joint (freq, damage_bands) per size stratum; convert damage_bands to £ via lognormal within-band interpolation; apply bridge multiplier ≈ 1.02 (validated by mixture model for phishing). The order-statistics bridge was explored and rejected — see Bridge Formalisation section.
-
-### Weighted vs. unweighted
-Every analysis should be run in two variants: one using the survey's statistical adjustment weights, one on raw unweighted rates. Divergence between variants is itself informative.
-
-### Monte Carlo / Squiggle
-The final simulation stage will use **Squiggle** (natively Monte Carlo). Python handles data analysis and fitting; Squiggle handles the simulation and produces distributional estimates (not point estimates).
-
----
-
-## Data variables (key findings from codebook)
-
-### damage_bands — primary cost variable (89% coverage among attacked)
-"Estimate of the total cost for the **most disruptive** cyber security incident in the last 12 months." Band labels:
-- 1 = No cost incurred
-- 2 = <£100
-- 3 = £100–£500
-- 4 = £500–£1,000
-- 5 = £1,000–£5,000
-- 6 = £5,000–£10,000
-- 7 = £10,000–£20,000
-- 8 = £20,000–£50,000
-- 9 = £50,000–£100,000
-- 10 = £100,000–£500,000
-- (11 = £500,000+, presumed)
-
-Special codes: 997=Don't know, 999=Refused, plus a non-integer variant (999.62004) from SPSS — filter with `damage_bands >= 100`, not exact isin.
-
-### crimecost_bands / notfraudcost_bands — total annual cost (very sparse)
-- `crimecost_bands`: "Total cost of all crimes (including fraud)" — total annual cost per firm. Only 14.8% coverage (163/1101 attacked businesses). Too sparse to use as primary variable.
-- `notfraudcost_bands`: "Total cost of all cyber crimes other than fraud." 10.3% coverage.
-- These ~163 firms with valid `crimecost_bands` can be used to **calibrate / validate the bridge** by comparing total cost vs. single-incident cost directly.
-
-### Attack type variables
-- `type1`–`type16` (binary, Q53A): which attack types occurred (ransomware, malware, DoS, hacking, phishing, impersonation, unauthorised access, etc.)
-- Type-specific total cost variables in COST_COLNAMES: `ranscost_bands`, `hackcost_bands`, `doscost_bands`, `viruscost_bands`, `fraudcost_bands` — these are total annual costs per attack type (not just largest attack)
-- `freq` (Q54): attack frequency band — 1=once only, 2=>once but <monthly, 3=~monthly, 4=~weekly, 5=~daily, 6=several times/day
-
----
-
-## Key Modeling Challenges
-
-### Cost band problem
-The cost variable is categorical (bands). Two sub-issues:
-- **Interior bands:** within-band distribution assumption is unavoidable. Candidates: uniform (simple baseline), lognormal (theory-motivated, must be validated by checking predicted vs. observed band proportions). Run both as sensitivity variants.
-- **Top open-ended band:** requires a tail assumption (Pareto or lognormal extrapolation). High stakes because large events dominate total cost estimates.
-
-### Bridge problem (most important)
-The survey records the cost of the **single largest attack**, not all attacks. To get total annual cost we need to recover the underlying attack cost distribution F from observed maxima.
-
-**What `freq` actually encodes (from codebook, Q54):**
-- 1 = Once only
-- 2 = More than once but less than once a month (~2–11 attacks/year)
-- 3 = Roughly once a month (~12/year)
-- 4 = Roughly once a week (~52/year)
-- 5 = Roughly once a day (~365/year)
-- 6 = Several times a day (~1000+/year)
-
-These are periodicity bands, not counts. This has two implications:
-1. For freq=1 ("once only"): no bridge needed — one attack occurred, its cost is the total. This is a large clean subgroup (215 firms) where reported cost = total annual cost directly.
-2. For freq≥2: the implied attack count k is itself uncertain (especially band 2, which spans 2–11). Converting band to count is a modeling step with its own uncertainty.
-
-**Consistency checks run (src/estimation/consistency_checks.py):**
-- *Monotonicity:* computed E[D | K=k] per size stratum and checked non-decrease in k. Violated in all four size bands — freq=1 firms consistently report higher mean cost bands than freq=2 firms, opposite of what i.i.d. predicts.
-- *Chi-square GOF:* DISCARDED — was incorrectly treating freq band values as literal attack counts k and computing F(b)^k. Invalid given what freq actually encodes.
-
-**Substantive interpretation of monotonicity failure:** Firms attacked more frequently tend to face cheaper attacks — consistent with a "many nuisance attacks vs. single targeted attack" pattern (e.g., phishing vs. ransomware). This means the i.i.d. assumption likely fails: the underlying cost distribution F depends on frequency, not just size. The bridge approach needs rethinking.
-
-**Data note:** `damage_bands` has a non-integer special code 999.62004 that was not caught by the original integer filter (997, 999). Fixed in proc.py to filter `damage_bands >= 100`. All prior scripts using isin([997.0, 999.0]) are affected.
-
-### Lognormal as candidate
-Theoretically motivated for financial losses. Must be validated against data before use. Charity dataset can provide additional validation evidence if it fits there too.
-
----
-
-## Planned Next Analyses
-
-### A. damage_bands vs crimecost_bands comparison (bridge calibration) — DEAD END
-Investigated and closed. Key findings:
-- crimecost subsample (154 firms) is highly non-representative on damage_bands: "No cost" firms are 49% of full sample but only 11% of subsample — they don't bother reporting total costs.
-- freq=1 consistency check: only 43% of once-only firms have matching bands; 50% have crimecost_bands LOWER than damage_bands by up to 9 bands.
-- Root cause: damage_bands = broad all-in cost for single most disruptive incident (external payments + staff time + damage/disruption). crimecost_bands = direct financial losses only across all incidents. Different cost concepts entirely — not comparable for bridge calibration.
-
-### B. Per-attack-type breakdown — COMPLETED (see also analyses 4 & 5 below)
-Hypothesis tested: the negative freq–cost correlation is a compositional artefact (high-freq firms dominated by cheap phishing). Result: hypothesis rejected.
-
-Key findings (src/estimation/attack_type_breakdown.py):
-- Phishing does dominate high-freq firms (65% at once-only → 95%+ at weekly/daily), so composition effect exists.
-- But monotonicity failure persists in every individual attack type — ransomware, phishing, DoS, impersonation, all of them.
-- For phishing-only firms (cleanest subgroup, n=384): mean damage_band decreases monotonically once → weekly (1.71 → 1.38) before recovering at several/day. Clear violation.
-- The negative freq–cost relationship is a genuine feature of the data, not a compositional artefact.
-
-Conclusion: i.i.d. order-statistics bridge model is robustly rejected. See analyses 4 & 5 for further investigation.
-
-**Analysis 4 (src/estimation/attack_type_breakdown.py) — full distribution by freq group within type:**
-- Phishing (n=847): once-only group has heavier upper tail (P(damage ≥ £100k) = 2.3% vs 0.4–0.8% for higher-freq groups). "No cost" fraction lower for once-only (39% vs 50–51%). Consistent with once-only = targeted spear-phishing, high-freq = commodity spam.
-- Impersonation: non-monotone — "weekly or more" group has heavier tail than medium-freq. Undermines simple composition story.
-- Ransomware: too small (n=67) to conclude reliably; once-only does show 20% at £100k+ vs ~3% for higher-freq.
-- Key pattern: high-freq groups are concentrated at "No cost" / low-cost bands. The extra k−1 attacks beyond the maximum are mostly cheap or free.
-
-**Analysis 5 — type-specific total cost vs damage_bands for single-type firms:**
-Cell sizes too small (most types n<3 with both variables valid). Approach closed.
-
-**Key implication for bridge:** The bridge correction (total − maximum) may be small precisely for the groups where freq is high, because most of their additional attacks cost nothing. Formalising this argument is the current focus — see Bridge Formalisation section.
-
-## Bridge Formalisation
-
-The i.i.d. order-statistics bridge is rejected. The alternative argument for using damage_bands as a proxy:
-
-**The key decomposition:**
-Total annual cost = cost of maximum attack + sum of costs of remaining k−1 attacks.
-
-- For freq=1: the second term is zero. damage_bands = total cost exactly.
-- For freq>1: the second term is positive but potentially small — because analysis 4 shows high-freq groups are concentrated at "No cost" and low-cost bands, meaning most additional attacks contribute little.
-
-**Three estimate tiers:**
-1. **Conservative (lower bound):** total = damage_bands for all firms. Exact for freq=1; underestimates for freq>1 by ignoring additional attacks. Defensible because additional attacks are mostly cheap.
-2. **Pessimistic (upper bound):** total = k_implied × damage_bands, treating the maximum cost as typical. Overestimates because the maximum is higher than typical by construction.
-3. **Best estimate:** total = damage_bands + E[sum of k−1 additional attacks]. Needs a model for the per-attack cost distribution below the maximum.
-
-**Formalising the best estimate — proposed approach:**
-For each freq group, the "No cost" fraction in damage_bands distribution approximates the per-attack probability of zero cost (treating damage_bands as drawn from the per-attack distribution — a rough approximation). From this, we can bound or estimate the expected cost of additional attacks. The implied multiplier m(freq) = E[total] / E[maximum] stays close to 1 when the "No cost" fraction is high.
-
-Alternatively: run sensitivity analysis with m ∈ {1, 1.5, 2, 5} applied per freq group, and present the range as the uncertainty band around the conservative estimate.
-
-**Current status:** Approach agreed in principle. Not yet implemented.
-
-## Mixture Model Test (src/estimation/mixture_model.py)
-
-### Hypothesis
-Under a 2-component mixture model (targeted F_T + mass F_M), all freq-conditional cost distributions p_f lie on a 1D affine subspace of R^10. Structural implication: the (freq group × band) matrix P has rank ≤ 2. Tested via SVD.
-
-### Results
-
-**Phishing (disrupta=6), all sizes pooled (n=579):**
-- 2 components explain **99.0%** of variance; 3rd adds only 0.6%
-- **Verdict: strongly consistent with rank-2**
-- Extracted F_T (targeted): 0% no-cost, mean band 4.0, meaningful probability mass at £20k–50k (8.1%) and £100k–500k (3.9%) — genuine spear-phishing pattern
-- Extracted F_M (mass): 58.5% no-cost, mean band 2.0 — commodity spam, mostly zero-cost to targeted firm
-- Mixing weights π_f: once-only 12.9% targeted → >once<monthly 5.7% → monthly/weekly/daily 0% → several/day 22.3% (last value suspicious given n=47)
-
-**Impersonation (disrupta=5), all sizes pooled (n=228):**
-- 2 components explain **99.5%** of variance
-- **Verdict: consistent with rank-2, but F_T ≈ F_M** (mean bands 2.55 vs 2.42, no-cost 38% vs 41%)
-- The structure is essentially rank-1: no evidence of two distinct cost regimes for impersonation
-- Mixing weights are poorly identified (jump from 1.0 to 0.0 between freq groups)
-
-### Interpretation
-- The mixture model is **supported for phishing** with interpretable components
-- For impersonation, rank-2 holds but is degenerate — no real mixture signal
-- The freq→π_f pattern for phishing is partially sensible (higher-freq = more mass-market), but the several/day outlier needs investigation (n=47, possibly sampling noise)
-
-### Per-size-band results (phishing)
-
-| Band | n_freq_grps | Var(2 comp) | Verdict | F_T mean band | F_M mean band | F_T no-cost | F_M no-cost |
-|------|-------------|-------------|---------|---------------|---------------|-------------|-------------|
-| Micro (1-9) | 6 | 99.6% | CONSISTENT | 3.34 | 1.68 | 0% | 66.4% |
-| Small (10-49) | 5 | 99.0% | CONSISTENT | 2.54 | 1.90 | 40.7% | 59.4% |
-| Medium (50-249) | 5 | 94.2% | MARGINAL | 3.15 | 2.11 | 14.9% | 54.8% |
-| Large (250+) | — | — | too sparse | — | — | — | — |
-
-π_f patterns: once-only consistently has the highest targeted fraction (micro 10.5%, small 23.6%, medium 64.7%). Monthly/weekly consistently near 0. "Several/day" shows an anomalous uptick (micro 29.3%, small 18.1%, medium 36.6%) — possibly noise at small n (n=21/12/8 respectively), or a genuine phenomenon.
-
-Key observation: F_T and F_M are clearly separated for Micro (F_T has 0% no-cost) but less so for Small (F_T has 41% no-cost). This may reflect that targeted attacks on very small firms reliably incur some cost, while "targeted" attacks on slightly larger firms still often fail.
-
-### Next steps (not yet run)
-- Weighted variant (current script uses raw proportions only)
-- Investigate "several/day" anomaly further if it matters for downstream modeling
-- Decide whether to adopt mixture model as the bridge framework or continue exploring alternatives
-
-### Scope extension attempt: other attack types (2026-07-08) — infeasible, not just untested
-
-Tried to repeat the rank-2 test (`run_mixture_test`, pooled across sizes, same as the phishing/impersonation runs) for the four remaining major attack types: ransomware (disrupta=1), other malware (disrupta=2), denial of service (disrupta=3), hacking (disrupta=4). None of the real per-attack count variables that validated phishing's structure exist at usable coverage for these types (6-20%, per earlier notes), so this would only have tested the structural rank-2 hypothesis itself, with no independent check available even if it ran.
-
-**Result: could not run at all.** Total attacked-firm counts per type are small (ransomware n=28, other malware n=33, DoS n=27, hacking n=21) and spread across all 5-6 freq bands, e.g. ransomware: {once=4, >once<monthly=8, monthly=7, weekly=2, daily=5, several/day=2}. The rank-2 test needs at least 3 freq groups with a reasonable minimum n (8-10) each to be meaningful; every one of the four types has at most 1 band clearing that bar. This isn't a marginal-power issue that a lower threshold would fix — the total sample per type (21-33 firms) is simply too small once split six ways.
-
-**Implication:** the mixture-model scope question (Open Questions #3) is now closed, not open — the structure is validated for phishing only, tested-and-rejected-as-infeasible (not merely "not yet tried") for the other four major types, and untested for the remaining minor types (unauthorized access variants, video-conf eavesdropping, website takeover — all smaller still). Any bridge treatment for non-phishing attack types will have to rely on something other than this mixture framework (e.g. the cruder empirical multiplier approach in `bridge_multiplier.py`, or treating non-phishing types with the conservative/pessimistic bounds only, without a best-estimate bridge). See `src/estimation/mixture_model.py`, appended section "SCOPE EXTENSION."
-
-**Full `disrupta` inventory check (2026-07-09):** confirmed via `df['disrupta'].value_counts()` that the codebook (Q64A) actually defines 12 categories, not 6. Most of the untested "remaining minor types" are genuinely too small to ever be worth testing: unauthorised access by staff n=8, by outsiders n=3, by students n=0, video-conf/IM eavesdropping n=0, "other" catch-all n=12 (also not a coherent single attack type). But **website/social media/email account takeover (disrupta=11, n=31)** was comparable in size to ransomware/malware/DoS/hacking (23-39) and had a label already defined in the script's `DISRUPTA_LABELS` dict, yet was never actually passed into `run_mixture_test` — a real gap, not a deliberate exclusion. Added to both the full 6-group loop and the coarse 3-bucket loop in `mixture_model.py`.
-
-**Result for website/social takeover:** full 6-group test still infeasible (only 1 freq group, once-only n=17, clears the n≥8 threshold — same failure mode as the other four). Coarse 3-bucket test *did* run cleanly this time (buckets n=17/6/8, all clearing n≥5) — and passed the rank-2 threshold better than any other non-phishing type tested: 98.6% variance explained by 2 components (vs. malware's 88.3% rejected, DoS's 95.1% marginal), nearly matching phishing's own 99%+ numbers.
-
-**But it's degenerate, not a second phishing-like finding.** The extracted F_T/F_M components are almost identical (mean band 3.05 vs 2.95, no-cost fraction 21% vs 28%) — the same failure mode seen with Impersonation earlier: the test passes because there isn't much cost variation across the 3 groups to begin with (any two nearby components will approximate a low-variance matrix well), not because a genuine two-type structure was found. Confirmed by the mixing weights, which swing wildly and non-monotonically (π_f: 5% once → 0% occasional → 96% frequent, on buckets of n=6 and n=8) — unlike phishing's engagement-validated monotonic 0%→20%→65% curve, this looks like noise amplification from having two nearly-identical components rather than a real signal.
-
-**Updated conclusion:** closing this gap didn't change the answer. Of 6 types with adequate-ish sample size to test at all (phishing, impersonation, ransomware, malware, DoS, hacking, website takeover — 7 actually, counting website takeover), only phishing shows a real, independently-validated two-type structure. Impersonation and website/social takeover both technically clear a rank-2 statistical bar but are substantively degenerate (components too similar to represent distinct attack types). Ransomware and hacking can't be tested even at coarse resolution; malware fails outright; DoS is marginal-and-untrustworthy. The phishing-specific read stands, now on a more complete accounting of the `disrupta` variable.
-
-**Follow-up: coarser 3-bucket retry (2026-07-08) — doesn't rescue it.** Collapsed the 6 freq bands into 3 (once / occasional [2-11x/yr] / frequent [weekly+]) to see if a much weaker version of the test could run at all. Note: 3 groups is the minimum for a non-trivial test — 2 groups would trivially have rank ≤2 regardless of the data, so a "once vs. more-than-once" split (as originally floated) wouldn't test anything.
-
-Result: still infeasible for ransomware (once-only bucket n=4, below even a loosened n≥5 threshold) and hacking (frequent bucket n=1 — hacking has no observations at all past freq=4 in this sample). Malware and DoS could be tested:
-- Malware (buckets n=6/15/12): 2 components explain only 88.3% of variance (3rd adds 11.7%) — **REJECTED**, does not fit even the loosened rank-2 structure.
-- DoS (buckets n=5/13/9): 95.1% (3rd adds 4.9%) — marginal, but the once-only cell is n=5 and shouldn't be trusted.
-
-Also, with only 3 groups the maximum possible rank is 3, so "explained by top 2 components" is a far weaker test than the original 6-group phishing version (max rank 6, where 99% was a genuinely stringent result) — DoS's "marginal" pass is much less informative than it looks.
-
-**Conclusion:** bucketing does not rescue the mixture approach for non-phishing types. Two of four types can't be tested at all even at this coarse resolution; of the two that can, one fails outright and the other only marginally passes on data too thin to trust. This is now good evidence that the targeted/mass-market mixture structure is a **phishing-specific finding**, not a general pattern that other attack types also have but that we lack the data to detect. Non-phishing bridge treatment should not assume an analogous mixture structure exists — use a different method (empirical multiplier upper bound, or conservative/pessimistic bounds only).
-
-### Real per-attack count data: validating F_T/F_M against ground truth (src/estimation/phishing_count_validation.py, mixture_model.py)
-
-Discovered that the survey has real per-attack count-band variables for phishing specifically (not literal totals, but high-coverage subsets): `phishcon_bands` ("number of specifically targeted [personalised] phishing attacks," 76% coverage) and `phisheng_bands` ("number of times someone engaged with a phishing attack," 83% coverage). Now loaded via `proc.py` (`PHISH_COUNT_COLNAMES`). No equivalent count variables exist with usable coverage for other attack types (hacking/DoS/ransomware/malware counts exist but only 6-20% coverage).
-
-**Does "targeted" (personalised) predict cost?** Weakly. Spearman corr(phishcon_bands, damage_bands) = 0.29. `phishcon_bands` measures whether an attack *looked* targeted, which turns out to be common (49-69% of phishing firms report ≥1 targeted attack across all freq bands) and only loosely tied to cost outcome. This directly contradicts the SVD-inferred π_f (which was 0% for 3 of 6 freq bands) — the two "targeted" constructs are not the same thing and phishcon_bands should not be used as a literal ground-truth label for SVD type membership.
-
-**Does engagement predict cost?** Yes, much better. Spearman corr(phisheng_bands, damage_bands) = 0.37. Firms with **zero** engagement: mean damage band 2.02, 57.1% no-cost — matches the SVD's F_M (mean 2.0, 58.5% no-cost) almost exactly, despite `phisheng_bands` never being used in the SVD fit. This is real, independent validation that F_M ("mass-market/commodity phishing, cheap or free") is a genuine feature of the data, not an SVD artifact.
-
-**Rerunning the rank-2 test grouped by `phisheng_bands` instead of `freq`** (only 3 of 9 engagement levels had n≥8: None n=465, "1" n=62, "2-3" n=19 — higher levels too sparse):
-- 2 components explain 99.0% of variance (identical to the freq-based pooled result) — rank-2 holds again with a completely different grouping variable.
-- Extracted F_T: mean band 4.19, 0% no-cost — nearly identical to the freq-based F_T (4.0, 0%). **Two independent groupings converge on the same targeted component.**
-- Extracted F_M: mean band 2.55, 42.2% no-cost — same direction as freq-based F_M (2.0, 58.5%) but not an exact match; likely reflects the thinner data (3 groups vs 6).
-- **π_f is monotonic in engagement level: 0% → 19.6% → 65.2%** — a clean dose-response relationship, unlike the freq-based π_f which was noisy and non-monotonic (12.9% → 5.7% → 0% → 0% → 0% → 22.3% with an unexplained freq=6 spike).
-
-**Implication:** engagement level looks like a mechanistically better (and now partially validated) organizing variable for the targeted/mass mixture than freq band. This strengthens confidence that F_T/F_M is real structure, and gives a lead for a monotonic mixing-weight model that the freq-based version couldn't offer. Not yet integrated into the bridge multiplier calculation (`mixture_bridge.py` still uses freq-based π_f) — that's the natural next step if this direction is pursued further. Also not yet extended to per-size-band breakdowns using engagement instead of freq.
-
-### Freq=6 anomaly investigated (src/estimation/freq6_anomaly.py)
-
-Direct test of whether the freq=6 targeted anomaly (Open Questions #2) is real or an SVD/small-n artefact, using raw data rather than the mixture reconstruction.
-
-**The anomaly is visible in the raw data, not just the SVD extraction.** Unweighted mean damage_band by freq group: once-only 2.09 → >once<monthly 2.02 → ~monthly 1.76 → ~weekly 1.56 → ~daily 1.93 → **several/day 2.53**. The last group breaks the otherwise-declining trend and has the highest mean of any freq group, plus the only meaningful high-cost tail (6.4% at band≥8, vs. 0-1.2% elsewhere, n=47). This is now the third independent observation of the same pattern — also seen in `attack_type_breakdown.py`'s original phishing-only analysis (1.71→1.38 then recovery) and in the SVD-derived π_f.
-
-**Not a weight or outlier artefact.** The 3 high-cost observations (bands 8, 8, 10) driving the tail have unremarkable survey weights (0.05-0.53, below the group's own max of 2.49) — real, low-weight rows, not a few over-weighted observations distorting the picture. Size composition of the freq=6 group (Micro 21, Small 12, Medium 8, Large 6) roughly matches the overall attacked-firm mix; 2 of the 3 outliers happen to be Large firms, but that's a weak signal at n=3.
-
-**But real engagement data complicates the "targeted" interpretation.** If freq=6's elevated cost were the same phenomenon as once-only's targeted attacks, engagement should be elevated there too — it isn't. P(≥1 real engagement) by freq group: 30.7% (once-only) → 13.3% → 15.1% → 10.3% → 21.4% (daily) → **20.0%** (several/day) — lower than once-only, not higher. Within freq=6 itself, engagement still predicts cost strongly (mean band 3.67 for the 9 engaged firms vs. 2.25 for the 36 non-engaged) — consistent with the general finding — but the group as a whole isn't unusually engagement-heavy.
-
-**Read:** the freq=6 cost anomaly is real — it survives raw-data, weight, and outlier checks, and replicates across three independent analyses — but the mixture model's assumed *mechanism* (that this is the same spear-phishing/targeted phenomenon seen at once-only, just at high implied k) is only partly supported. Engagement, otherwise the best real proxy for "targeted," isn't elevated at freq=6. More likely explanation: freq=6 firms are under chronic/sustained attack (consistent with the Step 3 finding that Large firms skew toward frequent attack), and a subset experience genuinely high-cost incidents through a different mechanism than one-off spear-phishing — not necessarily via more successful or more personalised individual attempts. At n=47 (9 engaged, 3 in the cost tail) this can't be pinned down further with this dataset.
-
-**Implication for the bridge:** this reframes rather than resolves the open question. It's not "is freq=6 real or noise" (it's real) — it's "does the type-T bridge formula (which assumes freq=6 firms are extreme-k targeted attacks, giving up to a ~7x multiplier) correctly describe what's actually happening in this subgroup." Given the engagement mismatch, applying that formula here is on shakier ground than previously assumed; the true bridge correction for this subgroup is unresolved, not simply "noise, use 1.0" or "real, use 7x."
-
-**2026-07-07 follow-up: `phishcon_bands` (targeted-count) resolves part of the puzzle; multi-vector attacks explain the rest.** Two further checks, appended to `freq6_anomaly.py` (sections 4-5):
-
-1. **"Targeted" (phishcon_bands) is NOT depressed at freq=6, unlike engagement.** P(≥1 targeted attack) by freq group: 39.0% (once-only) → 50.3% → 43.4% → 48.9% → 42.9% → **52.5%** (several/day) — freq=6 has the *highest* targeted rate of any group, essentially the opposite pattern from engagement (which was 20.0% at freq=6 vs. 30.7% at once-only). And within freq=6, targeted status is a strong cost discriminator: no targeted attack → mean band 1.79 (68.4% no-cost); ≥1 targeted attack → mean band 3.57 (19.0% no-cost) — a bigger split than the engagement-based one (2.25 vs 3.67). So the "targeted" construct, as opposed to the "engaged" construct, *does* support the spear-phishing story at freq=6. `phishcon_bands` and `phisheng_bands` are measuring different things (an attack can look personalised without anyone falling for it), and they disagree specifically at freq=6.
-
-2. **2 of the 3 high-cost (band≥8) outliers are multi-vector attacks, not pure phishing.** Row-level detail: (a) sizeb=4, band=8 — phishing + DoS + impersonation flagged, cost also recorded in `doscost_bands`; (b) sizeb=4, band=10 — phishing + malware + impersonation + unauth. access (outsiders) + video-conf eavesdropping + website/social-media takeover, cost also recorded in `viruscost_bands` and `tkvrcost_bands` (this firm has 6 concurrent attack types); (c) sizeb=2, band=8 — phishing only, no other type flagged, no other cost variable populated — the one clean single-vector case. So `disrupta=6` ("phishing was the most disruptive") doesn't mean phishing was the *only* thing happening — for 2 of 3 outliers driving the tail, the recorded cost likely reflects a broader multi-vector compromise, with the phishing engagement/targeting variables only describing one piece of what happened. Attack-type breadth (mean # types flagged) doesn't differ much across freq groups overall (1.51–1.79), so this isn't a group-wide pattern — but it is a red flag specifically for the small number of observations that drive the cost tail.
-
-**Updated read:** the freq=6 anomaly looks like a blend of two things: (i) a genuine elevated rate of targeted/personalised phishing (now corroborated by `phishcon_bands`, reversing the earlier engagement-based doubt), and (ii) at least some of the extreme-cost tail being multi-vector incidents where phishing is one component, not the sole cause. This means the ~7x type-T bridge multiplier is probably too clean a mechanism either way — even the "it's real, it's targeted" reading doesn't cleanly justify treating it as a pure single-attack-type bridge, given 2/3 of the outliers implicate other attack types. Still unresolved at n=47 (and n=3 for the outliers specifically), but the practical recommendation strengthens: treat this as a bounded sensitivity range rather than a single point estimate, since the underlying mechanism is evidently mixed.
-
----
-
-## Prevalence Analysis (src/estimation/prevalence.py)
-
-Fraction of businesses attacked, by size band. "Attacked" = freq ∈ {1–6}.
-
-| Band | n | Unweighted | Weighted |
-|------|---|-----------|---------|
-| Micro (1-9) | 1014 | 40.6% | 39.7% |
-| Small (10-49) | 565 | 51.0% | 49.4% |
-| Medium (50-249) | 413 | 65.9% | 64.7% |
-| Large (250+) | 188 | 68.6% | 67.8% |
-
-Weighted and unweighted are nearly identical — survey adjustments barely affect prevalence.
-
-Monotone in size (both variants). Overall prevalence ≈ 50%; the 49.5% of firms with missing/DK freq are essentially the non-attacked population (freq is only asked of attacked firms).
-
-**Logistic-in-log-size fit:** P(attacked) = sigmoid(a + b·log(midpoint)), a≈−0.67, b≈0.25. RMSE 2.2pp, max residual 3pp — essentially perfect fit for a 2-parameter model on 4 points. Curve flattens at top (Large only marginally higher than Medium), consistent with sigmoid saturation.
-
-**Implication:** For a stratified simulation using the 4 empirical strata, empirical proportions are fully sufficient and more defensible. The logistic fit is well-supported but adds no practical value within the data range. It would only matter for interpolation to continuous size, which is not planned.
-
----
-
-## Cost Distribution: Lognormal Fit (src/estimation/cost_distribution.py)
-
-Model: zero-inflated lognormal. P(cost=0) = p0 (fixed at observed no-cost fraction). Conditional on nonzero cost: Lognormal(mu, sigma), right-censored at £500k for fitting.
-
-**Per (size, freq) cell chi-square values (df≈6):**
-Most cells have chi-sq in the range 1–11 — acceptable. Lognormal is a legitimate parametric model for cost within individual cells.
-
-**Pooled across freq (per size band):**
-
-| Band | n | chi-sq | mu | sigma | p0 | P(>£500k) |
-|------|---|--------|----|-------|----|-----------|
-| Micro | 376 | 12.0 | 5.29 | 2.21 | 0.58 | 0.01% |
-| Small | 265 | 3.2 | 5.06 | 2.99 | 0.47 | 0.18% |
-| Medium | 232 | 7.0 | 5.67 | 2.67 | 0.43 | 0.15% |
-| Large | 109 | 13.6 | 6.79 | 2.85 | 0.34 | 0.87% |
-
-Pooled fit is good for Small/Medium, marginal for Micro and Large (expected: pooling across freq mixes different lognormals).
-
-**freq=1 only (cleanest subgroup — no bridge needed):**
-
-| Band | n | chi-sq | mu | sigma |
-|------|---|--------|----|-------|
-| Micro | 77 | 3.0 | 5.76 | 1.80 |
-| Small | 59 | 7.5 | 5.27 | 3.50 |
-| Medium | 50 | 5.2 | 4.62 | 3.12 |
-| Large | 14 | 4.5 | 90.8 | 47.1 — degenerate (n too small) |
-
-**Key findings:**
-- **sigma is not stable** across cells (range 1.31–3.79, median 2.68). Cannot assume common shape — both mu and sigma must vary per cell.
-- **P(cost > £500k)** is negligible (< 0.2%) for most cells. Only exception: Large | freq=1, but n=14 makes that estimate useless.
-- **mu increases with firm size** (roughly), consistent with larger firms facing higher-cost incidents.
-- Large | freq=1 (n=14): completely unreliable; must be pooled or treated empirically.
-
-**Implication for estimation:**
-Lognormal is a viable parametric model per cell. It provides: (i) principled within-band interpolation; (ii) a tail extrapolation for the top open-ended band (small effect except for Large firms). Cannot assume shared sigma — use per-cell (mu, sigma). For sparse cells (Large | freq=1), use empirical proportions or partial pooling.
-
----
-
-## Mixture Bridge: Analytical Computation (src/estimation/mixture_bridge.py)
-
-### Setup
-Extends the mixture model to derive a principled bridge multiplier. Assumes i.i.d. attacks *within* each type (a much weaker assumption than i.i.d. across all firms, which was rejected).
-
-Key insight: F_T and F_M from the SVD are distributions of the **maximum** attack cost, not individual attacks. The per-attack distribution is G = F^(1/k) (order-statistics inversion). The bridge is:
-
-- E[max] = E[X | F] (mean of the observed max distribution)
-- E[total] = k × E[X | G] = k × Σ_b (F_CDF(b)^(1/k) − F_CDF(b−1)^(1/k)) × midpoint(b)
-- Bridge = E[total] / E[max]
-
-### Results
-
-**Type M (mass-market, ~95% of phishing firms):**
-Bridge ≈ 1.02 for all k from 5 to 3000. Essentially flat. Reason: G_M = F_M^(1/k) concentrates near zero for large k — the k-1 additional attacks beyond the maximum cost almost nothing. **Conservative lower bound (total = max) is well-supported for type M.**
-
-**Type T (targeted, ~5% of phishing firms):**
-Bridge grows sharply with k: k=1 → 1.00, k=6 → 1.07, k=100 → 1.45, k=1000 → 5.0. Weighted bridge_T = 3.09, but this is driven almost entirely by the freq=6 anomaly (P(freq=6|T)=0.346 × bridge(1500)=7.0). Excluding freq=6: weighted bridge_T ≈ 1.03.
-
-**Overall mixture bridge = 1.70**, but if the freq=6 anomaly is noise (likely at n=47): overall bridge ≈ 1.02.
-
-**Bayes-derived P(freq | type):**
-- Type T: 33.6% once-only, 31.9% >once<monthly, 0% monthly/weekly/daily, 34.6% several/day (anomalous)
-- Type M: mostly monthly/weekly/daily with ~12.5% once-only
-- pi_overall ≈ 5.2% of phishing firms are type T
-
-**Poisson fit for k | type:**
-Type T: λ_T = 1.9 — bad fit (predicts 0 mass at freq=6, but 34.6% is there). Bimodal structure inconsistent with unimodal Poisson. Type M: λ_M = 8.8 — very poor fit (predicts 82% in freq=2, observed 29%).
-
-### Key conclusion
-The conservative lower bound is quantitatively validated for type M (95% of firms). The remaining uncertainty is whether type T firms with freq=6 (several/day targeted attacks) are real — if yes, that subgroup has a meaningful bridge correction (~7×). If the freq=6 type-T assignment is noise, the overall correction is ~2%.
-
----
-
-## Freq Distribution by Size (Step 3) (src/estimation/freq_distribution.py)
-
-Exploratory pass at P(freq | size, attacked) — the piece of Step 3 that was previously unexamined.
-
-**Cell counts (size x freq, attacked firms):** mostly healthy (n=16-113). Two thin cells: Small|~daily (n=9), Large|~daily (n=6) — unsafe to resample directly in the joint-empirical-sampling plan.
-
-**Row proportions:** Micro, Small, Medium look similar to each other across all 6 freq bands (once-only ~20%, mean freq band 2.68-2.85). **Large is distinct**: fewer once-only incidents (12% vs ~20%), heavier tail toward frequent/chronic attack (daily+several/day ~20% vs ~9-13% elsewhere), mean freq band 3.03.
-
-**Chi-square tests:**
-- Full 4x6 table: chi2=24.9, dof=15, p=0.051 — borderline, diluted by pooling 3 similar rows with 1 different one.
-- Large vs. (Micro+Small+Medium pooled), 2x6: chi2=14.3, dof=5, **p=0.014 — significant.** Confirms Large genuinely has a different freq distribution; Micro/Small/Medium are statistically indistinguishable from each other.
-
-**Implication:** points toward a 2-group structure for Step 3 — Micro/Small/Medium sharing (or close to sharing) one freq distribution, Large modeled separately — rather than 4 fully independent empirical distributions or one smooth parametric curve across all four bands. Also explains why sparsity concentrates in Large: its already-small sample splits across a genuinely heavier-tailed shape.
-
-**Decided (2026-07-08):** pool Micro/Small/Medium into one shared empirical freq distribution (increases effective n for resampling freq bands, resolves the two thin cells since Small|~daily folds into the pooled M/S/M sample); keep Large separate. This pooling applies **only to the freq marginal** (P(freq | size, attacked), the Step 3 sampling distribution) — it does not extend to the cost distribution. Cost (Step 4, `cost_distribution.py`) is already modeled per (size, freq) cell individually and stays that way, since sigma/mu vary by size band regardless of the freq-pooling question. So the joint sampling procedure becomes: draw freq from the pooled M/S/M (or separate Large) distribution, then draw cost conditional on (actual size stratum, freq) as already established. Large's own freq|~daily cell (n=6) remains thin and unresolved — not addressed by this decision, since Large isn't pooled with anything.
-
----
-
-## Open Questions
-
-These are unresolved issues that a future session should be aware of before diving in.
-
-**1. Freq-as-conditioning-variable vs. freq-as-distribution (source of past confusion)**
-Throughout the analyses, `freq` has been used in two distinct roles that are easy to conflate:
-- *Conditioning variable for cost:* P(damage_bands | freq, size) — done, lognormal fits well.
-- *Distribution to be modelled:* P(freq | size, attacked) — NOT done. This is what the Squiggle simulation needs to sample from: first draw a freq band, then draw a cost. These are separate questions. The parametric vs. empirical decision for freq refers to this second role only.
-
-**2. Freq=6 type-T anomaly — investigated, reframed twice, still not resolved**
-The mixture model assigns 34.6% of "targeted" (type T) mass to the several/day frequency group (n=47 phishing firms). `src/estimation/freq6_anomaly.py` confirms the elevated cost is **real** (visible in raw unweighted data, not a weight or outlier artefact, replicated across 3 independent analyses). First pass: real engagement rates at freq=6 (20.0%) are *not* elevated relative to once-only (30.7%), undermining the assumption that this is the same targeted/spear-phishing mechanism the bridge formula was built around. Follow-up pass (2026-07-07): the *targeted* rate (`phishcon_bands`, distinct from engagement) IS elevated at freq=6 (52.5%, highest of any freq group) and is a strong within-group cost discriminator — so the spear-phishing story isn't dead after all. But 2 of the 3 extreme-cost outliers driving the tail are multi-vector incidents (phishing plus DoS/malware/impersonation/etc., with cost also recorded under other attack types' cost variables), meaning at least part of the tail isn't a pure-phishing phenomenon the bridge formula could apply to cleanly. Net: real, partly targeted-attack-driven, partly multi-vector-driven — no single clean mechanism, still unresolved at n=47. Recommendation: treat as a bounded sensitivity range rather than resolving to one multiplier.
-
-**3. Mixture model scope — CLOSED, infeasible for other types (2026-07-08)**
-The 2-component (targeted/mass-market) structure is validated for phishing (dominant type) and degenerate for impersonation. Extension to ransomware/malware/DoS/hacking was attempted and found infeasible — each type has only 21-33 attacked firms total, too few once split across 6 freq bands to run the rank-2 test (at most 1 freq group per type clears even a lenient n≥8 threshold). Not resolvable with more analysis of this dataset; a non-phishing bridge treatment will need a different method entirely (empirical multiplier or conservative/pessimistic bounds).
-
----
-
-## Planned Next Steps
-
-1. **Freq distribution by size** — examine P(freq | size) empirically. Does it shift meaningfully across size bands? Then decide: parametric ordinal model vs. four separate empirical distributions over the 6 categories.
-2. **Settle the joint sampling model** — once freq-by-size is understood, nail down the (freq → cost) sampling procedure for the Squiggle simulation.
-3. **Fetch ONS business counts** by size band (external data, needed for Step 1 of the pipeline).
-4. **Build the Squiggle model** with three tiers: conservative (bridge=1, empirical distributions), best estimate (lognormal within-band + bridge≈1.02), upper bound (bridge=k_implied).
-5. **Optional:** run mixture model for other attack types (ransomware, malware) to check whether the 2-component structure generalises beyond phishing.
-6. **Optional:** acquire an additional year of data as a robustness check; use charity data to validate shared modeling assumptions.
-
----
-
-## Script Index
-
-All scripts run from the project root: `source .venv/bin/activate && python3 <path>`. Data loaded via `proc.get_business_data()` / `proc.get_charity_data()`.
-
-| File | Topic | Key outputs |
-|------|-------|-------------|
-| `proc.py` | Data loading | `get_business_data()`, `get_charity_data()`, `SPECIAL_CODE_THRESHOLD=100`, `PHISH_COUNT_COLNAMES` (phishcon_bands, phisheng_bands) |
-| `src/estimation/consistency_checks.py` | i.i.d. bridge test | Monotonicity test (violated everywhere); discovery of 999.62004 special code |
-| `src/estimation/bridge_calibration.py` | crimecost vs damage_bands | Avenue closed — different cost concepts, non-representative subsample |
-| `src/estimation/attack_type_breakdown.py` | Cost by attack type and freq | Monotonicity failure persists within every type; disrupta analysis; full distribution by freq group |
-| `src/estimation/bridge_multiplier.py` | Empirical bridge upper bound | MC multipliers per (size, freq) cell; freq=4+ gives implausible results (known upper bound only) |
-| `src/estimation/mixture_model.py` | SVD rank-2 test | F_T/F_M extraction; π_f weights; per-size-band results for phishing and impersonation; scope-extension attempt to ransomware/malware/DoS/hacking found infeasible (too few firms per type) |
-| `src/estimation/mixture_bridge.py` | Analytical bridge via mixture | Corrected bridge formula (G=F^(1/k)); bridge≈1.02 for type M; Poisson fit for k\|type (failed) |
-| `src/estimation/prevalence.py` | Prevalence by size | Empirical proportions; logistic-in-log-size fit (RMSE 2.2%) |
-| `src/estimation/cost_distribution.py` | Lognormal fit to cost bands | Per-cell (mu, sigma); chi-sq GOF; P(cost>£500k) per cell |
-| `src/estimation/freq_distribution.py` | Freq distribution by size (Step 3) | (size x freq) cross-tab; Large differs from Micro/Small/Medium (p=0.014) |
-| `src/estimation/phishing_count_validation.py` | Validate F_T/F_M against real phishing counts | phishcon_bands (targeted) weak cost predictor (ρ=0.29); phisheng_bands (engaged) strong (ρ=0.37) and matches SVD F_M almost exactly |
-| `src/estimation/freq6_anomaly.py` | Investigate freq=6 targeted anomaly | Anomaly real (not weight/outlier artefact); engagement not elevated there but targeted-rate (phishcon_bands) is; 2/3 extreme-cost outliers are multi-vector incidents, not pure phishing |
-| `src/estimation/preparedness_analysis.py` | Does cyber preparedness explain the freq→no-cost pattern? | Motivating hypothesis rejected; found a different, counter-intuitive, size-independent finding instead — see "Preparedness vs. cost" section below |
-| `src/estimation/cost_share_by_type.py` | £ share of total cost by disrupta type (conservative bridge) | Phishing 59-65% of count but only 11-19% of £; non-phishing ≥80% of £ despite ~35-41% of count; ransomware and impersonation are the largest £ contributors |
-| `src/estimation/impersonation_investigation.py` | Deep-dive on Impersonation's outsized £ share | No usable severity proxy exists (unlike phishing); per-size rank-2 retry initially looked promising for Micro/Small but downgraded — likely confounded by freq being cross-type (ρ=0.294 with co-occurring other types, which independently predict +1-1.5 damage bands within freq group); outsized £ share mostly one outlier row; severity correlates with attack-type breadth dataset-wide (whole-year presence, not same-incident) |
-| `src/estimation/type_specific_bridge.py` | Real per-type bridge multipliers via total-annual-cost variables | CONFIRMED ranscost_bands/hackcost_bands/doscost_bands/viruscost_bands/tkvrcost_bands/hacksumcost_bands are genuine total-cost-per-type (not single-incident) variables; but computed ratios hit the same self-report-noise wall as "Avenue A" (50-67% show logically-impossible ratio<1); ruled out a definitional-mismatch explanation; corrected damage_bands' band scale (13 bands, not 10, though no live impact) |
-| `src/estimation/type_cost_censored_model.py` | Censored-MLE lognormal fit of per-type total cost, using ALL bounding evidence per firm (not just disrupta==type) | Discovered the type-cost columns are populated whenever the type occurred at all, not just when it was the worst incident (bigger usable n than type_specific_bridge.py used); discovered hackcost_bands spans a broader "hacking" bucket (type4 + type7 + type8) than the single type4 flag; well-identified fits for Malware/DoS/Hacking/Takeover; Ransomware fit is genuinely degenerate/unidentified with this data (flagged, not forced) |
-| `src/estimation/bridge_specification.py` | Consolidates every bridge finding into one per-type 3-tier multiplier table, applied to the real sample | 86.3% of attacked-firm (freq>1) weight now has a genuine best-estimate bridge (phishing + 4 censored-model types), up from 0% for non-phishing freq>1 firms; £904→£950 per business moving from fully-conservative to current-best-available; fully-pessimistic (£116,915) confirmed implausible (dominated by K_IMPLIED=1000 for freq=6, consistent with the pre-existing "freq=4+ implausible" caveat) |
-| `src/estimation/ransomware_impersonation_rawdata.py` | Descriptive-only raw-data survey of Ransomware and Impersonation (no fitting) | Discovered ranssoft_bands/ransdem_bands/ranspay_bands/ranspayyn (Q83 series) for Ransomware and fraud1/2/3 (Q88A) for Impersonation, previously unloaded; on its own, neither looked like it unlocked a new model — but see type_specific_montecarlo_bridge.py, which combined ranssoft_bands with the right reference subsample and got a real result |
-| `src/estimation/type_specific_montecarlo_bridge.py` | Working, non-degenerate bridge for BOTH Ransomware and Impersonation, via a clean single-incident reference subsample + Monte Carlo | Ransomware £605.71/business (~70% of weight needs no bridge at all, via ranssoft_bands); Impersonation £1,908.61/business but downgraded to a £950-£1,900 range after leave-one-out (46.4% of weight is a clean impersonation-only subsample); caught and fixed a real logical-floor bug (MC estimate below own observed damage_bands); robustness-checked |
-| `src/estimation/censored_bounds_only.py` | Model-free view of the raw censored bounds — no lognormal, no Monte Carlo | Ransomware: floor £91.40/business, naive £238.12/business, only 8.1% of weight unresolved (no-ceiling); Impersonation: floor £119.63/business, naive £305.58/business, 55.8% of weight unresolved AND zero exact observations — identifies the structural (not modeling) reason Impersonation is harder |
-
----
-
-## Preparedness vs. cost (src/estimation/preparedness_analysis.py, 2026-07-09/10)
-
-**Motivating question**: why does the no-cost share among attacked firms climb with attack frequency (see consistency_checks.py DECOMPOSITION, Core Finding #1 correction)? Candidate hypothesis: better-prepared firms deflect more incidents at zero cost, and preparedness happens to correlate with frequency.
-
-**Data**: Q31 `rules1-20` (15 real technical controls after excluding "don't know"/"none of these" meta-responses, full coverage among attacked firms) summed into `num_controls` (0-15); Q33B `trained` (staff cyber training, full coverage) as `trained_yes`. Added `PREPAREDNESS_COLNAMES` to `proc.py` (also includes policy/review/strategy/corprisk/update/insurex, noted but not used here — substantial routing-related missingness, not checked yet).
-
-**Hypothesis rejected**: preparedness does not vary with attack frequency (mean num_controls flat at ~10.4-10.9 across all freq groups 1 through 5+; trained% noisy, no trend). So preparedness cannot mechanically explain the freq→no-cost climb.
-
-**Unexpected finding instead**: preparedness has a real, backwards-from-naive-expectation relationship with cost outcome — more-prepared firms are *less* likely to have a zero-cost year, not more. True of every one of the 15 individual controls (all show lower "yes" rate among no-cost firms than nonzero-cost firms, -4pp to -13pp). Initially looked like it might be explained by size (preparedness scales steeply with size: mean controls Micro 9.0→Large 13.2; no-cost rate falls steeply with size: Micro 58%→Large 34%) — but checked properly and **it survives controlling for size**:
-- Joint logistic regression (no_cost ~ freq_group + sizeb + num_controls + trained_yes): num_controls OR=0.93/control (p=0.004), independent of size (OR=0.85/band, p=0.02). freq_group's own effect weakens to marginal (p=0.055) once size+prep are controlled — part but not all of the raw freq→no-cost pattern was riding on these confounds. Pseudo-R²=0.034 — real but small effects, most of the variance in outcome is unexplained by this model.
-- Stratified by size band (no pooling): High-prep firms have a lower no-cost rate than low-prep firms in **all four size bands** (Micro 53.6% vs 59.5%, Small 44.5% vs 50.0%, Medium 36.8% vs 55.0%, Large 33.3% vs 38.5%). Per-band regressions all point the same direction (Micro/Medium significant, Small/Large not, but same sign — Large has only n=13 low-prep firms, treat as weak evidence).
-
-**Key clarifying split — presence vs. severity of cost**: re-ran the same size-stratified check on cost *severity conditional on having any cost* (mean damage_band among nonzero-cost firms only), and this relationship **disappears / becomes inconsistent**: no clean direction across size bands (Micro: high-prep lower severity; Small/Medium: high-prep higher severity; Large: tied, n too small). Pooled OLS (severity ~ num_controls + sizeb, nonzero-cost firms only): num_controls coefficient not significant (p=0.156); size itself is significant (p=0.002, bigger firms have costlier incidents when they have one). So preparedness relates to **whether any cost gets recorded at all**, not to **how bad it is once it exists** — a real and fairly clean split.
-
-**Interpretation (candidate explanations, not adjudicated by this single-wave cross-sectional data)**:
-1. Detection/attribution effect — better-monitored, better-trained firms notice and correctly attribute costs that less-prepared firms simply don't register. Best fit to the presence/severity split above (would predict preparedness → presence but not severity, which is what's observed).
-2. Reverse causality — firms hurt by past incidents subsequently invest in controls/training; "high preparedness" partly reflects past harm, not future prevention.
-3. Confound via digital complexity/exposure (distinct from raw employee-count size) — weaker fit, since this would more plausibly also predict severity, which isn't observed.
-
-**Not yet done**: separating "digital exposure" from raw size; using the lower-coverage `review`/`strategy` variables (about *when* policies were adopted) to get at the reverse-causality question with some time-ordering; checking whether the residual freq effect (p=0.055 after controls) fully vanishes with a richer preparedness battery.
-
-**Follow-up: full distributional breakdown (Step 5), not just means (2026-07-10).** Checked the full nonzero-cost `damage_bands` distribution (all bands + tail probabilities), not just the mean, broken out separately by freq_group, sizeb, and prep_level.
-
-- **By frequency**: mostly flat/noisy (means 3.36-3.76 across freq groups 1-4), except the **5+ group (daily/several-times-a-day, n=69) has a visibly fatter tail** — mean 4.22, P(≥£20k)=10.1%, P(≥£100k)=2.9%, roughly double the other groups. This is the same freq=6 anomaly investigated for phishing specifically in `freq6_anomaly.py` — showing up here in the *pooled, all-attack-types* view too, independent corroboration that it isn't phishing-specific.
-- **By size**: clean and monotonic, as expected — mean severity climbs steadily (Micro 3.34 → Small 3.53 → Medium 3.74 → Large 4.50) and so does the tail (P(≥£20k): 1.3%→6.4%→6.1%→9.7%; P(≥£100k): 1.3%→1.4%→0.8%→4.2%).
-- **By preparedness, pooled (not size-controlled)**: looked alone, High-prep firms appear to have *worse* conditional severity (mean 3.88 vs 3.39, P(≥£20k) 6.8% vs 3.2%) — apparently contradicting the earlier size-controlled regression finding (num_controls not significant for severity, p=0.156).
-- **Resolved by splitting jointly on size × prep_level**: the pooled "High prep = worse severity" pattern does NOT hold within strata — it *reverses* in Micro (High-prep mean 3.13 < Low-prep 3.42), and the gaps in Small/Medium aren't a clean uniform story either (Large ties, n too small). Confirms the pooled Step 5c table was picking up size composition (High-prep skews toward bigger firms, bigger firms have worse severity) rather than a genuine preparedness→severity effect — consistent with, and a good concrete illustration of, the OLS non-result from Step 4d. Reinforces: the presence/severity split (preparedness predicts *whether* there's a cost, not *how bad* it is) holds up under a full distributional look, not just at the level of means.
-
-**Follow-up: does frequency correlate with preparedness at all? (Step 6, 2026-07-10)** Direct test, not just eyeballing flat-looking group means: Spearman/Pearson correlations between freq (raw and grouped) and both num_controls and trained_yes, plus a partial correlation controlling for size. All near zero and non-significant (|ρ| ≤ 0.03, p ranging 0.34-0.69 across all variants, including the size-controlled partial correlation). **Cleanly rules out "frequently-attacked firms are more/less prepared"** as an explanation for anything downstream — preparedness and frequency are genuinely independent dimensions in this data.
-
-**Conceptual discussion, logged for future reference**: raised the question of why higher frequency correlates with a *higher* no-cost share at all, given that if "real"/costly attacks arrived at some baseline rate independent of a separate high-volume "low-effort junk" stream, more total attempts should mechanically increase the chance of at least one costly hit (more draws = more chances), predicting no-cost share should *fall* with frequency, not rise. Resolution (tentative, not further tested): this is inconsistent with an *additive independent-processes* model, but consistent with the phishing mixture model's own π_f (targeted-component mixing weight) curve — 12.9% (once-only) → 5.7% → 0% → 0% → 0% → 22.3% (several/day) — which shows targeted/costly attacks essentially *absent*, not just diluted, across the middle frequency bands. This looks less like "more draws from a shared pool with a small constant chance of a real hit" and more like **firms sorting into one regime or the other** (mostly-harmless-automated-noise vs. occasional-real-attempt), with unusually little overlap in the middle frequencies. What causes that sorting (target selection by attackers, industry, visibility, infrastructure) is not something this dataset can adjudicate — flagged as an open interpretive question, not a resolved one.
-
-**Follow-up: frequency-stratified preparedness check (Step 7, 2026-07-10)** — mirrors the earlier size-stratified check (Step 4a/4c), but stratifying by freq_group instead of size, to test whether the preparedness→no-cost relationship is itself robust to conditioning on frequency.
-- **Step 7a** (no-cost % by prep level, within each freq group): High-prep firms have a *lower* no-cost rate in **all 5 frequency groups**, no reversals — gaps range from −7.3pp (once-only) to −22.1pp (5+, the largest gap of any group).
-- **Step 7b** (per-freq-group logistic regressions): all 5 slopes negative (OR 0.86-0.94); 3 of 5 individually significant (freq=2,3,5+; p<0.05), the other two (freq=1, freq=4) directionally consistent but weaker (p=0.095, p=0.29) — likely a power issue given similar effect sizes, not a real reversal.
-- **Step 7c** (interaction model, num_controls × freq_group, controlling for size): no significant interaction terms (all p>0.35) — no evidence the preparedness effect size itself varies by frequency group.
-- **Contrast with the severity finding**: this is the opposite outcome from the Step 5d severity check, which *did* fall apart/reverse under stratification (revealing a size confound). Here the no-cost effect survives stratification cleanly in both size (Step 4) and frequency (Step 7) — combined with Step 6's null freq×prep correlation, the working picture is that **preparedness and frequency act as two independent, non-interacting predictors of the no-cost outcome** (preparedness lowers it regardless of attack frequency; frequency raises it regardless of preparedness level), rather than either one mediating or confounding the other.
-
----
-
-## Status
-Pipeline structure agreed. Core empirical analyses complete (prevalence, lognormal cost fit, mixture model, bridge). Main open items before simulation: Step 3 (freq by size) and Step 1 (ONS counts).
-
----
-
-## New data source found: ic3.zip (2026-07-08) — explored, not yet used
-
-`ic3.zip` (unexplained/untouched in repo root since 28 May) turned out to be 14 FBI **IC3 (Internet Crime Complaint Center) Annual Reports**, PDF, years 2011–2025 (2014 missing). Extracted to `data/raw/ic3/` (gitignored candidate — not yet added to `.gitignore`, ~39MB of PDFs). Installed `poppler` (via brew) to enable `pdftotext`/page reading, since no PDF library was in the venv.
-
-**What's in them:** US national cybercrime *complaint* statistics (not a business survey) — annual complaint counts and total $ losses (2025: 1,008,597 complaints, $20.877bn losses), broken down by crime type (phishing, ransomware, BEC, extortion, investment fraud, etc.), by victim age group, by US state, plus narrative sections on ransomware, elder fraud, cryptocurrency, AI-related crime. Business Email Compromise and Ransomware get dedicated detail sections with year-over-year trend data.
-
-**Relevance assessment (not acted on):** This is US, complaint-based (self-reported to FBI, not a stratified business survey like the UK CSBS), and not stratified by business size — structurally very different from the primary dataset (`data/raw/data.sav`, the UK Cyber Security Breaches Survey). Not usable as a direct input to the UK business estimate. Potential uses if wanted later: (a) rough cross-national sanity check / order-of-magnitude comparison for total losses, (b) crime-type mix comparison (e.g. is phishing similarly dominant in US complaint data — yes, 191,561 complaints, largest category by count, consistent with phishing's ~57% share of UK incidents), (c) time-series trend context (complaints/losses have grown ~20x since 2001). None of this has been analyzed quantitatively yet — this was purely an unzip-and-inspect pass, no numbers pulled into any script or estimate.
-
-**Update (2026-07-08, same day):** read all 14 reports in full (parallelized across 6 research agents, one per group of years) and extracted every quantitative table — crime-type breakdowns by count and by loss, state/country breakdowns, age demographics, ransomware/BEC/crypto/tech-support deep dives, elder-fraud figures, historical trend series. Synthesized into `data/raw/ic3/IC3_SUMMARY.md` (headline year-over-year tables, dominant crime types by year, data-quality caveats). Full plain-text extractions of all 14 PDFs also persisted at `data/raw/ic3/text/*.txt` (via `pdftotext -layout`) so future sessions can grep for a specific figure without re-running extraction or spawning agents again.
-
-**Headline takeaways:** complaints roughly tripled 2011→2025 (314k→1.01M) while reported losses grew ~43x ($485M→$20.9B) — average loss per complaint rose sharply, driven by BEC and later investment/crypto fraud growth, not just complaint volume. Phishing has been the #1 crime type by complaint count every year since 2019 (consistent with this project's UK finding that phishing dominates business incidents). BEC was the #1 loss category 2015–2021; investment fraud (crypto-driven) overtook it from 2022 onward. Important caveat for any comparison work: **no business-size or business-vs-individual breakdown exists anywhere in these reports** — this is the structural reason IC3 data can't feed directly into the UK per-business cost estimate; it remains cross-national context/color only, per the assessment above. Category definitions also shift across years (e.g. Phishing/Spoofing merged in 2023), so raw year-over-year comparisons need care — see caveats in `IC3_SUMMARY.md` §4.
-
-**Not yet decided:** whether/how to use this dataset at all in the actual estimate. Flag for discussion before investing further analysis time here, per project norm of not going deep without consulting first.
-
-**Update (2026-07-09): crime-type tables built as DataFrames.** `src/ic3_crime_types.py` hand-transcribes the "crime type by count" and "crime type by loss" tables for 2015-2025 (2011-2013 lack a unified table in the source reports; 2014 report missing) into pandas DataFrames — long format (year, category_raw, category, value) and wide/pivoted format (year x canonical category). Includes a `canonicalize()` mapping so categories that got renamed/merged across years (Phishing/Vishing/Smishing/Pharming → Phishing → Phishing/Spoofing after the 2023 merge with Spoofing; BEC/EAC → BEC → Business Email Compromise) line up under a stable name, while keeping the raw per-year label too so merge/split points stay visible rather than being silently blended. Outputs written to `data/raw/ic3/crime_type_{counts,losses}_{long,wide}.csv`.
-
-**Update (2026-07-09), same day: growth decomposition analysis, written up in full in `data/raw/ic3/IC3_SUMMARY.md` §7.** Extended `src/ic3_crime_types.py` with several follow-on analyses on the same crime-type data. Headline findings: (1) IC3's total loss growth is highly concentrated — 5 "leader" categories (Investment, Tech Support, BEC/EAC, Personal Data Breach, Government Impersonation) explain ~80% of loss growth in both 2020→2025 and 2022→2025 windows, with Investment alone ~54-57%; complaint-*count* growth is not similarly concentrated (it's several categories rising while others, notably Phishing, actively shrink in volume). (2) A "flat total loss" category can hide two opposite mechanisms — count falling with severity rising (Overpayment/419, Credit Card Fraud) vs. count rising with severity falling (Ransomware, Botnet, Data Breach) — always decompose before interpreting a flat aggregate. (3) The pooled "rest" (all categories excluding the 5 leaders) is not stagnant — grew 5.3x nominal / 3.9x real (CPI-adjusted) 2015→2025 — but its share of total dollar losses fell from 66% to 21% as the leaders grew far faster (37.9x nominal / 27.9x real); inflation (35.8% cumulative 2015-2025) explains only a small slice of any of this. (4) Investment fraud's growth is overwhelmingly crypto-driven: crypto-specific investment fraud accounts for 87.9% of Investment's loss growth 2021→2025, making crypto-investment fraud the single largest identifiable driver of total IC3 loss growth in that period.
-
----
-
-## Pipeline Design Discussion (2026-07-12)
-
-### Proposed end-to-end estimate structure (discussed interactively, not yet implemented)
-
-Synthesis of how the full pipeline is imagined to fit together, incorporating all findings above:
-
-1. **Stratification:** four size bands (Micro/Small/Medium/Large), as in the survey.
-2. **Prevalence:** empirical P(attacked|size) directly (40.6/51.0/65.9/68.6%) — logistic fit adds nothing over raw proportions.
-3. **Frequency:** draw freq from the pooled Micro/Small/Medium empirical distribution, or Large's own, per the Step 3 decision.
-4. **Cost of the reported (max) incident:** per (size, freq) cell zero-inflated lognormal, as already fit in `cost_distribution.py`.
-5. **Bridge (max → total annual cost) — the open design question:** freq=1 needs no bridge (max = total). Phishing (~57% of incidents by count) has the validated mixture-model bridge (≈1.02 for the mass-market component, with the freq=6 subgroup treated as a bounded sensitivity range rather than resolved to one multiplier). For all other attack types (ransomware, malware, DoS, hacking, impersonation, website takeover — collectively too small individually to support the mixture test), no validated bridge exists; only the a priori bounds are available (conservative: total=max; pessimistic: total=k_implied×max). Proposed structure: three explicit tiers (conservative / best-estimate / pessimistic) rather than one point estimate, where the "best estimate" tier uses the mixture bridge for the phishing-attributed share of cost and defaults to the conservative bridge (1×) for everything else, with an explicit caveat that this likely underestimates the non-phishing contribution.
-6. **Preparedness:** treated as interpretive color for the write-up (real, independent-of-size/frequency finding that preparedness lowers no-cost rate but not conditional severity), not as a pipeline input/stratification variable.
-7. **Blocking gap:** N(size) — ONS business counts — not yet fetched; needed to turn the conditional distributions above into an absolute £ total.
-
-### User's restatement (status log, verbatim)
-
-> So we use the received stratification. Then, we use the prevalences – again just empirical numbers from the data. Basically the same for frequencies as well. Then we use a lognormal fit to model max_cost | (size, freq). (Lognormal fit per conditioned cell). Then we somehow need to bridge from the obtained maximum distribution to the total damage distribution, and we get the final result.
->
-> So the main tricky part is the bridging, and maybe also the lognormal modeling of freqs is the other part that one might conceivably challenge. But so, zooming in on the bridge problem, what we have is:
-> - no bridging needed for freq=1, since max cost _is_ total cost then
-> - for phishing, we have a validated, sophisticated model
-> These together cover a substantial number of incidents, but there are a number of crime subtypes (which possibly drive a considerable amount of costs), that it doesn't. For those, we can't really port the phishing machinery.
->
-> So the main question at hand right now is what to do for those crime subtypes. As a starting point, we have some a priori bounds for a firm's total cost: lower is 1x max individual cost, upper is freq x max ind cost. So these can be used to get a min/max estimate for those components. But this presumably yields a pretty wide range. So we could think about ways to infer a reasonable "midpoint" multiplier for these subtypes. Or we could think about tricky techniques (some smart pooling, whatever really) to push through the phishing machinery on the remainder. Or any other bridging technique is welcome.
->
-> What do we expect, informally and loosely speaking, as to how much _money_ (as opposed to crime count, which if I understand is what phishing is 57% of) does phishing cover. Are some of the residual crime types much costlier. What about back-of-the-envelope magnitudes as to incident damage x incident freq? In a nutshell, how much we are missing.
-
-### Informal answer: how much £ is phishing likely to cover vs. residual types (2026-07-12)
-
-Not yet computed empirically — this is a qualitative/directional read based on findings already in hand, to guide prioritization:
-
-- Phishing's 57% figure is a **count share** (fraction of attacked firms whose single most disruptive incident was phishing), not a £ share. Its per-incident severity is comparatively low: phishing once-only firms show only 2.3% at damage_band≥£100k (`attack_type_breakdown.py`), and phishing-only firms' mean damage_band sits around 1.4–1.7 (low bands, i.e. sub-£1k typical).
-- Ransomware, by contrast, is rare by count (n≈28 attacked firms total, most-disruptive-type basis) but has a dramatically fatter tail: once-only ransomware shows ~20% at damage_band≥£100k — roughly an order of magnitude higher tail probability than phishing's. Hacking and multi-vector incidents also plausibly skew this way (2 of 3 extreme-cost outliers in the freq=6 phishing anomaly were actually multi-vector, not pure phishing — see `freq6_anomaly.py`).
-- This "common-but-cheap vs. rare-but-severe" pattern has independent corroboration in the IC3 (US) data already reviewed: phishing is the #1 crime type by *complaint count* every year since 2019, yet BEC/Investment-fraud/Tech-support — much smaller by count — have driven the overwhelming majority of *loss* growth (5 categories excluding phishing explain ~80% of loss growth 2020→2025+). Structurally the same shape is plausible here: count concentration in one cheap/common type, £ concentration in a few rare/severe types.
-- **Informal magnitude read:** phishing's £ share of total cost is very plausibly well below its 57% count share — a rough guess would put it in the meaningful-but-minority range (order of a few tens of percent), with a real possibility that the untreated non-phishing residual (ransomware/hacking/DoS/multi-vector especially) accounts for a comparable or larger share of total £ despite being a small minority of incidents. This is the least convenient possible answer for the modeling gap: the part of the data we can't bridge well (non-phishing) may also be the financially dominant part, which raises the stakes on getting tier 6's non-phishing treatment right rather than treating it as a minor residual.
-- This is a directional read, not a computed number. Flagged as a natural next analysis: compute total cost mass per `disrupta` type (Σ over cells of count × E[cost_band | cell, type]) under the conservative bridge, to replace this qualitative guess with an actual first-pass £ breakdown by type — cheap to do since it only needs the existing per-type cost distributions, no new bridge model required.
-
-### Follow-up: £ share by type — computed (src/estimation/cost_share_by_type.py, 2026-07-12)
-
-Ran the analysis flagged above: for each attacked firm with valid `disrupta`, converted `damage_bands` to a £ midpoint (same `DAMAGE_MIDPOINTS` table as `attack_type_breakdown.py` analysis 5) and summed within type (n=982 firms with valid disrupta, both weighted and unweighted). This is the conservative-bridge (total=max) £ contribution per type — confirms and sharpens the qualitative guess above, more starkly than expected:
-
-- **Phishing: 59.0% of incidents by count (65.0% weighted) but only 19.3% of £ (11.1% weighted).** Mean £ per incident: 1,318 unweighted / 403 weighted — far below every other type.
-- **Non-phishing types collectively: 41.0% of count (35.0% weighted) but 80.7% of £ (88.9% weighted).** Mean £ per incident: 7,925 unweighted / 5,998 weighted — roughly 6–15x phishing's per-incident mean.
-- **Ransomware** is the standout: only 2.9%/2.5% of count, but ~30% of £ mass both weighted and unweighted — tied with Impersonation as the largest single £ contributor. Fat-tail check confirms it directly: P(damage_bands=10, i.e. ≥£100k) is 10.7% unweighted / 7.5% weighted for ransomware vs. 0.2%/0.0% for phishing — roughly a 50x difference in top-band probability.
-- **Impersonation** is a new and somewhat unexpected finding: 24.5%/18.3% of count but 33.8% weighted £ share (18.3% unweighted) — the single largest weighted £ share of any type, driven by a much higher weighted mean per incident (£4,361) than its unweighted mean (£3,003) would suggest. This is worth flagging since the earlier mixture-model work (`mixture_model.py`) found Impersonation's F_T/F_M components nearly identical (no real two-regime structure) — that finding was about the *shape* of its cost distribution, not its *level*, and apparently the level is high regardless of shape. Not yet reconciled or investigated further.
-- **Hacking and DoS** each contribute ~10% of £ from only ~3% of count (mean £17k–25k unweighted per incident vs. phishing's £1.3k), consistent with the fat-tail hypothesis.
-
-**Important caveat on direction of bias:** this is the conservative bridge (total=max only, no repeat-attack multiplier) applied uniformly, so it understates absolute £ figures for every type roughly similarly — but phishing is the one type where we know the bridge correction is small (mixture bridge ≈1.02 for its dominant mass-market component), so phishing's *relative* share is close to correct as computed. Non-phishing types have no validated bridge; applying any bridge >1 (e.g. the pessimistic k_implied tier) would only inflate their £ contribution further, not reduce it. So **≥80% is a reasonable floor, not a ceiling, for non-phishing's true share of total cost** — the validated phishing machinery likely governs something on the order of 10-20% of total £ cost, and the ~80%+ majority sits in exactly the attack-type territory where no bridge model has been validated. This meaningfully raises the stakes on Tier 5/6 of the proposed pipeline design (how non-phishing types are bridged) — treating it as a minor residual understates its importance to the overall estimate considerably.
-
-**Not yet done:** reconciling this with the per-(size,freq) lognormal cell fits in `cost_distribution.py` (which pool across attack types); investigating why Impersonation's weighted mean is so much higher than unweighted (which firms carry high survey weight there); any attempt at a non-phishing bridge model given this now-quantified stake.
-
-### Impersonation deep-dive (src/estimation/impersonation_investigation.py, 2026-07-12)
-
-Follow-up on the Impersonation lead from `cost_share_by_type.py` (largest weighted £ share, 33.8%). Unlike ransomware/hacking/DoS, Impersonation has n=241 — comparable to phishing's per-size-band samples — so sample size alone doesn't rule out a mixture-model approach the way it did for the other non-phishing types. Four findings:
-
-**1. No usable severity/engagement proxy exists for Impersonation.** Checked `impersonationhack`/`impersonationtkvr` (Q53B/Q53C: did the impersonation involve unauthorised access / a website-takeover?) and `fraud4_comb1/2` (Q88A: impersonation as a downstream consequence of any breach). None are usable: the two Q53 flags are ~95-97% "No" (only 7-10 firms of 241 say "yes, some"), and fraud4 has only 14/241 (5.8%) non-missing. Unlike phishing's `phishcon_bands`/`phisheng_bands` (real spread across hundreds of firms), there is no independent ground-truth variable to validate an Impersonation mixture split the way engagement validated phishing's. Any mixture result for Impersonation will be SVD-inferred only, with no independent check available.
-
-**2. Per-size-band rank-2 retry reveals REAL structure for Micro and Small — this had never been run before (mixture_model.py only did the per-size breakdown for Phishing) and it changes the picture.** The original "Impersonation is degenerate" conclusion (`mixture_model.py`, all sizes pooled) turns out to hold only in the pooled test:
-   - Micro (n=49 across 3 freq groups): 97.3% var explained by 2 components, F_T/F_M mean-band gap = **1.30** (real separation — F_T mean band 3.63/10% no-cost vs F_M mean band 2.33/52% no-cost)
-   - Small (n=67): 98.2% var explained, mean-band gap = **1.91** (real separation — comparable to phishing's own per-size gaps)
-   - Medium (n=66): 97.1% var explained, mean-band gap = **0.34** (degenerate, consistent with the original pooled finding)
-   - Large: untestable (only 1 freq group clears n≥8)
-
-   **This partially reopens Open Decisions #4 / Open Questions #3 ("mixture model scope — CLOSED, infeasible for other types"):** that closure was correct for ransomware/malware/DoS/hacking (genuinely too few firms to split by freq at all) but the Impersonation "degenerate" verdict was an artefact of pooling across size bands, not a fundamental data limitation — same lesson as Step 3's freq-by-size finding (Large behaves differently; pooling sizes can mask real structure). Micro/Small Impersonation now look like a second genuine candidate for a validated mixture bridge, alongside phishing — but unlike phishing, there is no independent (engagement-style) confirmation available (see finding 1), so this is real SVD signal, not yet independently validated the way phishing's was.
-
-**3. The outsized weighted £ share is mostly a small-n tail artefact, not broad-based.** 89.1% of Impersonation's weighted £ mass comes from just 8 of 241 rows; a single row alone (Micro firm, band=10/£300k midpoint, weight=1.54 — an unremarkable weight, not a weighting artefact) accounts for **69.5%** of the entire weighted £ total. `corr(weight, damage_bands) ≈ 0` — the gap between weighted (33.8%) and unweighted (18.3%) £ share is not a general weight/cost relationship, it's concentrated in a handful of specific rows. That single dominant row also has `crimecost_bands=10`, matching `damage_bands=10` exactly — independent confirmation that, for this one firm, the conservative bridge (total=max) is exactly right, not an underestimate. But the row flags **Hacking + Impersonation + Phishing + WebsiteTakeover simultaneously** — a multi-vector compromise, not a clean single-type incident, with its full cost attributed to "Impersonation" only because that's what `disrupta` (most-disruptive-type) happened to code it as. 5 of the top 8 £-contributing rows are multi-vector.
-
-**4. New general finding: severity correlates cleanly with attack-type breadth across the ENTIRE dataset, not just Impersonation.** Checked mean # attack types flagged (`n_types`) by `damage_bands` level across all 982 attacked firms: rises monotonically from 1.44 types (no-cost band) to 4.38 types (top band); % of firms with >1 type flagged rises from 32.5% to 100%. This generalises the freq6_anomaly.py finding (2/3 of that anomaly's cost-tail outliers were multi-vector) and finding 3 above into a structural fact: **the costliest incidents in this dataset are overwhelmingly multi-vector compromises, not clean single-type attacks.** This is a real, previously-undocumented caveat for ANY single-type bridge model applied to the tail — `disrupta`'s "most disruptive type" attribution becomes progressively more arbitrary exactly where the £ stakes are highest. Phishing's own validated bridge is comparatively insulated from this (its mass-market component rarely reaches the top bands), but this is a structural reason to expect any non-phishing type-specific bridge — including the newly-reopened Micro/Small Impersonation lead in finding 2 — to be less clean at the tail than the mid-distribution SVD fit suggests.
-
-**Not yet done:** extracting mixing weights (π_f) for the Micro/Small Impersonation split to check monotonicity (as was done for phishing); deciding whether to pursue a Micro/Small-only Impersonation bridge given the lack of independent validation; whether the general multi-vector/severity finding (4) should change how `disrupta`-based type attribution is used elsewhere in the pipeline (e.g., cost_share_by_type.py's £-share breakdown itself inherits this same attribution ambiguity at the tail).
-
-### Correction (2026-07-12, same day): data-model clarification, and the "multi-vector" claim was overstated
-
-User pushback prompted a re-check of what the underlying variables actually mean. Important clarification, and a real walk-back of findings 2-4 above:
-
-**What the data actually is:**
-- `type1`–`type16` (Q53A, "Have any of the following happened... in the last 12 months?") are **whole-year presence flags per type**, not evidence of a single combined incident. A firm with `type4=1` and `type6=1` had hacking AND phishing *at some point that year* — not necessarily the same event, not necessarily simultaneous.
-- `freq` (Q54, "how often... did you experience **any of** the cyber security breaches or attacks you mentioned?") is a **single, whole-year, cross-type frequency** — not type-specific. For a disrupta=5 (Impersonation) firm, `freq` reflects how often *anything* happened that year, not how often impersonation specifically happened.
-- `disrupta` labels only which single type was the year's *most disruptive* incident; `damage_bands` costs only that one incident.
-- `disruptphish1`–`18` (Q64B) is the **only** place a genuine same-incident cascade/consequence chain is directly measurable in this survey ("what did this phishing attack result in") — and it exists for phishing only, no other type.
-
-**Consequence for the "multi-vector" claims in this file and in `freq6_anomaly.py`:** those claims (both the freq=6 phishing outliers and Impersonation's dominant outlier row) were based on co-occurring `type` flags, which do **not** distinguish "one incident touched multiple systems" from "this firm had several separate incidents of different types that year." The correct, defensible claim is only the latter framing: firms with the costliest single worst incident also tend to have experienced more *different kinds* of breaches somewhere in that year (a "this firm had a rough year" pattern) — not that the worst incident itself was a multi-vector attack. This does not overturn the freq=6/Impersonation-outlier findings' practical implication (the tail is still messy and hard to attribute cleanly to one type) but the causal story of *why* was overclaimed. `freq6_anomaly.py`'s text is left as-is (historical record of what was found/thought at the time) — this note is the correction of record for both it and the Impersonation write-up above.
-
-**More importantly, this reveals a real methodological weakness in finding 2 above (the Micro/Small Impersonation "real separation"):** since `freq` is cross-type, grouping Impersonation firms by `freq` risks the split partly reflecting "how frequently-attacked was this firm overall" rather than an impersonation-specific targeted/mass distinction — exactly the kind of contamination phishing's result is immune to (it was independently re-validated with phishing-*specific* `phisheng_bands`/`phishcon_bands`; no such variable exists for Impersonation, confirmed in finding 1).
-
-**Checked directly** (`impersonation_investigation.py`, section 4): among the 241 Impersonation-disrupta firms, `n_other_types` (count of OTHER attack types the firm also experienced that year) correlates with `freq` at Spearman ρ=0.294, and rises monotonically-ish across freq groups (mean 0.70 → 1.08 → 0.83 → 1.39 → 1.86 → 2.83 from once-only to several/day). More decisively: **within every freq group tested, firms with ≥1 other co-occurring type have meaningfully higher mean `damage_bands` than firms with 0 other types** — 3.11 vs 2.03 (once-only), 2.68 vs 1.46 (>once<monthly), 2.67 vs 1.33 (~monthly): roughly +1 to +1.5 bands, holding freq fixed. This is real, direct evidence that "other types also occurred" is doing independent work beyond freq alone.
-
-**Updated verdict on finding 2:** the Micro/Small "real rank-2 separation" is now downgraded from "a promising second validated-bridge candidate" to "unresolved and likely at least partly confounded" — the apparent F_T/F_M split plausibly reflects, in part, firms that had a broadly bad year across several attack types (higher freq + more co-occurring types + higher cost, all moving together) rather than a clean impersonation-specific targeted/mass mechanism. This dataset has no incident-level detail (no per-incident type/cost pairing, no impersonation-specific count variable) that could fully disentangle the two stories. Recommendation: do not treat this as a second phishing-style validated bridge without a much stronger caveat than originally given; if pursued further, would need to control for `n_other_types` explicitly (e.g. restrict to impersonation-only firms with `n_other_types==0`) rather than taking the pooled-by-freq SVD result at face value — though that restriction would shrink the already-small per-size samples further.
-
-### MAJOR DISCOVERY, CONFIRMED TRUE (2026-07-12): SEVERAL EXISTING `COST_COLNAMES` ARE REAL, TOTAL-ANNUAL-COST-PER-ATTACK-TYPE VARIABLES
-
-**`ranscost_bands`, `hackcost_bands`, `doscost_bands`, `viruscost_bands`, `tkvrcost_bands`, AND `hacksumcost_bands` ARE NOT SINGLE-INCIDENT COSTS — THEY ARE THE TOTAL COST OF THAT SPECIFIC ATTACK TYPE FOR THE WHOLE YEAR, CONFIRMED DIRECTLY FROM THE CODEBOOK (`data/raw/csbs.rtf`):**
-- `ranscost_bands` = "Total cost of **ransomware** attacks to organisation" (whole year)
-- `hackcost_bands` = "Total cost of **deliberate hacking** incidents" (whole year)
-- `doscost_bands` = "Total cost of **deliberate and successful DoS** attacks" (whole year)
-- `viruscost_bands` = "Total cost of **successful malware** attacks" (whole year)
-- `tkvrcost_bands` = "Total cost of **online takeovers**" (whole year)
-- `hacksumcost_bands` = "Total cost of **criminal hacking and online takeovers**" combined (whole year)
-
-Combined with `damage_bands` (cost of the single worst incident) and `disrupta` (which type that incident was), a firm with `disrupta==type` and a valid type-specific total-cost variable gives a **directly measured** bridge ratio (`total_type_cost / single_worst_incident_cost`) — no mixture model, no SVD, no proxy variable needed. The earlier attempt to use these (`attack_type_breakdown.py` Analysis 5) additionally required `n_types==1` (this was the *only* type all year), which crushed samples to n<3. That restriction was unnecessary — `disrupta==type` alone guarantees `damage_bands` belongs to that type. Dropping it: **Ransomware n=28→21 with valid cost data** (was n<3), Website takeover n=31→10, DoS n=27→8, Other malware n=33→6, Hacking n=21→2 (still too small).
-
-**BUT: computing the actual ratios ran into the exact same wall as "Avenue A" (damage_bands vs crimecost_bands, closed earlier as a dead end) — this is a recurring survey-data-quality issue, not a new problem specific to these variables.** (`src/estimation/type_specific_bridge.py`)
-
-- Raw median ratio across Ransomware/Malware/DoS/WebsiteTakeover: **~0.47-0.51, NOT close to 1.** 50-67% of firms in every type show ratio<1 — logically impossible (a type's whole-year total cost cannot be less than its own single worst incident's cost) if both variables are answered consistently about the same year.
-- Tested and **ruled out** the obvious fix (that the type-specific variable measures a narrower cost concept, e.g. external payments only, the way "Avenue A" found `crimecost_bands` = direct financial losses only vs `damage_bands` = broad all-in cost): compared `ranscost_bands` against just the external-payment sub-components of the same incident (`damagedirsx_bands`+`damagedirlx_bands`) instead of full `damage_bands` — median ratio barely moved (0.583 vs 0.467), and one row is flatly self-contradictory (£300k in damage_bands AND £300k specifically coded as external payments for that one incident, yet `ranscost_bands`, the whole-year ransomware total, reports **under £100**). This is not explicable by definitional mismatch — it's a genuine internally-contradictory response.
-- **Conclusion: this is the same general phenomenon as "Avenue A"** — respondents do not answer "total cost of type X this year" and "cost of your single worst incident" consistently with each other in this survey's banded retrospective-recall format, even when logic requires total ≥ worst-incident. Confirmed generalisable, not type-specific: the original Avenue A finding showed the identical pattern (crimecost_bands lower than damage_bands for 50% of freq=1 firms, where they logically *must* match).
-- Restricting to the "internally consistent" subset (ratio ≈ 1, i.e. total ≈ single worst incident, meaning that one incident WAS effectively the whole year's cost for that type): this subset is large relative to the "some real accumulation beyond the max" subset (ratio>1) across every type — 0 of 20 ransomware firms, 0 of 5 malware, 1 of 8 DoS, 1 of 9 website-takeover show ratio meaningfully >1. So among firms whose two answers are at least *internally coherent*, the evidence leans toward "conservative bridge (≈1) is a reasonable working assumption" for these types too — consistent with, not overturning, the project's existing conservative-tier default — but this is weak corroborating evidence sitting inside a lot of noise, not a precise calibration.
-- **Phishing cross-check** (single-type phishing firms, `damage_bands` vs `crimecost_bands`, n=8 only): median ratio = 1.0 (reassuring, consistent with the validated ~1.02 mixture bridge) but mean = 12.7, max = 60 — a couple of wildly divergent firms illustrate the same self-report noise problem in the opposite direction (total reported much *higher* than the single incident). n=8 is too small to read as anything beyond "consistent with, doesn't contradict, the existing phishing bridge."
-
-**Also corrected in passing:** `damage_bands` (and `crimecost_bands`, `hacksumcost_bands`, `fraudcost_bands(2)`, `notfraudcost_bands`, and the four `damagedir*/damagestaffx/damageindx_bands` sub-components) actually use a **13-band codebook scale** going up to "£5 million or more" (bands 11=£500k-1m, 12=£1m-5m, 13=£5m+), not the 10-band scale (capped at £100k-500k) used in every `DAMAGE_MIDPOINTS`-style dict across this project so far (`cost_distribution.py`, `attack_type_breakdown.py`, `cost_share_by_type.py`, `impersonation_investigation.py`). **Checked empirically — no live impact:** no firm in this dataset's `damage_bands`, `crimecost_bands`, or `hacksumcost_bands` actually reaches band 11+ (max observed is band 10 everywhere except `fraudcost_bands2`, which has 3 firms at band 11 — not used in any existing analysis). So nothing has been silently miscounted so far, but `type_specific_bridge.py` defines a corrected `FULL_BAND_MIDPOINTS` (1-13) for future-proofing; other scripts' 10-band dicts should be extended the same way if this project is ever rerun on an updated survey wave.
-
-**Bonus, not yet followed up:** `type_specific_bridge.py` also pulled the four `damage_bands` sub-components (external payments during/aftermath, staff time, damage/disruption) broken out by freq group, as a lead for the still-unresolved freq→cost anticorrelation (Core Finding #1). No clean pattern jumped out on a first look (all four components are individually noisy across freq groups, small per-cell n) — flagged as a lead for a future session, not analysed further this session.
-
-**Net assessment:** the discovery is real and worth having made — it's now confirmed that genuine per-type total-annual-cost data exists in this survey for 5-6 non-phishing types, which is a meaningfully richer picture of the dataset than assumed a few sessions ago. But it doesn't hand us a clean, precise bridge multiplier the way hoped — it instead reveals (a second time, more broadly) that this survey's paired total-vs-single-incident cost questions are noisy at the individual-firm level. The practical upshot for the pipeline is modest but real: weak additional corroboration for the conservative-tier default on non-phishing types, not a new validated best-estimate bridge.
-
-**Correction (2026-07-12, same day): "just noise" was the wrong characterisation — the pattern has a specific, explicable signature, and it isn't a narrow-cost-category effect either.** User pushback ("isn't it a different definition of cost?") prompted a proper check rather than the hand-wave above. Two things checked:
-
-1. **The ratio distribution isn't symmetric noise — it has a hard ceiling.** Across all 4 types: ratio>1 occurs in essentially 0 cases (Ransomware 0/20, Malware 0/5, DoS 1/8, Takeover 1/9), with the rest split between ≈1 (total = single incident exactly) and <1. Pure random measurement noise would scatter roughly symmetrically above and below 1 — this near-total absence of ratio>1 is a systematic signature, not noise, and the earlier "same noise as Avenue A" framing undersold that.
-2. **But it's also not simply "ranscost_bands measures a narrower cost sub-category"** (e.g. hard/direct costs only, excluding the softer staff-time/disruption components) — tested via Spearman correlation (robust to band-rounding, unlike the exact-ratio test used earlier): `ranscost_bands` correlates **best with the FULL `damage_bands` sum** (ρ=0.675), not with just the external-payments sub-components (ρ=0.509) or just staff-time+disruption (ρ=0.385). If `ranscost_bands` targeted one specific narrow slice of cost, it should correlate best with that slice specifically — it doesn't; it tracks overall incident severity broadly, just less completely.
-
-**Best-supported explanation: an elicitation-method effect, not a definitional one.** `damage_bands` is constructed by walking the respondent through 4 specific cost categories (external payments during/aftermath, staff time, damage/disruption) and summing them. `ranscost_bands` is a single holistic "what was the total cost of ransomware attacks this year" question, asked once, much later in the survey. This is a well-documented survey-methodology phenomenon (the "unpacking effect": itemised/decomposed recall questions systematically yield higher totals than a single holistic recall question, because respondents under-recall when asked to sum everything in their head at once) — and it exactly predicts the observed signature: `ranscost_bands` ≤ `damage_bands` almost always (holistic recall undershoots), tracks overall severity rather than one specific cost category (it's not narrowly targeted, just less completely recalled), and hits ≈1 when the incident was simple enough that recall loss didn't matter much.
-
-**Implication, revised from the "just noise, weak corroboration" framing above:** this means `ranscost_bands` (and siblings) are likely a **downward-biased** measure of true annual type-cost, not a neutral/unbiased-but-noisy one — so they can't be used as a reliable independent ceiling/validation for the bridge multiplier either (a firm could have real additional ransomware cost beyond its worst incident, and still under-report the type-total below `damage_bands` due to recall loss). This slightly firms up, rather than weakens, the case that `damage_bands`'s itemised construction is already a comprehensive costing of the single worst incident — but it also means this avenue cannot supply a trustworthy non-phishing bridge estimate in either direction (can't confirm bridge≈1, can't rule it out either). Combined with the Impersonation mixture-model dead end (freq-contamination) and the small-n infeasibility for the other types, **all three attempted routes to a validated non-phishing bridge multiplier (mixture model, type-specific totals, Impersonation retry) are now exhausted for this dataset.** The practical recommendation is unchanged in direction but firmer in confidence: present the non-phishing ~80%+ of total £ mass with genuinely wide conservative/pessimistic bounds in the final estimate, rather than continuing to search this dataset for a precise multiplier — that search has now been tried from three independent angles and closed each time for a specific, understood reason, not for lack of trying.
-
-### Follow-up (2026-07-13): pushed further per user request ("don't give up so easily") — building censored per-firm-per-type cost records and fitting actual distributions, not just point-ratios
-
-User's idea: for every attacked firm, build a per-type cost record using the *tightest bound the data actually supports* rather than treating each firm/type as either "exact" or "useless" — then infer what distribution of per-type damages could give rise to that. This is a materially different (and better) approach than the point-ratio test above, which only used the `disrupta==type` subset. Two things checked first, both real and useful:
-
-1. **The type-specific total-cost columns are populated whenever the type occurred at all — not restricted to `disrupta==type`.** E.g. for Ransomware, 82 firms have `type1==1`, of which only 30 are `disrupta==Ransomware`, yet 33 firms have a valid `ranscost_bands` value (12 of those are firms where Ransomware happened but wasn't the worst incident). `type_specific_bridge.py` only used the `disrupta==type` subset, discarding real total-cost observations. Checked and confirmed **no firm has a valid type-cost value while its flag is 0** for Ransomware/Malware/DoS (cost columns require the type to have occurred) — except:
-2. **`hackcost_bands` is broader than `type4` alone.** 35 firms have valid `hackcost_bands` with `type4==0`; of those, `type7` (staff unauthorised access) or `type8` (outsider unauthorised access) is set instead. Codebook confirms: `hackcost_bands` = "Total cost of **deliberate hacking incidents**" — evidently the union of Q53A's bank-account-hacking item (type4) with the unauthorised-access items (type7/type8), not just type4. Modelled as the union going forward, with `disrupta` codes {4, 7, 9} (7=staff, 9=outsiders) as the corresponding "this bucket was the worst incident" condition.
-
-**Built (`src/estimation/type_cost_censored_model.py`):** for each of 5 types (Ransomware, Malware, DoS, broad-Hacking, Takeover) and every attacked firm, construct one of:
-- flag=0 → cost=0 (point mass)
-- valid direct cost column (any flag state) → exact interval from the 12-band TYPE_COST scale (trusts the more specific variable over the flag when both exist)
-- flag=1, no direct cost column, type IS `disrupta` → **lower-censored** at the `damage_bands` interval's lower bound (we know the year's total is at least this, since this was that type's own worst incident)
-- flag=1, no direct cost column, type is NOT `disrupta` → **upper-censored** at the `damage_bands` interval's upper bound, under the assumption that the officially-most-disruptive incident (of some other type) cost at least as much as this quieter one — **an assumption, not a certainty, since `disrupta` is elicited as disruption, not cost; flagged explicitly in the script's docstring and output, not treated as ground truth**
-
-Then fit a **survey-weighted, interval/censored-likelihood zero-inflated lognormal** per type — the same machinery `cost_distribution.py` already uses for the plain banded fit, extended with lower- and upper-censored likelihood terms for the two new observation kinds. Multi-start Nelder-Mead, sigma capped at 3.8 (the range seen elsewhere in `cost_distribution.py`'s cell fits is 1.3–3.8, with one known pathological outlier at 47 — same unbounded-likelihood failure mode as encountered here, evidently a pre-existing unflagged issue in that script too).
-
-**Results:**
-
-| Type | n exact/lower/upper | E[cost \| occurred] | E[cost] (per attacked firm) | vs. naive single-worst-incident mean |
+Started fresh on 2026-10-05. The old notes are in `archive/NOTES_old_2026-07_to_2026-10.md`. They are history only, not a working document. Only look in them for a specific detail, and check anything taken from them before relying on it.
+
+This file is being filled in by going through the project together with the user, one topic at a time.
+
+## Summary of findings so far (2026-10-06; details in F1–F18 below)
+- **Size and frequency (F1):** bigger firms are attacked more often (40% Micro → 68% Large). Among attacked firms, how often they're attacked barely changes with size. Worst-incident cost rises clearly with size. Being attacked more often does not mean a costlier worst incident.
+- **Types (F2):** phishing 85% of attacked firms, impersonation 35%, malware 18%, others about 6% each. Cost order: mass phishing < targeted phishing ≈ impersonation < other types < ransomware. Average costs per type are mostly single firms.
+- **Co-occurrence (F3, F4):** one attack can tick several boxes. All types co-occur more than chance, mostly through one shared exposure level: a quiet majority and a small heavily attacked group. More phishing goes with more other types.
+- **Cost is concentrated in broad firms (F5):** the 15% of attacked firms with 3+ types carry about 77% of cost. Breadth predicts a big loss; attack frequency doesn't.
+- **Breaches (F6, F7):** a breach makes the worst incident much costlier for every type. Without one, £5k or more is almost never reached. There is no separate "big breach" cluster; broader breaches shift the whole cost distribution up.
+- **Breach chance (F9–F13):** with per-type chances fitted on all firms, broad firms are breached about as often as independent per-type chances predict. The earlier "breached below independence" result was an artefact of lumping types together and of a small, odd baseline of S-only firms (F12).
+- **Cost beyond independence (F8, F11, F14):** given a breach, broad firms cost more than independent breaches priced by type would give: about x1.6 per extra type, mainly at 4+ types.
+- **What carries it (F15, F16):** the big-cost uplift needs breadth AND an "inside" type (ransomware, bank hacking, outsider or staff access): 58% costly vs 1–14% otherwise. Inside types are common in narrow firms too, but cheap there. Outcomes match the ticked types, and costly incidents have about 3.5 different consequences, narrow or broad.
+- **Exposure vs footprint (F18):** costly broad firms are NOT more attacked from outside (less phishing volume, DoS and spoofing). Cheap broad firms are the heavily attacked ones. So breadth in costly firms looks like the footprint of a spreading compromise, not heavy exposure. This is inferred: one multi-method attacker and recall effects aren't excluded.
+- **Dead ends (F9 test, F17):** per-type "success" items measure something different from breaches. Per-type attack counts are about 1 everywhere, with ambiguous zeros, so they can't test spreading.
+- **Open:** see "Open topics" at the end.
+
+## Goal (agreed 2026-10-05)
+- Estimate the total yearly cost of cybercrime incidents to UK businesses. Sole traders are left out because the survey doesn't include them.
+- "Cybercrime" and "cost" mean whatever the survey asks about. We don't redefine them.
+- The survey is the main input. The job is to scale it up to all UK businesses, bringing in supporting data only where needed (for example, how many businesses there are).
+- We may reason informally from outside evidence or well-known cases (for example, to judge how big the largest losses can get), but we don't plan to bring in any major new data source.
+
+## Data (agreed 2026-10-05)
+- UK Cyber Security Breaches Survey 2025: 3,835 organisations, including charities and schools; we use the businesses. Survey weights scale the sample up to the business population. Files: `data/raw/data.sav`, `data/proc/data.csv`; codebook in `data/proc/csbs.txt`. UK business counts by size come from ONS (`data/external/`).
+- Main questions used, all about the last 12 months:
+  - which kinds of attack the firm had (a tick-list);
+  - how often it was attacked (a band from "once" to "several times a day");
+  - the cost of its single worst incident, as a band split into parts (staff time, payments, disruption, and so on);
+  - for some attack types, counts of attempts and successes, what happened, and how long recovery took. Some questions went to only half the sample.
+  - A total-cost-for-the-year question exists, but very few firms answered it.
+- Main limits:
+  - Only the worst incident is priced, not the year's total.
+  - Costs come as bands, not exact figures.
+  - There are few large firms and few big losses, and the top cost bands are nearly empty.
+  - Answers are self-reported, and some firms skip the cost questions.
+- Nobody has gone through all 527 columns by hand, so other useful columns may exist.
+- User's view: the highest attack-frequency answers ("daily", "several times a day") are less trustworthy. This probably matters little, because those attacks are likely to cost almost nothing.
+
+## Facts (being collected one at a time with the user)
+
+### F1. Size, attack frequency and worst-incident cost (`src/estimation/core_vars.py`, 2026-10-05)
+Note: `disrupta` is the TYPE of the worst breach, not its cost. The worst-incident cost is `damage_bands`.
+Businesses only (questtype = 1). Shares below are weighted.
+- **Being attacked rises with size.** The share attacked is 40% for Micro, 49% Small, 65% Medium and 68% Large.
+- **Among attacked firms, how often they're attacked barely changes with size.** About 20% were attacked once, about 28% less than monthly, and about 5–8% several times a day, for every size band. Large firms have slightly more "several times a day" (14%, n = 129).
+- **Worst-incident cost rises clearly with size.** "No cost" is 57% for Micro, 47% Small, 42% Medium and 35% Large. A cost of £5k or more is 2%, 6%, 8% and 21%.
+- **Being attacked more often doesn't mean a costlier worst incident.** There's no upward trend across frequency bands, within Micro or within Small+. If anything, firms attacked only once are slightly less often at "no cost".
+- **Reverse view:** Small+ firms with a worst incident of £5k–50k were more often attacked "once" or "less than monthly" (65%) than firms at "no cost" (42%). The samples are small.
+- **Top of the range:** no business is above £500k. Eight are at £100k–500k (2 Micro, 2 Small, 1 Medium, 3 Large).
+
+### F2. Crime types (`src/estimation/crime_types.py`, 2026-10-05)
+Attacked businesses (n = 1,101). Shares are weighted. "Targeted" phishing = at least one phishing email containing the recipient's personal details (`phishcon_bands`). This is the survey's own measure of "specifically targeted".
+- **How common:** phishing 85% of attacked firms, impersonation 35%, malware 18%. Ransomware, DoS, bank hacking and takeover are about 6–7% each. Outsider access, staff access, eavesdropping and other are each 4% or less. About half of phishing firms ticked nothing else.
+- **Phishing counts:**
+  - About half of phishing firms had at least one targeted email (answered by 822 of 957 phishing firms).
+  - 14% had someone engage with a phishing email at least once. Engagement more than 3 times is almost never reported.
+- **High attack frequency vs mass phishing (user's recollection not confirmed).**
+  - Firms attacked daily or several times a day are no more often phishing-only than firms attacked monthly or weekly (about half in each).
+  - They report MORE targeted phishing. 30–38% of them had 21 or more targeted emails, against 2–3% of firms attacked less than monthly.
+  - Caveat: "contains personal details" may include mass emails that just insert the recipient's name, so the survey's "targeted" may partly be bulk mail.
+  - Firms attacked only once are the least phishing-heavy (59% phishing, 49% impersonation).
+- **Cost by the type of the worst incident** (`disrupta`; the share costing £5k or more is given in brackets):
+  - mass phishing: 74% no cost (0%)
+  - targeted phishing: 52% no cost (2%)
+  - impersonation: 41% no cost (3%)
+  - takeover: 35% no cost (3%)
+  - DoS: 32% no cost (5%)
+  - bank hacking: 27% no cost (10%)
+  - malware: 38% no cost (12%)
+  - ransomware: 3% no cost (41%)
+  
+  This matches the user's ordering: mass phishing < targeted phishing ≈ impersonation < the rarer types < ransomware.
+- **Means by type are unreliable.** For impersonation, ransomware, DoS and bank hacking, a single firm (a £100k–500k incident) makes up 70–82% of the weighted mean. Without that firm, the means are about £1.3k, £8.8k, £1.4k and £2.1k.
+- **Firms that ticked only one type are cheaper** than firms whose worst incident is that type. For example, impersonation-only firms are 62% no cost and 1% at £5k or more. Big costs come with several types ticked; to be looked at separately.
+
+### F3. Which types occur together (`src/estimation/occurrence.py`, 2026-10-05)
+Attacked businesses only. Shares are weighted.
+- **One attack can tick several boxes (confirmed).** 40% of firms attacked "once" ticked 2 or more types, mostly phishing + impersonation (43 firms). Next come phishing + malware (8) and phishing + impersonation + bank hacking (5). The share ticking 2 or more is the same for "once" as for "less than monthly" or "monthly". It only rises for weekly or daily firms.
+- **Every type goes with every other type.** On ALL businesses (including those not attacked), every pair of types co-occurs more often than chance would predict: 2–2.5 times for pairs involving phishing, 3–4 times for impersonation, and 4–9 times among the rarer types. [Correction 2026-10-05: an earlier version of this note, using attacked firms only, said phishing and impersonation were about independent of the rest. That was an artefact. Looking only at attacked firms hides the "attacked at all" part of the shared pattern.]
+- **The rarer types go together.** Malware, ransomware, DoS, bank hacking, takeover, outsider access and staff access each co-occur with one another at about 2–4 times the rate chance predicts. This holds within Micro and within Small+ separately, so it isn't just a size effect. Outsider and staff access are especially tied (about 15 times chance, small n).
+- **Firms are either narrow or broad.** Compared with independent types (same rates):
+  - one type: 58% observed vs 41% expected
+  - two or three types: 35% vs 56%
+  - four or more: 7% vs 3%
+- **What "one-dimensional" means here.** There is a single hidden firm-level quantity (call it exposure). Given a firm's exposure, the types occur independently; firms with high exposure get more types of everything. Under this picture, all the co-occurrence comes from that one quantity, and every type rises with it by roughly the same amount.
+- **Evidence (old work, 2026-09-26; not yet re-run):**
+  - `type_cooccurrence_structure.py`: on all firms, the correlations between yes/no flags (estimated as if each flag were an underlying continuous scale cut at a threshold) are mostly 0.4–0.7 for every pair. One leading factor explains 56% of the variation (50% Micro, 63% Small+), with near-equal loadings of 0.27–0.36. The second factor is about noise level (eigenvalue around 1) and points in different directions for Micro and Small+.
+  - `latent_on_counts.py`: the same quantity also raises attack COUNTS. Firms hit by 2 or more other types have 2–3 times the phishing count at every quantile.
+  - Caveat from `frailty_flag_structure.py`: grouping into 4 type-groups, a formal check for a single factor partly failed. Phishing + impersonation and ransomware + other serious types pair up beyond the one factor. This is plausibly because one incident ticks related boxes (a spoofed email is ticked as both phishing and impersonation; ransomware is also ticked as malware), not a second kind of exposure.
+  - My attacked-only check (2026-10-05) is consistent: each rare type climbs steadily with the number of other types ticked (ransomware 2%, 7%, 20% at 1, 2, 3+ others).
+- **Shape of the hidden exposure from the FLAGS ALONE (`frailty_shape_flags.py`, 2026-09-26; not re-run).**
+  - The flags can't tell separate levels from a smooth scale: two or three levels and a continuous scale explain about the same share of the co-occurrence.
+  - The best-fitting levels are ordered: every type's hit rate rises from one level to the next, so they are rungs of one scale.
+  - Micro: 2 levels are enough.
+  - Small+: 3 levels, 67% / 30% / 4%. The top 4% are hit by most types.
+  - The big "quiet" group needs no model to see: about half of all businesses (60% of Micro) report no attack at all.
+- **Shape with attack COUNTS added (joint model: flags + frequency bands + phishing counts + worst cost; old fits, 2026-09-24/26; not re-run).** Attack rates per year come from the counts and frequency bands, not from the flags.
+  - **Across firms it is lumpy and skewed, not a smooth bell curve.** A free fit, with no shape assumed (`frailty_free_mixture.py`), settled on three levels: quiet 55% (about 0.03 attacks a year per kind, i.e. essentially never attacked), middle 37%, and hot 9%. Two levels fit clearly worse. A smooth bell-shaped (lognormal) spread also fit worse than three levels.
+  - **It doesn't scale every type equally.** Going from middle to hot: targeted phishing x2.5, impersonation x4, mass phishing x7, serious types (malware, ransomware, DoS, hacking and so on) x9. Serious types for hot vs quiet firms: about x120. So the top level is mostly about serious attacks and phishing volume. (The "near-equal loadings" result is on a correlation scale; the two results are not in conflict.)
+  - **The exposed share rises with size.** In the two-level version it is 37% Micro, 42% Small, 57% Medium and 66% Large.
+  - **Caveats:**
+    - A free fit like this always lands on a few separate levels even when the truth is smooth. So "three levels" really means a big quiet mass plus a long upper tail. It does not prove that firms come in three kinds.
+    - The fits depended on turning the frequency bands into attack counts, and that conversion fit badly (too few "once" answers).
+    - In that old model, the national cost per firm barely changed across shapes (£729–732). The shape mattered for which firms carry the cost, not for the average.
+- Open: whether the "broad" firms are firms exposed to more kinds of attack, or one big incident ticking several boxes (old notes leaned towards the latter for costly firms). This is to be looked at with cost.
+
+### F4. More phishing goes with more other types (`src/estimation/phishing_volume_vs_breadth.py`, 2026-10-05)
+Phishing-ticking attacked businesses. Plain cross-tabs, weighted. "Serious" = any type other than phishing and impersonation.
+- **Yes, gradually and in both size groups.** By exact phishing count (`Cybercrime_phishsum`, 566 answers), the share with any serious type is:
+  - 1 attack: 32%
+  - 2–5: 38%
+  - 6–20: 42%
+  - 21–100: 52%
+  - over 100: about 70%
+  
+  The number of serious types and the impersonation share rise the same way. Micro and Small+ are nearly identical.
+- **The same holds by number of targeted phishing emails.** Any serious type: 21% for none, rising to about 65% for over 100.
+- **Overall attack frequency (`freq`) shows it only weakly and unevenly**, presumably because it is a coarse answer covering all types.
+- **Reverse view:** firms with 2 or more serious types have higher phishing counts, mostly in the upper part of the range. 75th percentile: Micro 41 vs 12 for phishing-only firms; Small+ 100 vs 15. Medians differ less: 6 vs 4, and 10 vs 3.
+- **Caveats:**
+  - Who answered the exact count is uneven: 39% of phishing-only firms vs 79% of firms with 2 or more serious types.
+  - Part of the link may be direct rather than shared exposure: phishing is a common way in for other attacks, so more phishing can itself lead to more of the other types.
+
+## Cost
+
+### F5. Worst-incident cost rises steeply with the number of types ticked (`src/estimation/cost_breadth.py`, 2026-10-05)
+Attacked businesses with a cost answer (n = 982). Shares are weighted.
+- **Share with no cost, and with £5k or more, by number of types ticked:**
+
+  | Types ticked | No cost | £5k or more |
+  |---|---|---|
+  | 1 | 66% | 1% |
+  | 2 | 44% | 3% |
+  | 3 | 25% | 7% |
+  | 4+ | 8% | 28% |
+
+  Same shape within Micro and within Small+.
+- **The same holds counting only serious types.** Ignoring phishing and impersonation, 3+ serious types gives 41–42% at £5k or more in both size groups.
+- **Concentration:** firms with 3 or more types are 15% of attacked firms but carry about 77% of the weighted cost (band midpoints). Firms with 1 type are 63% of firms and 7% of the cost.
+- **Within a given number of types, attack frequency doesn't matter.** For 3+ types, the share at £5k or more is 17% for "once", 15% for "less than monthly to monthly" and 15% for "weekly or more". For 1 type it is about 1% at every frequency. So what predicts a big loss is how broad the firm's attacks were, not how many attacks it had.
+- Means per group are again driven by single firms (25–90% from the top firm), so read the shares, not the means.
+- Open next: is breadth a cause (more exposed firms) or a result (one big incident ticking several boxes)?
+
+### Earlier claims on breaches and big breaches (from the old notes, reviewed with the user 2026-10-05; NOT yet re-checked)
+- **What "breach" means.** It is a firm-level marker on the WORST incident. It is set by the survey's outcome items (Q56A: money stolen, data lost, systems corrupted, and so on), or by consequence items: restore took a day or more, staff stopped work, recovery costs, revenue loss. Old name "W2"; user decision 2026-10-02. It is not observed per type. Per-type breach rates were inferred from firms hit by only 1–2 type groups.
+- **Breaches are much costlier (agreed).** Narrow firms with an outcome marker: 24% no cost, 8% at £5k or more. Firms with no marker at all: 72% no cost, about 0% at £5k or more.
+- **Breaches are rare for phishing and impersonation, not for the rarer types (correction to the user's recollection).** Estimated chance that a hit becomes a breach: phishing about 5%, impersonation about 5%, ransomware about 24%, other serious about 37%. The rarer types are rare to be hit by, but a hit often becomes a breach.
+- **"Steeper than max of independent breaches" (agreed), with one nuance.** The breadth used was the number of type GROUPS (phishing / impersonation / ransomware / other serious), not raw types. Independent per-group breaches, with the worst taken as the maximum, predict about 6% at £5k or more for 3+ groups. Observed: 34%. Fine for 1–2 groups (8% observed vs 6% predicted).
+- **Big vs ordinary breaches is a modelling choice, not a split the data forced.** In the fitted model, each breach is "big" with a chance of 1% / 6% / 29% / 71% for 1 / 2 / 3 / 4 groups hit (big: median about £4.5k, wide spread). A simpler alternative, where breach cost just scales about x2 per extra group, fit equally well and was slightly preferred on AIC. Both forms fit the data. They differ about 1.6x in average cost for broad firms (tail extrapolation).
+- **Big is tied to breadth (agreed).** This persists within exposure levels: exposure adds nothing once breadth is known.
+- **Homogeneous apart from bank hacking (roughly agreed).**
+  - Among broad, costly breached firms: no detectable effect of ransomware (x0.8–1.2), 4 vs 3 groups or size.
+  - Bank hacking: x9 [3–26] among broad breached firms (n = 23), but not among narrow firms (x0.6; there it is often money stolen but cheap, median £350).
+  - Later checks suggested the bank-hacking tick in these firms is mostly part of the incident itself, not separate bank attacks: 10 of 16 had no separate bank-attack attempts. So it reads as "the intrusion reached the money", not a separate attack type.
+  - Weaker side note: broad firms with ransomware or malware but without phishing + impersonation looked bimodal (handled vs disaster), n = 12.
+
+### F6. A breach makes the worst incident much costlier, for every type with data (`src/estimation/breach_cost.py`, 2026-10-05)
+Breach marker (user decision 2026-10-02): any Q56A outcome (`outcome_any`), OR restore took a day or more, OR staff stopped from working / revenue loss / recovery costs. 244 of 982 attacked firms with cost answers (22% weighted).
+Note: Q56A and Q57 ask about ALL breaches in the year, not just the worst one. So the marker belongs to the firm's year, not strictly to the priced incident.
+- **By type of the worst incident** (no cost → no cost; share at £5k or more in brackets), not breached vs breached:
+
+  | Type | Not breached | Breached |
+  |---|---|---|
+  | phishing | 68% (0%) | 31% (8%) |
+  | impersonation | 52% (0%) | 7% (13%) |
+  | malware | 84% (0%) | 9% (19%) |
+  | takeover | 62% (0%) | 12% (6%) |
+  | bank hacking | 99% (0%) | 15% (12%) |
+
+  - DoS is weaker: 45% (9%) not breached vs 26% (3%) breached, n = 7 and 20.
+  - Ransomware worst incidents are nearly all breached (23 of 28): 0% no cost, 53% at £5k or more.
+  - The access types and "other" have under 10 firms each.
+- **Single-group firms show the same:**
+  - phishing only: 71% → 34% no cost;
+  - impersonation only: 67% → 28%;
+  - other serious only: 71% → 36%.
+- **The stricter marker (outcome item only) gives the same picture.**
+- **Caveat:** part of the marker is itself about cost (recovery costs, revenue loss, time to restore), so "breach → costlier" is partly built in. The outcome-only version avoids most of that and still shows it.
+- Not breached firms almost never reach £5k, whatever their breadth: 5 of 738 in total.
+
+### F7. No visible "big vs ordinary" split among breaches: broader breaches shift the whole cost distribution up (`breach_cost.py`, 2026-10-05)
+- The fact the old big/ordinary model was built to explain: among breached firms, the high-cost share rises with breadth much faster than independent breaches would give (old check: 34% vs 6% at £5k or more for 3+ groups). A simpler model (cost scale about x2 per extra group) explained it equally well.
+- **Breached firms, weighted quantiles of worst cost:**
+
+  | | q10 | q25 | median | q75 | q90 |
+  |---|---|---|---|---|---|
+  | narrow (1–2 groups), Micro | none | none | £100–500 | £1–5k | £1–5k |
+  | broad (3–4 groups), Micro | <£100 | £100–500 | £500–1k | £5–10k | £10–20k |
+  | narrow (1–2 groups), Small+ | none | <£100 | £100–500 | £1–5k | £5–10k |
+  | broad (3–4 groups), Small+ | <£100 | £500–1k | £1–5k | £10–20k | £20–50k |
+
+  Every quantile moves up by about one or two bands. "No cost" falls from 34% (1 group) to 5% (3+ groups).
+- **This looks like a whole-distribution shift, not a new high bump on top of an unchanged low part.** A 2-cluster story would leave broad firms' lower quantiles where narrow firms' are. They aren't. The band histograms show no clear second peak; the dip at £500–1k between £100–500 and £1–5k is most likely band width (the £1–5k band is 5 times wide).
+- **Caveats:** coarse bands; few broad breached firms (Micro 21, Small+ 88); 4-group firms only 26.
+- Reading: the data support "broader breaches are costlier across the board". Nothing here requires a separate class of big breaches.
+
+### F8. The breadth excess over independence: breached and non-breached firms (`src/estimation/breadth_vs_independence.py`, 2026-10-05)
+- **Method (plain simulation, no fitted model).** Three groups: P = phishing, I = impersonation, S = all other types incl. ransomware. For a firm hit by a set of groups, draw for each group a random firm hit by ONLY that group (by weight), and take its worst cost and breach flag. The simulated worst = the largest draw; the simulated firm is breached if any draw was. Pooled over sizes. Single-group pools: P 384, I 76, S 44 firms.
+- **Results** (observed vs independent):
+
+  | Groups hit | Firms | n | £500 or more | £5k or more |
+  |---|---|---|---|---|
+  | all three (PIS) | breached | 100 | 73% vs 39% | 29% vs 7% |
+  | all three (PIS) | not breached | 79 | 19% vs 6% | 1% vs 0% |
+  | two (PI / PS) | breached | 32 / 39 | | 10–12% vs 5–7% |
+  | two (PI / PS) | not breached | | 12–14% vs 3–6% | about 0 |
+
+  IS has only 15 firms.
+- **Reading:**
+  - The excess over independence is NOT limited to breaches. Non-breached broad firms also cost more than independent incidents would give, but only in the £500–5k range; they essentially never reach £5k.
+  - The excess at £5k or more, which is where the money is, is in breached firms. It is strongest with all three groups (about 4 times), and present but mild with two groups (about 2 times).
+- **Side observation:** broad firms are breached LESS often than independent groups predict (PIS 54% vs 68%; PS 45% vs 64%). The S-only pool is small and maybe unusual (61% of S-only firms are breached), so this is weak.
+- **Caveat:** the non-breached excess could partly be breaches the marker misses (outcome questions cover the whole year; soft items may be skipped).
+
+### F9. "Broad firms are breached less often than independence predicts": real, but it comes from the 'other types' group (`breadth_vs_independence.py`, 2026-10-05)
+User flagged this as a fact to pay attention to: it bears on WHY breadth matters. Breach counts are unknown, so the competing stories are (a) several independent breaches adding up and (b) one breach spreading across types. (a) predicts breached shares at or above independence; (b) allows below.
+- **Breached share, observed vs independent** (union of single-group rates); gap with bootstrap 90% interval:
+
+  | Set | Size | Observed | Independent | Gap |
+  |---|---|---|---|---|
+  | PI | all | 16% | 17% | -0.01 [-0.11, +0.07] (no gap) |
+  | PS | all | 45% | 63% | -0.19 [-0.37, -0.01] |
+  | PIS | all | 54% | 68% | -0.14 [-0.29, +0.01] |
+  | PS | Small+ | 37% | 80% | -0.42 [-0.64, -0.19] |
+  | PIS | Small+ | 54% | 83% | -0.29 [-0.43, -0.12] |
+  | PS / PIS | Micro | | | -0.10 to -0.14, intervals include 0 |
+
+  The outcome-item-only marker gives the same pattern.
+- **The gap appears ONLY in sets that include S (other types), and comes from S-only firms' very high breach rate.** Single-group breach rates: P 7%, I 12%, S 61% (S-only n = 44). Phishing + impersonation combine just as independence predicts.
+- **Two readings, not yet separated:**
+  1. Spreading / one incident ticking several boxes: in broad firms one breach accounts for several ticks, so the breach rate per tick is lower.
+  2. The S tick means different things in narrow and broad firms. A firm that ticks ONLY malware / takeover / etc. may tick it because it was harmed (blocked attempts go unnoticed or unreported), while heavily attacked broad firms also tick S for attempts. Then S-only firms are the wrong baseline.
+- Open: find a way to tell 1 from 2, e.g. through what S-only firms look like (attempt counts, frequency, outcomes) compared with S in broad firms.
+- **Logic correction (2026-10-05).** Spreading on its own does NOT predict below-independence breach rates. A breach that starts in one group and spreads moves a breached firm into a broader set, which RAISES broad sets' breached share. So the below-independence fact points more towards reading 2 (S ticks in broad firms are often unsuccessful attempts; S-only firms are tick-because-harmed), or towards broad firms being harder to breach per attack. It is not positive evidence for spreading.
+- **First test (`src/estimation/s_tick_meaning.py`).** Per-type success items exist for malware (`virussoft_comb`), takeover (`tkvrsuc_comb`), DoS (`dossoft_comb`) and ransomware (`ranssoft_comb` = ransom demanded); most ticking firms answered them.
+  - Share of ticks that were successful, S-only vs P+I+S: malware 21% vs 9%, takeover 35% vs 17%, DoS 41% vs 22%. Ransomware goes the other way: 22% vs 39%.
+  - Pooled over malware / takeover / DoS, the firm had any success among its ticked types: S-only 30% (6 of 22), S + one other 10% (7 of 98), P+I+S 17% (28 of 151).
+  - Direction consistent with reading 2, but the S-only group is tiny (22 firms, 6 successes).
+  - Also: per-type success is far below the firm-level breach marker everywhere (S-only 30% vs 61%). The marker is mostly set by other items (outcomes / soft consequences), not by these per-type successes.
+
+### F10. With all firms as the baseline, breach prevalence fits independence; the odd group is S-only firms (`src/estimation/breach_independence_fit.py`, 2026-10-05)
+- **Method (user's suggestion: don't use single-group firms as the baseline).** Under independence, P(no breach | set) = product of per-group escape chances. The three escape chances were fitted to all 7 sets at once (weighted binomial likelihood), then observed vs fitted breached share was compared per set. Bootstrap 90% intervals come from refitting on resampled firms. All attacked businesses (n = 1,101).
+- **Fitted per-channel breach chance:** phishing 6%, impersonation 9%, other types 43%. About the same in Micro and Small+.
+- **Observed vs fitted:**
+  - P, I, PI, IS and PIS all fit. PIS: observed 52% vs fitted 51%.
+  - S-only firms are breached MORE than fitted: 61% vs 43%, gap +0.18 [+0.04, +0.32]; Small+ 76% vs 43%.
+  - PS is somewhat less breached: 39% vs 46%, gap -0.08 [-0.14, -0.01]; Small+ -0.16.
+- **Reading:** the F9 "broad firms breached below independence" mainly reflects the S-only baseline. Firms whose only ticks are "other" types are unusually often breached, consistent with "ticked because it hurt". With a baseline drawn from all firms, breach prevalence in broad firms (including all three groups) is what independent per-channel breach chances predict. The PS shortfall is the one remaining departure (modest; strongest in Small+, n = 56).
+- **For the A vs B question:** prevalence is consistent with A (independent chances per channel). Prevalence alone doesn't rule out B. Spreading would push broad sets' breach rate UP, and no such excess is seen in PIS, which mildly argues against spreading being common, or at least against it creating broad firms out of narrow ones.
+- **How solid is F10? Not very (checked 2026-10-05, same script).**
+  - "PIS fits" is close to built in. P's rate is pinned by the 390 phishing-only firms, so the S rate is set mostly by the 212 PIS firms themselves.
+  - The informative check is whether one S rate fits all S-containing sets. S chance implied by each set, given the fitted P and I rates: S-only 61% (n = 47), PS 35% (n = 120), IS 46% (n = 19), PIS 43% (n = 212). They disagree.
+  - S lumps several types. Mean number of S types ticked: S-only 1.16, PS 1.37, IS 1.28, PIS 1.94 (25% of PIS firms tick 3 or more). At the TYPE level, independence would give PIS firms a HIGHER S breach chance than S-only firms, yet theirs is lower (43% vs 61%). So at type level the "breached below independence" pattern partly comes back. It still leans on the small S-only group, but PS vs PIS (more S types, more breached: 35% vs 43%) is in the expected direction.
+  - Net: breach prevalence data neither clearly fits nor clearly breaks independence. The grouping choice (lumping S) and the small S-only group decide the answer.
+- **How solid is the F8 cost excess? Moderately (checked 2026-10-05, `breadth_vs_independence.py`).** Breached PIS firms; observed vs independent; bootstrap 90% interval on the £5k-or-more gap:
+
+  | Variant | n breached | £500 or more | £5k or more | Gap |
+  |---|---|---|---|---|
+  | one draw per group | 100 | 73% vs 39% | 29% vs 7% | [+0.08, +0.34] |
+  | one draw per S TYPE ticked (accounts for broad firms ticking more S types) | 100 | 73% vs 46% | 29% vs 10% | [+0.04, +0.33] |
+  | without ransomware | 72 | 70% vs 44% | 21% vs 9% | [-0.02, +0.27] |
+  | with ransomware | 28 | 81% vs 54% | 51% vs 13% | [+0.09, +0.63] |
+  | Micro | 16 | | 24% vs 9% | interval includes 0 |
+  | Small+ | 84 | | 35% vs 10% | [+0.09, +0.40] |
+
+  PS (two groups): 12% vs 8%, no clear excess.
+- **Reading:**
+  - The direction holds through every check. The size is uncertain: somewhere between about 1.5x and 4x at £5k or more.
+  - It is clearest in Small+ and in firms that ticked ransomware. Ransomware hardly appears outside broad firms (5 of 44 S-only firms tick it), so "ransomware is costly" and "breadth makes breaches costly" can't be cleanly separated.
+  - Without ransomware the excess at £500 or more is still clear (70% vs 44%), while at £5k or more it is borderline.
+- **Baseline bias:** the comparison still uses single-group firms (breached pools: P 28, I 10, S 27). [Corrected 2026-10-05 by F12: an earlier claim that this bias makes the true excess larger is wrong. S-only breached firms are mostly CHEAP: often single events with an outcome but little cost. So the S pool may push the independence prediction DOWN and overstate the excess. Direction unclear.]
+
+### F11. Breadth matters without ransomware; ransomware adds on top (`src/estimation/ransomware_vs_breadth.py`, 2026-10-05)
+Breached firms. Breadth = number of types ticked OTHER than ransomware. Cells give n, then £500 or more / £5k or more (weighted):
+
+| | 0–1 types | 2 types | 3 types | 4+ types |
 |---|---|---|---|---|
-| Ransomware | 31/7/21 | — | — | **DEGENERATE — sigma pinned at cap, no real interior MLE optimum. Unidentified with this data, not reported as a number.** |
-| Other malware | 15/27/96 | £3,173 | £336 | 1.68x naive (£1,894) |
-| Denial of service | 11/19/27 | £2,845 | £134 | **0.36x naive (£7,883) — lower, not higher** |
-| Hacking (broad) | 42/25/41 | £10,587 | £834 | 1.40x naive (£7,580) |
-| Website/social/email takeover | 21/17/28 | £7,734 | £515 | 5.49x naive (£1,410) |
+| no ransomware | 59, 31% / 4% | 56, 52% / 8% | 50, 69% / 11% | 34, 63% / 34% |
+| ransomware | 7, 48% / 13% | 7, 17% / 17% | 10, 70% / 59% | 21, 92% / 55% |
 
-**Combined E[cost] per attacked firm across the 4 well-identified types: £1,819.** Ransomware excluded from this total — forcing a number there would be reporting a fit artifact, not a finding. The Ransomware degeneracy itself is informative: it's driven by real tension between mostly-small exact `ranscost_bands` observations and at least one heavily-weighted firm with `disrupta==Ransomware` and `damage_bands` in the £100k-500k band — data that a single unimodal lognormal genuinely cannot reconcile, not a coding bug.
+- **Without ransomware, cost still rises with breadth.** The £5k-or-more share jumps at 4+ types (34%), and £500 or more rises steadily. So there is a breadth fact beyond ransomware.
+- **At the same breadth, ransomware firms are costlier** (3 types: 59% vs 11%; 4+: 55% vs 34%). Within ransomware firms, breadth also matters: narrow ransomware firms are mostly cheap, though n is tiny. All ransomware firms (n = 67) are breached 54% / 47% / 71% / 84% across the breadth bands.
+- **Not-breached firms:** £500 or more rises with breadth (3% → 30%), but £5k or more stays at about 1% everywhere.
+- **Caveat:** this table shows that cost rises with breadth, not that it rises faster than independence would give. Independence also predicts a rise (the maximum of more draws). The earlier per-type independence check without ransomware was borderline at £5k (21% vs 9%, interval [-0.02, +0.27]). The steep jump at 4+ non-ransomware types (8–11% → 34%, n = 34) is the part most likely to exceed independence. Not yet tested against an independence prediction by breadth band.
+- **Independence test by breadth band, no ransomware (same script, 2026-10-05).** Pools: single-group firms without ransomware (P 384 / 28 breached, I 76 / 10, S 39 / 23); one S draw per S type ticked. Breached firms, observed vs independent, bootstrap 90% interval on the gap:
 
-**This revises the "all three routes exhausted" conclusion above** — it wasn't exhausted, it just hadn't used the full richness of the discovered columns yet. This censored-fit approach gives an actual per-type expected-cost figure (not just a plausibility-checked ratio) for 4 of 5 types, properly grounded in interval/censored likelihood rather than point-ratio arithmetic, and is a legitimate improvement on both the single-worst-incident-only estimate and the naive ratio-median approach. Open items if this is worth taking further: (a) decide whether/how to fold these per-type E[cost] figures into the main pipeline (they're currently a firm-level *unconditional* expectation, i.e. already incorporate each type's prevalence — would need to be combined with, not stacked naively onto, the existing size/freq-conditioned lognormal max-cost model to avoid double-counting); (b) the upper-censoring "disruption-as-cost-proxy" assumption is untested and could be checked (e.g. does it hold up for the subset of firms where more than one type has *both* a direct cost column and a `disrupta` designation, allowing a same-firm cross-check?); (c) Phishing and Impersonation still have no direct total-cost column and aren't covered by this model at all (Phishing already has its own validated mixture bridge; Impersonation remains the confounded case from above).
+  | Types ticked | n (breached) | £500 or more | £5k or more |
+  |---|---|---|---|
+  | 2 | 256 (56) | 52% vs 35% [-0.01, +0.40] | 8% vs 5% [-0.04, +0.14] |
+  | 3 | 109 (50) | 69% vs 36% [+0.08, +0.57] | 11% vs 5% [-0.06, +0.19] |
+  | 4+ | 53 (34) | 63% vs 44% [-0.14, +0.50] | 34% vs 7% [+0.04, +0.48] |
 
-**IMPORTANT CORRECTION (2026-07-13, same session): the first cut of this script's £-per-firm figures used the wrong weight denominator.** It normalised by the "attacked" subsample's weight (freq>0, sum≈844-916 depending on exact filter) rather than the full business population's weight (sum≈2179.8), so the reported figures were actually "E[cost] conditional on the firm being attacked at all," not "E[cost] per business." Fixed by running `build_records`/the fit over the full `get_business_data()` population (confirmed firms with freq<=0 correctly have every real attack-type flag at 0 — the one apparent exception, `type11`, is actually the Q53A "None of these" meta-response option, not a real attack type; **flagged as a pre-existing wrinkle: `TYPE_COLNAMES` in `proc.py` includes `type9/10/11/12` as if they were attack-type flags, but these are actually "Any other" / "Don't know" / "None of these" / "Refused" meta-responses from the Q53A checklist — this may have subtly inflated "n_types"/"n_other_types" counts in `type_specific_bridge.py` and `impersonation_investigation.py`, not corrected there, just noted here for a future pass**). Corrected per-business E[cost] figures (summary table re-run): Ransomware £1,940 (still degenerate, not usable), Other malware £160, DoS £52, Hacking(broad) £244, Takeover £201 — **combined £658 per business across the 4 solid types** (previously mis-stated as £1,819, which was per-*attacked*-firm, not per-business).
+  - **Without ransomware there is still an excess over independence.** In the middle range (£500 or more) it is clear at 3 types. In the big-cost range (£5k or more) it is clear only at 4+ types, resting on 34 breached firms.
+  - Breached prevalence is again far below this independence prediction (28/35, 50/70, 55/89%). That is the S-only baseline problem from F9/F10, made worse by giving every S type the S-only breach rate. The cost prediction uses the same small pools, so treat the sizes as rough.
 
-**Folded into the pipeline (`src/estimation/bridge_specification.py`):** consolidated every bridge finding to date (phishing's mixture bridge ≈1.02, the 4 solid censored-model ratios as best estimates, `K_IMPLIED`-based pessimistic bounds, freq=1's trivial bridge=1) into one per-type three-tier table, then applied it to the actual 982-firm attacked sample (freq>0, valid damage_bands, valid disrupta):
+### F12. What is odd about firms whose only ticks are "other" types (`src/estimation/s_only_firms.py`, 2026-10-05)
+47 firms. Firm-by-firm listing in the script output.
+- **Mostly a single event.** 45% were attacked "once", against 17% for firms that tick S along with phishing or impersonation. Most tick a single S type (mean 1.16).
+- **They don't report phishing**, which 85% of attacked firms do. They look like firms that report "the thing that happened", not their background of attempts.
+- **Often breached, but cheaply.** 61% breached (48% via an outcome item). The outcomes are things like temporary loss of access, services down, a third-party loss, or money stolen from a bank account. Of the 28 breached, only 3 cost £5k or more; most are under £500.
+- **Per type, breached share S-only vs S with phishing / impersonation:** malware 67% (n = 14) vs 39% (n = 211); ransomware 98% (5) vs 58% (75); bank hacking 79% (14) vs 68% (63); DoS 74% (7) vs 65% (68); takeover 35% (6) vs 61% (69).
+- **Reading:** nothing is wrong with the S types themselves. The S-only firms are a peculiar, small group whose single tick usually describes one actual incident. In broad firms, S ticks more often include attempts that did nothing. So S-only firms are a poor baseline for "what an S hit is like" in other firms:
+  - their breach RATE is too high (F9/F10);
+  - their breach COST is low, so cost-excess estimates built on them (F8, F11) may be overstated.
+- Implication: the independence comparisons so far all lean on this baseline. A baseline that doesn't depend on S-only firms is needed before the size of the breadth excess can be trusted.
 
-- **86.3% of attacked-firm (freq>1) weight now has a genuine best-estimate bridge** (up from 0% for non-phishing freq>1 firms before this session) — covering Phishing, Malware, DoS, Hacking (all 3 disrupta buckets), and Takeover. Only Ransomware, Impersonation, and the small untested "Any other" bucket still fall back to the conservative default.
-- Population-weighted (£-per-business; still awaiting the pending ONS business-count step to scale to an actual national total) comparison: **fully-conservative £904, current-best-available £950, fully-pessimistic £116,915.** The best-available figure sits (as it should) between the two bounds, and is much closer to conservative — the pessimistic figure is confirmed implausible here too (dominated by `K_IMPLIED=1000` for the rare freq=6 "several/day" firms), consistent with the pre-existing "freq=4+ gives implausible results" caveat on `bridge_multiplier.py`.
-- Net effect of this whole censored-model thread on the headline per-business figure: **+£46 (£904→£950), i.e. a real but modest correction** — most of the probability mass is either freq=1 (no bridge needed) or Phishing (already had a validated near-1.0 bridge), so even a big proportional change in the smaller non-phishing types' bridge (e.g. Takeover's 5.5x) moves the population-weighted total only a little. The genuinely open uncertainty is concentrated in Ransomware and Impersonation specifically, not spread evenly across all non-phishing types.
+### F13. Per-type breach chances from all firms: breach prevalence is consistent with independence at type level (`src/estimation/type_breach_rates.py`, 2026-10-05)
+- **Method.** P(no breach | ticked types) = product of per-type escape chances. 11 escape chances were fitted on all 1,101 attacked businesses (weighted), with bootstrap 90% intervals.
+- **Breach chance per tick:**
+  - phishing 6% [4–9]
+  - impersonation 9% [5–13]
+  - malware 19% [12–28]
+  - other 25% [7–44]
+  - ransomware 35% [18–53]
+  - takeover 36% [15–53]
+  - DoS 51% [28–68]
+  - outsider access 52% [0–82]
+  - bank hacking 59% [40–73]
+  - staff access and eavesdropping: undetermined
+- **Fit by number of types ticked (observed vs fitted):**
 
-**Important correction, same session:** the first cut of `type_cost_censored_model.py` normalised E[cost] by the "attacked" subsample's weight (~845-916), not the full business population's weight (~2180). Fixed by running `build_records`/the fit over the full `get_business_data()` population (freq<=0 firms confirmed to correctly have every real attack-type flag at 0 — the apparent exception, `type11`, is actually the Q53A "None of these" meta-response, not a real attack type; **flagged as a pre-existing wrinkle: `TYPE_COLNAMES` in `proc.py` includes `type9/10/11/12` as if they were attack flags, but they're "Any other"/"Don't know"/"None of these"/"Refused" meta-responses — may have subtly inflated "n_types" counts in `type_specific_bridge.py`/`impersonation_investigation.py`, not fixed there, just noted**). Corrected per-business figures: Malware £160, DoS £52, Hacking £244, Takeover £201 — combined **£658/business** across the 4 solid types (not £1,819, which was per-*attacked*-firm).
+  | Types | n | Observed | Fitted |
+  |---|---|---|---|
+  | 1 | 510 | 11% | 9% |
+  | 2 | 338 | 25% | 24% |
+  | 3 | 138 | 48% | 48% |
+  | 4 | 56 | 45% | 66% |
+  | 5+ | 59 | 79% | 83% |
 
-### Ransomware and Impersonation: two targeted follow-up attempts, both negative (2026-07-13)
+  Only the 4-type group departs (gap -0.21, n = 56). 5+ fits again, so this is plausibly noise.
+- **Fitting on firms with 2+ types only gives nearly the same rates** and predicts single-type firms well for phishing, takeover and bank hacking. Single-type malware firms are more often breached than predicted (53% vs 14%, n = 12), the same S-only oddity as F12, now small.
+- **Reading:** with a type-level, all-firm baseline, broad firms are breached about as often as independent per-type chances predict. The "breached below independence" result (F9) was the lumped-group, S-only-baseline artefact. On breach prevalence, nothing argues against story A (independent breach chances per type), and there is no sign of an excess that spreading would create.
 
-User asked to try to rescue both remaining unresolved types using "smart processing," given we now understood *why* each one was failing.
+### F14. Breached-firm cost with per-type breach chances and per-type costs: a breadth effect remains, about x1.6 per extra type (`src/estimation/breach_cost_independence.py`, 2026-10-05)
+- **Method.** 244 breached firms with a cost answer. Which ticked types were breached is unknown; under independence each possible breached subset gets probability from the F13 per-type chances (held fixed). Each breach costs zero (probability z) or a lognormal draw with a type-specific median (the 4 thin access/other types share one) and one shared spread. Worst = largest breach cost. Non-breach clean-up costs are ignored. A breadth term multiplies every breach cost by a factor per extra type ticked. Fitted by weighted likelihood on the cost bands, with and without the breadth term.
+- **Result.** Adding the breadth term improves the fit by 9.5 log-likelihood points for 1 parameter (strong). Factor x1.62 per extra type, bootstrap 90% interval x1.25–x2.08 (60 resamples). Without the term, per-type medians are pushed up for types common in broad firms (e.g. ransomware £1,494 → £350 once breadth is allowed).
+- **Observed vs predicted shares** (independence = no breadth term):
 
-**Ransomware — bias-correct the exact observations, since we know why they're wrong.** Diagnosis: `ranscost_bands` (Ransomware's "exact" evidence) was independently shown earlier this session to be a downward-biased holistic-recall measure relative to `damage_bands` (the "unpacking effect"). `type_specific_bridge.py` measured the specific undershoot: median ratio 0.483 (n=20, disrupta==Ransomware subset). Applying the inverse (×2.07) to the exact-observation band bounds before fitting — i.e. treating the "exact" data as needing calibration rather than as ground truth — **did not fix the degeneracy.** Sigma still pins at the 3.8 cap; only the location shifted (E[cost|occurred] moved from ~£99k-102k to £166,363, E[cost]/business to £3,269). **Conclusion: the bias correction was directionally right (it moved the numbers in a sensible direction, and the reasoning behind it stands) but wasn't sufficient — this isn't purely a mismatched-scale problem, it's a genuine data-sparsity/tension problem** (very few exact observations, one very heavily-weighted lower bound sitting far above the rest, not enough data to reconcile the two even after calibration). Still reported as unidentified, not forced into a number.
+  | Types ticked | n | £500 or more: obs / independence / with term | £5k or more: obs / independence / with term |
+  |---|---|---|---|
+  | 1 | 60 | 32 / 42 / 34% | 5 / 12 / 6% |
+  | 2 | 62 | 51 / 49 / 47% | 8 / 16 / 12% |
+  | 3 | 57 | 57 / 50 / 51% | 13 / 16 / 15% |
+  | 4 | 26 | 55 / 54 / 61% | 38 / 18 / 23% |
+  | 5+ | 39 | 90 / 64 / 79% | 51 / 25 / 47% |
+  | 3+ no ransomware | 84 | 67 / 51 / 56% | 20 / 16 / 21% |
+  | 3+ with ransomware | 38 | 56 / 60 / 65% | 41 / 22 / 30% |
 
-**Impersonation — try the same censored machinery with zero exact anchors (bounds-only, from `damage_bands` alone).** This one initially looked like a win: a non-degenerate fit (sigma=3.756, just under the 3.8 cap) — but the number was implausibly huge (E[cost|occurred]=£505,321, £54,123/business, a 116x multiplier over the naive mean) and, with literally zero exact anchor points, deserved direct scrutiny rather than trust just because it avoided the numerical cap. **Ran the obvious check: refit excluding the single already-known dominant-outlier row** (idx=792 — the same Micro firm, weight=1.543, `damage_bands`=10/£300k, flagged back in `impersonation_investigation.py` as 69.5% of Impersonation's entire weighted cost mass on its own, and itself a multi-vector incident, not a clean single-type one). **Result: the fit collapsed — E[cost|occurred] dropped from £505,321 to £94,759, a >5x swing from removing one of 401 informative observations.** This confirms the "non-degenerate" label was a false negative: the fit is not robust, it's propped up entirely by one already-flagged anomalous row. Now excluded from the combined total alongside Ransomware (the script auto-flags it via this sensitivity check).
+  Independence over-predicts narrow firms and under-predicts broad ones, which is the signature of a breadth effect on cost. With the term the fit is good, except 4 types (n = 26).
+- **Reading:** even with each type's own breach chance and own breach cost, and the worst taken as the maximum, breached firms' cost rises with breadth beyond independence. The big-cost part of the excess is concentrated in 4+ types and in ransomware firms. Without ransomware, the excess at £5k or more is small (20% vs 16%), and at £500 or more it is clearer (67% vs 51%).
+- **Caveats:**
+  - Lognormal + zero shape assumed.
+  - Breach chances fixed (their uncertainty is not carried through).
+  - Non-breach costs ignored.
+  - Breadth enters only as a simple scale per type.
+  - Only the worst incident is seen.
+  - Bootstrap is short.
 
-**Net result of both attempts: negative, but for good, specific, now-documented reasons** — not from insufficient effort. Combined solid-type total is unchanged at £658/business (4 types: Malware, DoS, Hacking, Takeover). **Ransomware and Impersonation have now failed four independent resolution attempts each** (mixture model, type-specific-totals ratio, bias-corrected censored fit for Ransomware / bounds-only censored fit for Impersonation) — this is about as thorough a search as this dataset supports. Recommendation: treat both with the conservative/pessimistic bounds only, and stop searching this dataset for a point estimate for these two specifically — the next real lever would be new data (an incident-level cost breakdown), not further reprocessing of what's already here.
+### Current reading of the breadth effect (2026-10-05, summary of F5–F14; for discussion)
+- **What the data support:**
+  1. **Breach chance:** each ticked type carries roughly its own independent chance of leading to a breach. Broad firms are breached about as often as that predicts (F13). Breadth doesn't make a breach more likely beyond having more types.
+  2. **Breach cost:** given a breach, broad firms' worst incident is bigger than "the largest of independent breaches, each priced by its own type" (F14). The excess is small up to 3 types and large at 4+. It is better described as a jump than a smooth x1.6 per type.
+  3. The whole cost distribution moves up, not just a few extra big cases (F7). It doesn't depend on how often the firm was attacked (F5). It is strongest with ransomware, but not created by ransomware alone (F11, F14).
+  4. In one sentence: broad firms aren't breached more than expected, but when they are, the breach is bigger, as if it were one bigger event rather than more events.
+- **What the data don't settle:** the direction.
+  - (a) Facing more kinds of attack makes a breach worse (more routes for an intrusion to spread, a more capable attacker).
+  - (b) A worse breach makes the firm tick more types (the incident touched accounts, bank details, systems; or recall of a bad year).
+  
+  Both fit the facts above.
 
-### Raw-data survey, before trying a 5th model (`src/estimation/ransomware_impersonation_rawdata.py`, 2026-07-13)
+### F15. The big-cost breadth uplift needs breadth AND an "intruder inside" type (`src/estimation/breadth_composition.py`, 2026-10-05)
+Breached firms with a cost answer (244). Costly = worst incident £5k or more.
+- **Combinations are diverse.** The 35 costly breached firms with 4+ types show 33 different type combinations. The 30 non-costly ones are equally varied. No single recipe.
+- **Size and attack frequency don't differ** between costly and non-costly broad breached firms.
+- **Types over-represented in costly broad firms:** ransomware (60% vs 33%), bank hacking (40% vs 20%), outsider access (31% vs 17%), staff access (29% vs 20%). Takeover goes the other way (34% vs 53%). Phishing, impersonation, malware and DoS are about equal.
+- **Splitting breached firms on whether they ticked ANY of ransomware / bank hacking / outsider access / staff access** (costly share by number of types ticked):
 
-User asked to step back from parametric fitting entirely and just look at what data actually exists for these two types. Found and loaded (new `proc.py` groups `RANSOMWARE_DETAIL_COLNAMES`, `FRAUD_DETAIL_COLNAMES`) a previously-unused variable family:
+  | Types ticked | none of the four | at least one |
+  |---|---|---|
+  | 1 | 4% (n = 52) | 10% (n = 8) |
+  | 2 | 10% (n = 51) | 1% (n = 11) |
+  | 3 | 11% (n = 32) | 14% (n = 25) |
+  | 4+ | 1% (n = 12) | 58% (n = 53) |
 
-**Ransomware (Q83 series) — analogous in spirit to phishing's phishcon_bands/phisheng_bands, but doesn't pan out the same way:**
-- `ranssoft_bands` (count of ransomware attacks): 87.8% coverage (n=72/82) — genuinely good. But the distribution is thin: 37 "None" (self-report inconsistency — type1==1 firms reporting zero ransomware attacks — the same kind of contradiction flagged before elsewhere in this survey), 25 "1", only 10 firms above 1 attack, spread across 4 more count buckets.
-- `ransdem_bands`/`ranspay_bands` (ransom demanded/paid): 29.3%/**0%** coverage. The 0% for `ranspay_bands` is not a bug — cross-checked against `ranspayyn` (did you pay?): all 24 firms with a valid answer said **"No"**. Nobody in this sample actually paid a ransom, so "amount paid" is structurally always missing. **This is informative on its own**: it means ransomware cost in this dataset is not being driven by ransom payments at all — it's recovery/downtime/staff-time cost, which explains why the ransom-specific variables don't help model the org's total cost (`ranscost_bands`).
-- Cross-tabbing `ranscost_bands` (org total) against `ranssoft_bands` (attack count) shows **no clean scaling relationship** — n=33 spread thin across 6 count buckets, and if anything the reported total cost is *lower*, not higher, for firms reporting more attacks (almost certainly just small-n noise, not a real inverse relationship).
-- **Conclusion: this richer variable family does NOT unlock a better model.** It explains *why* Ransomware resists modeling (genuinely tiny samples once split any further, real payment behaviour that decouples "ransom size" from "org cost") rather than fixing it.
+  - Without any of the four, there is no big-cost uplift with breadth at all. The share at £500 or more rises to 3 types (28% → 67%), then falls back at 4+ (28%, n = 12).
+  - With one of the four but narrow (1–3 types), firms are not costly either.
+  - The uplift sits where a firm is broad (4+) AND has one of these four.
+- **What the four have in common:** an intruder actually inside the firm's systems or accounts (encrypting data, in the bank account, accessing files or networks). Phishing, impersonation, DoS, takeover and malware attempts can all happen from outside.
+- **Reading:** costly broad breaches look like intrusions that got inside and reached many things. This fits reading (b), where the incident's footprint ticks many boxes, at least as well as (a).
+- **Caveats:**
+  - The four types were picked AFTER seeing which were over-represented (a risk of fitting noise). The 1% at 4+ without them rests on 12 firms.
+  - Ransomware ticks include attempts.
+  - Next check: whether the outcome items (systems corrupted, money stolen, files lost) line up with these four types in costly firms.
+- **Are the four types present in narrow firms? Yes, often; there they are cheap (same script, section 6).** Of 158 firms ticking any of the four, 89 are narrow (1–3 types). Narrow vs broad (4+):
 
-**Impersonation — no analogous count variable exists.** Checked the closest available proxy, general fraud-consequence counts (`fraud1`/`fraud2`/`fraud3`: money moved out / card misuse / fraudulent-invoice payment, Q88A): coverage is actually good (84%+) — but **incidence is very low** (1.9%/2.6%/4.3% "Yes" among Impersonation firms), meaning almost nobody who experienced Impersonation also reports one of these fraud consequences — same low-signal dead end as `impersonationhack`/`impersonationtkvr` found earlier. `fraudcost_bands` (total cost of all frauds) vs `damage_bands` among the n=21 firms with both valid shows ratios scattered **both above and below 1** (0.009 to 11.67) — a genuinely different, more symmetric-looking pattern than Ransomware's hard below-1 ceiling, hinting `fraudcost_bands` might not carry the same one-directional elicitation bias — but n=21 is too small to build anything on.
+  | | Narrow | Broad |
+  |---|---|---|
+  | breached | 60% (44) | 72% (53) |
+  | costly among breached | 8% | 58% |
+  | £500 or more among breached | 47% | 87% |
 
-**Bottom line: the raw-data pass did not surface a new modeling path for either type.** It converts "we don't have a bridge for these two" from a slightly frustrating unknown into a well-understood one — genuinely small samples, low-incidence auxiliary variables, and (for Ransomware specifically) a real behavioural reason the obvious extra variables don't help. This is now the 5th and 6th checked angle (Ransomware: mixture model, ratio bridge, bias-corrected censored fit, raw ransom-detail cross-check; Impersonation: mixture model, ratio bridge, bounds-only censored fit, raw fraud-detail cross-check) — recommendation is unchanged and now firmer: conservative/pessimistic bounds only for these two, no further modeling attempts on this dataset without new data.
+  Per type, costly among breached, narrow vs broad:
+  - bank hacking 5% (n = 21) vs 74% (n = 20)
+  - ransomware 16% (14) vs 57% (31)
+  - outsider access 0% (5) vs 64% (16)
+  - staff access 2% (6) vs 68% (16)
 
-### CORRECTION (2026-07-13, same day): the above was premature — user pushed back hard, and a genuinely working bridge exists for both types
+  So the uplift is not "these types are absent from narrow firms". The same tick is common and often breached in narrow firms, but contained and cheap there. It is costly only together with breadth: an interaction, not either factor alone.
 
-User's objection, verbatim in spirit: stop testing single variables in isolation and giving up on thin coverage — catalogue everything available and think about how to COMBINE it. Doing that properly (`src/estimation/type_specific_montecarlo_bridge.py`) found real structure that four separate "declare defeat" moments had missed:
+### F16. Outcomes line up with the "inside" types; costly incidents are multi-outcome events, narrow or broad (`src/estimation/outcomes_vs_types.py`, 2026-10-05)
+Breached firms with a cost answer (244). Outcomes = Q56A, which covers the year's breaches, not only the worst.
+- **The ticks match the consequences** (share with the outcome, firms ticking the type vs breached firms not ticking it):
+  - ransomware (n = 45): systems corrupted 36% vs 10%; temporary loss of access 66% vs 26%; services down 49% vs 22%; third-party loss 35% vs 12%.
+  - bank hacking (n = 41): money stolen 45% vs 4%; accounts misused 14% vs 5%.
+  - outsider access (n = 21): systems corrupted 29% vs 13%; temporary loss of access 60% vs 31%; services down 44% vs 25%.
+  - staff access (n = 22): money stolen 43% vs 10%; paid attackers 43% vs 5%; accounts misused 20% vs 6%. Possibly staff tricked into paying, rather than file access.
+  
+  So the type ticks are not noise: each goes with the consequences you'd expect.
+- **Matching outcome, narrow vs broad:**
+  - Ransomware matches throughout (57–98%).
+  - Bank hacking: narrow cheap 54%, broad costly only 42%, broad cheap 0%. So in many broad firms the bank-hacking tick comes WITHOUT money stolen; "the intrusion reached the money" is not the general story.
+- **Mean number of distinct outcomes:**
 
-**The key move, for both types: identify a subsample where this type occurred EXACTLY ONCE and NOTHING ELSE happened that year.** For these firms, `damage_bands` (single-worst-incident cost) IS the type's exact total annual cost — zero bridging ambiguity, by the same logic as freq==1 in the general framework. That subsample's `damage_bands` distribution is then a properly-justified "per-single-attack cost" distribution, usable for the (much smaller) remaining group of multi-incident firms via the SAME Monte Carlo sum-of-k-draws technique `bridge_multiplier.py` already uses project-wide.
+  | | Narrow, cheap | Narrow, costly | Broad, cheap | Broad, costly |
+  |---|---|---|---|---|
+  | with an inside type | 1.2 (n = 36) | 3.5 (n = 8) | 1.4 (n = 19) | 3.5 (n = 34) |
+  | without | 1.15 (n = 121) | 0.9 (n = 14) | 1.4 (n = 11) | |
 
-**Ransomware:** `ranssoft_bands` (count of ransomware attacks, Q83E, 88% coverage — NOT the cross-type-contaminated `freq`) directly identifies which `disrupta==Ransomware` firms had exactly 1 attack. Result: **n=19 firms (weight 15.62 of ~22.2 total, i.e. ~70% of Ransomware-disrupta weight) need NO bridge at all** — `damage_bands` is already their exact answer. Only **n=3 firms (weight 3.05)** actually need extrapolating (2+ attacks), done via Monte Carlo draws from the clean 19-firm reference distribution. A small residual (n=8, `ranssoft_bands` missing/"don't know", weight 3.53) falls back to their own `damage_bands` as a floor. **This retroactively explains the earlier degenerate censored-lognormal fit**: its single heaviest, fit-breaking "lower-censored" observation (idx=1436, weight=1.405, `damage_bands`=10/£100k-500k) turns out to be a `ranssoft_bands`-confirmed EXACT single-attack observation, not merely a lower bound — the old model had manufactured tension between "exact" and "at least" evidence that wasn't actually there, for lack of this variable. **Result: £605.71/business — a real, non-degenerate, mostly-exact-data-backed figure**, replacing the broken £3,269 (which was reported as unreliable and excluded).
+  Systems corrupted is about 46–48% in both costly inside groups, and money stolen about 30%.
+  - The few costly NARROW firms with an inside type look just like the costly BROAD ones: about 3.5 outcomes, a similar mix.
+  - The costly event seems to be the same kind of thing (a compromise with many consequences). It is simply much more common among broad firms.
+  - Costly narrow firms without an inside type (n = 14) are a different kind: about 0.9 outcomes, presumably staff time or disruption without a compromise.
+- **Reading:** number of ticks and number of outcomes both look like measures of how far one incident reached. This favours reading (b), the footprint of a big compromise, without proving it.
 
-**Impersonation:** no dedicated count variable exists, but restricting to `disrupta==Impersonation` firms where impersonation was the ONLY real attack type flagged all year (`n_types_real==1`, using only the 11 real `type*` columns — excluding `type9/10/11/12`, which are Q53A's "any other"/"don't know"/"none"/"refused" meta-response options, not attack flags) removes the freq-contamination problem directly. This "clean" subsample is **n=78, weight 72.48 — 46.4% of ALL Impersonation-disrupta weight**, far bigger than expected. Within it: freq==1 firms (n=39, weight 42.77) are the exact-cost reference class; freq>1-but-still-clean firms (n=39, weight 29.72) get the Monte Carlo treatment. The remaining, genuinely contaminated multi-type residual (n=169, weight 83.58, 53.6% of total) still has no clean bridge and uses the clean-derived per-attack distribution as a working (flagged, not certain) estimate.
+### F17. Per-type counts for the "inside" types: they exist but can't separate spreading from separate attacks (`src/estimation/type_counts.py`, 2026-10-05)
+- **What exists:**
+  - ransomware: `Cybercrime_ranssum`; `ranssoft` (ransom demanded)
+  - malware: `Cybercrime_virussum`; `virussoft`
+  - unauthorised access: `hackcount`, which EXCLUDES instances that led to fraud or ransomware; `Cybercrime_hacksum`
+  - takeover attempts, including online bank accounts: `tkvrcount`, with the same exclusion; `tkvrsuc`
+  - DoS: `doscount`, no exclusion
+  
+  Coverage among ticking breached firms is mostly good, except `Cybercrime_virussum` and partly `ranssum`.
+- **Result** (breached firms; narrow/broad × cheap/costly): the median count is 1 in almost every cell, for every type. There is no "regular repeated attacks" baseline for these types to contrast with: one or two instances is the norm everywhere.
+- Zeros are more common in broad costly firms: ransomware ticked but no ransom demanded 53% (vs 20–43% elsewhere); takeover attempts 0 in 50% (vs 0% elsewhere); outsider access 0 in 40% (vs 20%). This fits "the tick was part of the incident, with no separate attempts". But for `tkvrcount`/`hackcount` a zero is EXPECTED when the instance led to fraud or ransomware (the exclusion rule), so it cannot be read as evidence. Cells hold 5–20 firms.
+- DoS (no exclusion, but an outside-entry type) has HIGHER counts in broad costly firms (median 2.5 vs 1).
+- **Reading:** per-type counts do not give a usable test of spreading. They are low everywhere, the zeros are ambiguous because of the exclusion rule, and the cells are small.
 
-**A real bug caught and fixed in the process**: the raw Monte Carlo estimate for the already-known dominant-outlier row (idx=792, weight=1.54, `damage_bands`=10/£300k, a Hacking+Phishing+Takeover+Impersonation multi-vector incident) came out BELOW that firm's own directly-observed £300k worst-incident cost — logically impossible (total must be ≥ the worst single incident), the same pathology diagnosed at length earlier this session. Fixed by adding an explicit floor: every MC-estimated total is `max(MC_estimate, firm's own damage_bands)`. This affected 5/169 contaminated-residual firms. With the fix: **Impersonation = £1,908.61/business.**
+### F18. Exposure vs footprint: costly broad firms are NOT more exposed; cheap broad firms are (`src/estimation/spread_vs_exposure.py`, 2026-10-05)
+Breached firms with a cost answer. Groups: narrow cheap 157, narrow costly 22, broad (4+) cheap 30, broad costly 35. Shares weighted.
+- **Part 2: exposure on things a breach cannot create, broad costly vs broad cheap:**
+  - phishing count over 20: 10% vs 63% (31 / 23 answering); median count 12 vs 17
+  - targeted phishing 6 or more: 40% vs 49%
+  - DoS ticked: 27% vs 56%
+  - impersonation that was outside spoofing only (no access / takeover): 61% vs 90%
+  - attacked weekly or more: 50% vs 47%
+  - attacked once: 18% vs 12%
+  
+  So costly broad firms are no more exposed on outside-attack types than cheap broad firms, and on phishing volume, DoS and spoofing they are LESS exposed. Cheap broad firms are the heavily-attacked ones: lots of phishing, DoS and spoofing, so their breadth comes from exposure, and it stays cheap. Costly broad firms get their breadth from "inside" types (F15) with ordinary exposure.
+- **Part 1: direct linkage items (thin):**
+  - "Impersonation involved account takeover": broad costly 29% (n = 30) vs broad cheap 5% (n = 28), narrow 0–10%.
+  - "Impersonation involved unauthorised access": 14% vs 9%, a small difference.
+  - "Impersonation using information from the breach": asked of too few firms (2–12 per group).
+  - Any fraud: 35% vs 26%. Fraud attribution answered by 14 vs 4 firms. In costly broad firms frauds are attributed to varied sources (takeover 6, phishing 6, outsider access 5, bank hacking 4), but rarely to 2 or more types per firm (10%).
+  
+  Mild support for footprint via impersonation-with-takeover; otherwise too thin to read.
+- **Reading:** this favours reading (b), or at least rules against the simple version of (a). The breadth of costly firms is not the breadth of heavy exposure; it is breadth from compromise-type ticks. There appear to be two kinds of broad firm:
+  1. heavily attacked from outside (cheap);
+  2. compromised, with the incident's footprint showing as several types (costly).
+- **Caveats:** 30–35 firms per broad group; phishing count answered by 23–31; weighted shares on small cells.
 
-**Checked for robustness the same way the two previous (failed) attempts were checked**: row 792 now contributes only **11.1%** of the total Impersonation figure (vs. 69.5-89% in every earlier framing) — a real improvement, not hidden by the floor fix. However, the top 8 of 169 contaminated-residual firms still account for **75.7%** of that bucket's contribution, and the two single largest contributors (idx=805, idx=1721) are both **freq=6 ("several times a day")** firms — meaning they inherit `K_IMPLIED[6]=1000`, the same extreme multiplier `bridge_multiplier.py` already documents as producing implausible results for high-freq bands. This is a pre-existing, known limitation surfacing here, not a new flaw — but it means the Impersonation figure's tail is still less trustworthy than its middle.
+### User synthesis (2026-10-05), with qualifications
+- **User:** there is evidence of a spreading mechanism, which comes with a noticeable cost uplift. Firms where a breach spread are not especially attacked on the facets it spread to.
+- **Qualifications:**
+  - **"Spreading" is inferred, not seen directly.**
+    - For: costly broad breadth comes from "inside" types, not outside exposure (F15, F18); costly incidents carry about 3.5 distinct outcomes (F16); impersonation-with-takeover is tied to costly broad firms (F18).
+    - Not excluded: a capable attacker using several methods at once (the same in this data, and fine to treat together); a bad year making respondents tick more boxes (recall).
+  - **"Not attacked on the spread facets":** what was measured is that costly broad firms are NOT more attacked on facets a breach cannot create (phishing volume, DoS, spoofing are lower or equal; overall frequency about equal). For the facets the breach spread to (the inside types), per-type attempt counts are about 1 everywhere and the zeros are ambiguous (F17). So the data can't say whether those facets were separately attacked.
+  - **Cost uplift:** among breached firms, 58% are costly with 4+ types plus an inside type, against 1–14% elsewhere (F15). The core rests on 35 costly broad firms.
+- **Possible implication for the model (not decided):** breadth in costly firms is an OUTCOME of the incident, so it should not be an input. Instead, a breach (from any entry type) may escalate into a multi-facet compromise with a higher cost. The chance of escalating doesn't appear tied to outside exposure.
 
-**Bottom line: both types now have a genuinely defensible, non-degenerate, mostly-real-data-backed bridge estimate.** Ransomware (£605.71/business) is solid — ~70% of its weight needed no modeling at all. Impersonation (£1,908.61/business) is real progress and passes the same outlier-robustness check that sank the two previous attempts, but its extreme-freq tail still leans on the project's already-flagged-as-imprecise `K_IMPLIED` convention. **Combined, these two types alone now contribute an estimated £2,514/business — more than 3.5x the combined contribution of the four "solved" types (£658/business)**, confirming the earlier suspicion that the unresolved types were where the real money was. **Not yet threaded into `bridge_specification.py`'s per-firm multiplier framework** (that file uses a ratio-multiplier structure; these two types' estimates are built as absolute per-firm totals via a different mechanism, and merging them without double-counting the freq==1/phishing logic already in that file needs care — flagged as the natural next step, not done yet this session given two integration bugs already caught and fixed today).
+## Open topics (as of 2026-10-05, not yet revisited in the fresh notes)
+1. **The top of the cost range.** No business reported over £500k. A handful at £100k–500k carry much of the total (old estimate: about a third of the national total from single losses over £500k). Size likely matters most here (the largest real-world UK incidents hit very large firms).
+2. **How cost scales with firm size, especially Medium/Large.** These are few in the sample, while Micro is about 80% of the weight.
+3. **Small costs adding up.** Only the worst incident is priced, so many small clean-ups per year are invisible. The old range (£0.13–0.24bn) is driven by an assumed cost shape.
+4. **More than one breach per firm per year.** The total exceeds the worst incident.
+5. **Firms that skipped the cost questions** (about 11% of attacked firms).
+6. **Spreading/escalation details for the model:** what drives the chance a breach escalates (entry type, size?), and the cost distribution of escalated compromises (this ties into 1).
+- **Refinement (2026-10-06): is "costly broad firms get less phishing volume" a selection effect?**
+  - Partly. Comparing within 4+ firms selects on breadth: a firm can reach 4+ through outside exposure or through inside (footprint) ticks, so within that group the two look negatively related even if they aren't overall.
+  - Check without selecting on breadth (breached firms, by exact phishing count 1 / 2–5 / 6–20 / over 20):
+    - share with an inside type is flat: 33% / 43% / 36% / 42%. So the chance of a compromise isn't tied to phishing volume.
+    - costly share, with an inside type: 20% / 52% / 55% / 23% (n = 15 / 18 / 12 / 23).
+    - costly share, without an inside type: 12% / 11% / 4% / 1%.
+  - So, even without selecting on breadth, the most heavily phished breached firms are less often costly. The costliest sit at moderate volume.
+  - Possible reason: for heavily attacked firms, the year-level breach marker may come from many small incidents. Not checked. Cells are about 20 firms.
+  - Revised statement: the costliest firms are not the most heavily attacked. Very heavy phishing goes with cheaper breaches, not dearer ones.
 
-**Follow-up scrutiny (2026-07-13, same day), user-prompted:**
+### F19. Mass and breachy sources: no sign they avoid each other's firms (`src/estimation/sources_targeting.py`, 2026-10-06)
+- **The question (user's dilemma):** do the volume source (mass phishing etc.) and the breachy source target firms independently given shared factors (H1), or prefer different firms (H2)?
+- **Test:** per-firm shares among ALL attacked firms (no conditioning on the breach marker), by phishing volume. H2 predicts the per-firm chance of a costly compromise falls with volume; H1 predicts flat or rising.
+- **By exact phishing count** (1 / 2–5 / 6–20 / 21–100 / over 100; n = 132 / 153 / 124 / 75 / 26):
+  - costly compromise (costly + inside type): 2.0% / 5.5% / 4.8% / 3.9% / 4.1%
+  - costly at all: 4.5% / 7.2% / 5.5% / 4.3% / 4.1%
+  - inside type ticked: 16% / 15% / 18% / 20% / 33%
+  - breached: 30% / 24% / 24% / 35% / 57%
+  - Small+ alone: costly compromise 2.9% / 6.4% / 10.9% / 3.9% / 18% (n = 19 at the top).
+- **By targeted phishing count** (1–5 / 6–20 / 21+): costly compromise 3.3% / 4.1% / 3.7%.
+- **By overall frequency:** noisy, no consistent direction.
+- **Reading:**
+  - The per-firm chance of a costly compromise is roughly flat across phishing volume (about 4–5% after the lowest band), not falling. No sign of H2.
+  - Breach markers and inside ticks DO rise with volume, but the extra breaches are cheap. So among BREACHED firms the costly share falls at high volume: dilution, as H1 allows (F18 refinement).
+  - Current view: the sources target firms roughly independently given shared factors. Heavy-volume firms collect more cheap breach markers.
+- **Caveats:**
+  - Small cells at high volume.
+  - The exact count is answered selectively: phishing firms without a count are very cheap, 0.8% costly.
+  - "Costly compromise" uses the inside-type definition from F15.
 
-1. **"Isn't a dominant outlier just what you'd expect under a heavy-tailed (lognormal-ish) model?"** — Yes in principle, and worth distinguishing two different cases that look similar but aren't:
-   - Impersonation's dominant row (idx=792, £300k) is NOT a simulated value at all — the floor rule means its contribution is that firm's own DIRECTLY OBSERVED cost, preserved as-is. There's no "is this consistent with the model" question to ask here; it's ground truth. The real open question for this row is an attribution one (it's a multi-vector incident coded to Impersonation only because that's what `disrupta` happened to pick), not a distributional one.
-   - Ransomware's dominant row (idx=2121, £280,471) IS a simulated/extrapolated value (its own observed worst incident is only £300) — so this one genuinely is a "does the model's tail assumption hold up" question. Checked directly: the ~10% probability mass at the top cost band in the 19-firm reference class is estimated from just **2 raw observations** (idx=507, weight=0.123; idx=1436, weight=1.405 — an 11x weight gap between them). A heavy tail existing is expected and not itself a red flag; but the specific tail-probability *estimate* driving idx=2121's simulated total is only as solid as 2 data points, one of which dominates the weighted probability — a real precision concern distinct from "is a fat tail plausible."
+## Breach counts
 
-2. **Confirmed: `weight` is the survey's own design/adjustment weight** (corrects for sampling by size stratum and non-response) — the same weight column used in every "weighted" figure throughout this project, not something introduced ad hoc for this script.
+### F20. Evidence on repeat breaches: costly repeats look rare (`src/estimation/breach_counts_evidence.py`, 2026-10-06)
+- **Per-type success counts** (breached firms ticking the type; share with 2+ among those with 1+):
+  - phishing engaged with: 25% (n = 186). Costly firms 59%, but few with 1+. Engagement is not a breach.
+  - successful takeover: 2% (n = 36)
+  - successful malware: 2% (n = 90)
+  - successful DoS: 39% (n = 33; only about 13 with 1+)
+  - ransom demanded: 22% (n = 38). Costly ransomware firms: all exactly 1 (n = 22).
+  
+  So for the inside / costly types, 2+ successes are rare. Repeats show up mainly for DoS and phishing engagement, which are mostly cheap.
+- **Yearly total (`crimecost_bands`, same 13-band scale) vs worst incident** (154 firms answered both; breached firms answer much more often, 46% vs 6%):
+  - The total is LOWER than the worst in 55–65% of firms, so it is a narrower cost concept (likely direct costs only) and cannot serve as the yearly total.
+  - Total HIGHER than worst: breached 3%, costly 1%, not breached 16%. Of 14 such firms, only 4 rise to £10–50k.
+  - Because the concept is narrower, "higher" is a lower bound on extra cost, but it is rare.
+- **Implication for the count model:**
+  - Independent random arrivals at the fitted per-type breach chances (bank hacking 59%, DoS 51%, takeover 36%) would imply 25–35% of breached firms with 2+ breaches of that type. The success counts show about 2% for takeover and malware.
+  - So per-type breach occurrence behaves more like yes/no per year than like repeated independent arrivals, at least for the costly types.
+  - Simplest candidate: per type at most one breach per year. Incidents can bundle several types (spreading). The yearly cost of breaches is roughly the worst incident, plus a small allowance for repeats of the cheap kinds (DoS, phishing engagement).
+- **Caveats:**
+  - Success is not the same as breach (F9).
+  - Count questions are answered by subsets.
+  - The total-cost question has a narrower concept and is answered selectively.
+  - Rare repeats in a sample of about 1,000 can still matter across 1.4M firms (user point from 2026-10-02): this says repeats are rare, not absent.
 
-1b. **Ran the same body-vs-tail consistency check for Impersonation's reference sample — result is materially different (worse) than Ransomware's.** Fit a lognormal to the 36 "body" observations of the n=39 clean (impersonation-only, freq==1) reference sample, excluding its single £35k outlier, then asked whether that body-only fit predicts the tail on its own (same method as the Ransomware check). Result:
-   - Body-only fit predicts P(X>=£20k) = **0.05%**. Observed: 1/39 = **2.6%** — about 50x higher than predicted.
-   - P(seeing this by chance, if the true rate really were 0.05%) = **1.8%** — notably less comfortable than Ransomware's 35.7% (unremarkable).
-   - **This one outlier IS in some tension with a smooth lognormal fit to the rest of its own reference sample** — doesn't prove misspecification (n=39 is thin enough that this could still be chance), but it's a qualitatively different, weaker result than Ransomware's check.
-   - **Why this matters more here**: this reference distribution feeds the extreme-frequency (freq=5/6, K_IMPLIED=365/1000) contaminated-residual firms — the ones already identified as dominating that bucket (idx=805, 1721, 427). With k this large, the simulated total is hugely sensitive to any sliver of tail probability in the reference distribution; multiplying a single-observation-based tail estimate by 1,000 draws inflates it enormously. **The biggest simulated totals in Impersonation's weakest bucket are riding almost entirely on this one moderately-surprising £35k data point being in the reference sample at all** — remove it, and those totals would likely collapse toward near-zero. This meaningfully lowers confidence in the Impersonation £1,908.61/business figure specifically (its tail-driven portion), while leaving the Ransomware £605.71/business figure's tail behavior comparatively well-supported.
+### Simplest breach-count model: concrete sketch (proposed 2026-10-07, not decided)
+- **Per firm-year:**
+  1. **Hits:** which attack types reach the firm (exposure; depends on size and the shared exposure level).
+  2. **Breach per hit type:** yes/no with chance b_t (F13), at most one per type per year (F20).
+  3. **Escalation:** each breach turns into a spreading compromise with chance e (one number, maybe by size). A compromise adds "inside" type ticks (its footprint) and takes its cost from a compromise cost distribution (costlier, many consequences, F16). Otherwise the breach takes an ordinary cost by type.
+  4. **Yearly cost:** the breaches' costs (in practice usually one breach, so about the worst incident), plus clean-up for non-breach hits.
+- **To pin from data:** b_t for the outside/entry types; e; ordinary and compromise cost distributions. Checks: per-firm costly-compromise share of about 4–5% of attacked firms (F19); breadth and outcome patterns of costly firms; rarity of repeats (F20).
+- **Simpler alternative (descriptive):** take the firm's ticked types as given, per-type yes/no breaches with b_t, one cost draw for the firm's breach-year scaled x1.6 per extra type (F14). Easier to fit, but it treats breadth as a cause, although for costly firms breadth looks like an outcome.
+- **Open choices:**
+  - Does e depend on size or on how many types hit the firm? Not on outside volume (F18/F19).
+  - Are several breached types in one year one incident or several? Repeats look rare (F20), so one is the simplest.
+- **User decision (2026-10-07):** no hard "at most one breach" cap. That is an a priori limit with no justification. Use a Poisson count of breaches. Repeats being absent or rare in the sample is fine, but for the 1.4M-firm population this matters, so carry an interval on the rate through to the national results.
+- **Correction to F20's implication (2026-10-07).** The "25–35% of breached firms would have 2+" figure used per-TICK breach chances (e.g. 59% for bank hacking among firms that ticked it). That is the wrong unit: the tick itself is partly selected by the breach. At the firm level:
+  - 22% of attacked firms are breached → Poisson rate about 0.25 → about 12% of breached firms with 2+ breaches;
+  - costly compromise about 4.5% of attacked firms → rate about 0.046 → about 2% of compromised firms with 2+.
+  
+  These are not clearly contradicted by the success counts (2+ in about 2% for takeover/malware, 22% ransom, 39% DoS). With Poisson, the rate is fixed by the breached share; repeats are not a free parameter. The real open question is firm-to-firm heterogeneity: some firms being repeatedly breached would give more repeats than Poisson.
+- **What is known about repeat breaches and the worst cost (status 2026-10-07):**
+  - "The worst cost is too stable for repeated iid draws" is established for ATTACKS: the worst cost doesn't rise with attack frequency (F1, F5).
+  - For BREACHES the old work (2026-10-02) found the repeat rate weakly identified; nothing clearly contradicts Poisson repeats. Hints both ways: firms with several ransom demands are cheaper (handled attempts); several phishing successes look like one bigger event; no dose-response of cost with number of successes in broad firms.
+- **User steer (2026-10-07):** don't lean on the per-type "success" counts for breach counts; the concept overlaps too little with breach (F9). Reason primarily from cost distributions instead.
+- **Proposed way to use cost distributions (not run yet).**
+  - The worst incident is the largest of the year's breach costs. If some firms have more breaches, their worst cost shifts up and their "no cost" share falls by a predictable amount (largest of N draws).
+  - So, among breached firms, compare worst-cost distributions across groups whose expected breach count should differ, using measures a breach cannot create: phishing volume, DoS, overall frequency, size.
+  - Compare with what largest-of-N predicts under Poisson, from no firm-to-firm variation up to strong variation.
+  - The range of variation the band distributions allow gives the interval to carry to the national estimate.
+  - Known so far: cost doesn't rise with attack frequency at fixed breadth (F5), and heavily phished firms are breached more but cheaper (F18/F19). Both hint that extra breaches in heavily exposed firms are cheap, or rare.
+  - Limit: the largest of a few draws moves slowly, so this may only give a wide bound.
 
-3. **Raw (unweighted, weight=1 for every firm) figures, run for comparison:**
-   - Ransomware: weighted £605.71/business (2.21x) vs. **unweighted £831.97/business (1.49x)**. The unweighted multiplier is smaller — removing idx=2121's outsized survey weight (2.40 vs. a typical 0.05-1.5) reduces its dominance over the "needs a bridge" bucket.
-   - Impersonation: weighted £1,908.61/business (6.25x) vs. **unweighted £6,036.13/business (18.18x)**. Here the unweighted multiplier is much LARGER, the opposite direction from Ransomware — the raw sample apparently contains proportionally more of the extreme-frequency (freq=5/6) firms driving the contaminated-residual tail than the survey weights credit them with in the true population.
-   - **The two types move in opposite directions under reweighting** — a sign that the weighting is doing real, non-trivial work, and that neither the weighted nor unweighted figure alone should be read as "the" answer without the other for context. Weighted remains the population-representative convention used throughout this project; unweighted is reported here as a robustness/transparency check, not a replacement headline number.
+### F21. Repeats bounded from cost distributions: extra cost from repeat breaches roughly +1% to +15% (`src/estimation/breach_counts_from_costs.py`, 2026-10-07)
+- **Method.**
+  - Single-breach cost distribution G = worst-cost bands of breached firms attacked ONCE (n = 85; one attack, one breach). G: none 18%, <£100 11%, £100–500 24%, £500–1k 10%, £1–5k 27%, £5k+ 10%.
+  - Breach counts are negative binomial with shape k (k = infinity is plain Poisson; small k = firms differ a lot, more repeats). The mean is set so that P(N ≥ 1) matches each group's breached share.
+  - Predicted worst = largest of N draws from G. Compared with observed worst bands of breached firms in groups that should have more breaches. Weighted log-likelihood across k.
+- **Results** (log-likelihood relative to the best k; a drop of about 2 or more counts against):
 
-### Full 7-type comparison, weighted vs unweighted (2026-07-13, appended to `type_cost_censored_model.py`)
+  | Group (breached share, n breached) | Poisson: mean N / extra cost | Lowest k not ruled out | Extra cost there |
+  |---|---|---|---|
+  | attacked less than monthly to monthly (18%, 109) | 1.10 / +1% | about 0.5 (k = 0.2: -5.5) | +4% |
+  | attacked weekly or more (14%, 50) | 1.08 / +1% | about 0.1 | +17% |
+  | phishing count 2–20 (24%, 73) | 1.14 / +2% | best at k = 0.2 (Poisson -6.2) | +17% |
+  | phishing count over 20 (40%, 46) | 1.28 / +3% | about 0.5 (k = 0.2: -9.5) | +13% |
 
-User asked "how heavy is which type, both unweighted and weighted" — extended the comparison beyond just Ransomware/Impersonation to all 7 types. Phishing added via its established ~1.02x mixture bridge applied directly to `disrupta==Phishing` firms' own `damage_bands`; the 4 solid censored-fit types rerun with `weight=1` for the unweighted column; Ransomware/Impersonation pulled in from `type_specific_montecarlo_bridge.py`.
+  k = 0.1 or below is ruled out in 3 of 4 groups (extra cost +25% to +70%).
+- **Reading:**
+  - Plain Poisson implies few repeats (1.1–1.3 breaches per breached firm) and adds about 1–3% to breach cost.
+  - The cost distributions allow at most moderate firm-to-firm variation, which adds up to about +15%.
+  - Working interval for the repeat add-on: about +1% to +15% of breach cost.
+- **Caveats:**
+  - The phishing 2–20 group "prefers" more repeats only because its worst costs are higher (26% vs 11% at £5k or more). That is more likely the costly-compromise concentration at moderate volume (F19) than repeats. The same confound could inflate the upper bound generally.
+  - G is assumed the same everywhere. Heavy-volume firms' extra breaches seem cheaper (F19), so G-like repeats are the costly case.
+  - G rests on 85 firms. Phishing-count groups can include once-attacked firms. Small groups. Sizes are pooled.
+  - Bounds repeats that cost like G; much cheaper repeats are not bounded but add little.
+- **Can the cost distribution tell 0/1 breaches from Poisson repeats? No (2026-10-07).**
+  - At the observed breach rates (breached share 14–40% by group), Poisson gives only 1.08–1.28 breaches per breached firm.
+  - Its predicted worst-cost distribution is almost the same as 0/1 (= G): "no cost" 14–17% vs 18%; £5k or more 11–13% vs 10%. A shift of 1–4 points, well inside the noise for groups of 46–109 firms.
+  - There is no group with a high enough breach rate to separate them.
+  - What the costs CAN do is rule out MANY repeats (strong firm-to-firm variation, F21).
+  - Practical consequence: 0/1 vs Poisson is not decidable from this data, and at sample-level rates it changes cost by only 1–3%. The open lever for the population is firm-to-firm variation, bounded by F21 at about +15%.
+- **Options for handling breach counts in the model (proposed 2026-10-07, user to decide):**
+  1. Poisson breaches per firm, with the rate depending on what we can observe: size and the shared exposure level (F3). That already gives firms different breach-proneness, grounded in data.
+  2. Leftover firm-to-firm variation beyond that, which the survey can't see, as an interval: plain Poisson up to the F21 bound. Simplest form: a multiplier of about 1.01–1.15 on breach costs.
+  3. A rare repeat-prone tail (e.g. 1 in 1,000 firms with many breaches) as a stated sensitivity scenario. It is invisible in the sample, so it is assumed, not estimated.
+- **DECISION (user, 2026-10-07):** breach counts are Poisson per firm, with the rate from size and exposure, as long as nothing in the data contradicts it, and nothing does (F21: Poisson fits within noise). No rare repeat-prone tail: there is no evidence for one, so it is dropped (options 2–3 above withdrawn as defaults). The interval comes from uncertainty in the rates themselves. The F21 bound on extra firm-to-firm variation (up to about +15%) is kept only as a note, not built in.
 
-| Type | Weighted £/business | Unweighted £/business | uw/w ratio |
-|---|---|---|---|
-| Phishing (mixture bridge) | £102.21 | £357.09 | 3.49x |
-| Other malware | £160.33 | £336.51 | 2.10x |
-| Denial of service | £52.25 | **£4,598.05 — DEGENERATE, don't trust** | 88.00x |
-| Hacking (broad) | £244.09 | £1,144.74 | 4.69x |
-| Website/social/email takeover | £201.05 | **£1,755.48 — DEGENERATE, don't trust** | 8.73x |
-| Ransomware (Monte Carlo bridge) | £605.71 | £831.97 | 1.37x |
-| Impersonation (Monte Carlo bridge) | £1,908.61 | £6,036.13 | 3.16x |
+## Model status (2026-10-07)
+Per firm-year:
+1. **Which attack types reach the firm.** Depends on size and one shared exposure level (F3: a quiet majority, a middle group and a small heavily attacked group; or a smooth scale). The volume source and the breachy source target firms roughly independently given these (F19). STATUS: structure agreed; not refitted in the fresh work (old fits exist).
+2. **Breaches.** Poisson count per firm, rate from size and exposure (DECIDED 2026-10-07). STATUS: open how the rate is built. Per-type chances (F13) exist, but "inside" ticks are partly the footprint of a breach, so breaches should be generated from the entry types.
+3. **Escalation.** Each breach may spread: extra inside-type ticks, many consequences, a much higher cost. STATUS (2026-10-07, F22–F24):
+   - Marker: breached, 4+ types, an inside type, worst >= £5k (agrees with the consequence count).
+   - Spread chance: one chance for all entry types (entry type can't be recovered), rising with size: 6% / 9% / 18% of breached Micro / Small / Medium+Large firms. Caveat: bigger firms pass the breadth condition more easily, so part of this may come from the marker.
+   - How far: inside types reached 1: 58%, 2: 35%, 3+: 8%; somewhat further in bigger firms.
+   - Cost: one spread cost distribution, the same whatever the number or kind of inside types (DECISION 2026-10-07, replaces the earlier 'rises with inside count'; F25: the inside count raises the chance a broad breach is a spread one, not its cost). Typical spread breach about £14k; the mean (£15k–60k) depends on the top band.
+   - Open: fitting the spread cost distribution (the £5k cutoff in the marker needs undoing, e.g. the mixture reading in F23), its top end, and whether the size effect is real.
+4. **Cost per breach.** An ordinary breach cost by type, and a compromise cost. No separate "big breach" cluster beyond this (F7). STATUS: not yet fitted. Open: the top end above about £100k and how cost scales with firm size.
+5. **Clean-up of attacks that didn't breach.** Small costs; the yearly total is unobserved (only the worst incident is priced). STATUS: open; the old range is assumption-driven.
+6. **Yearly cost** = breach costs + clean-up; national = scaled by ONS business counts per size band. Firms that skipped the cost questions: old estimate about +5%.
 
-**Important catch: DoS and Takeover's UNWEIGHTED censored-MLE refits came out degenerate (sigma pinned at the optimizer cap)**, even though their WEIGHTED fits were solid — the same failure mode Ransomware hit, but only appearing when reweighting is removed. Flagged automatically (script now propagates the `degenerate` flag into the comparison table rather than reporting raw numbers uncritically) and excluded from the "reliable" total.
+### Escalation: what we currently claim (checked with the user, 2026-10-07)
+- **Agreed working view:** a breach either stays in its lane, or spreads to involve other ("inside") types. A spreading breach shows up as extra type ticks AND a much higher cost (F15, F16, F18). This is inferred, not proven: one attacker using several methods, or recall, aren't ruled out.
+- **"Two kinds" shows in footprint and consequences, not in the cost numbers alone.** There is no visible two-cluster split in breach costs (F7): broader breaches shift the whole cost distribution up.
+- **"Uplift is about the same whatever the spreading profile, except bank hacking is costlier" is NOT established in the fresh work.** It comes from the old notes (bank hacking x9 [3–26], n = 23; ransomware no effect) and was not re-checked. Fresh results partly disagree:
+  - Ransomware seemed to add cost at a given breadth (F11, F14), but those comparisons include broad firms with NO inside type. Among spread firms only, ransomware adds nothing (F22). So the old "no ransomware effect" stands.
+  - Bank hacking: costly among breached 74% in broad firms (n = 20) vs 5% in narrow, but in costly broad firms the bank-hacking tick comes with money stolen / accounts misused only 42% of the time (F16). So "the intrusion reached the money" is not the general story.
+  - Fresh check done: F22 below.
 
-**Totals:**
-- All 7 types, including the 2 known-unreliable unweighted entries: weighted £3,274.24/business, unweighted £15,059.97/business (the unweighted figure is inflated by the 2 degenerate entries and should not be used as-is).
-- **Using only the 5 fully-reliable types (both weighted and unweighted fits solid): weighted £3,020.95/business, unweighted £8,706.44/business.**
+### F22. Cost of spread breaches by which inside types are involved (`src/estimation/escalation_profiles.py`, 2026-10-07)
+Spread proxy: breached, 4+ types, at least one inside type (n = 53, 58% at £5k or more). Gaps are with minus without the type, bootstrap 90% intervals. Small n throughout.
+- **Ransomware: no difference** (57% vs 61%, gap -0.05 [-0.37, +0.31]). Firms whose only inside type is ransomware are on the cheap side (32%, n = 13).
+- **Bank hacking: costlier, but not firmly** (74% vs 40%, gap +0.34 [-0.03, +0.59]; n = 20 vs 33). Same direction as the old x9, weaker.
+- **Outsider / staff access: small gaps, wide intervals** (+0.07, +0.11). Staff access firms have more at £20k or more (43% vs 13%, n = 16).
+- **Number of inside types matters more than which one:** 1 inside type 48% (n = 30), 2 types 88% (n = 17), 3+ types 75%, with 63% at £20k or more (n = 6). Part of the bank-hacking gap may be this, since bank hacking often comes with other inside types (not separated; n too small).
+- **Narrow breached firms with an inside type stay cheap whatever the type** (8% at £5k or more, n = 44). Small+ 27% vs Micro 4% there.
+- **Reading:** the uplift is not clearly homogeneous. The clearest pattern is "more inside types, costlier", which fits spreading: a bigger footprint, a bigger cost. Bank hacking may add on top; it's unclear.
+- **DECISION (user, 2026-10-07):** for now, model the cost of a spread breach as rising with the number of inside types involved, with no separate bank-hacking effect: nothing clearly sets bank hacking apart, so the simpler form wins.
+- **Next (user, 2026-10-07):** sort out escalation questions: (1) what sets the chance a breach spreads (size, entry type), (2) how many inside types a spread breach reaches, (3) how to mark spread firms when fitting (footprint vs consequence count).
 
-**Ranking by weighted £/business (the population-representative, currently-trusted figures): Impersonation (£1,908.61) >> Ransomware (£605.71) > Hacking (£244.09) > Takeover (£201.05) > Other malware (£160.33) > Phishing (£102.21) > DoS (£52.25).** Despite Phishing dominating incident *count* (~57-65%), it is the SECOND-CHEAPEST type by £/business — consistent with every earlier finding this project has made about phishing's £ share being small relative to its count share. Impersonation and Ransomware, the two hardest types to model, remain by far the largest £ contributors — over 80% of the 5-type reliable total between them alone.
+### F23. Marking spread breaches: cost plus breadth, checked against other indicators (`src/estimation/escalation_marker.py`, 2026-10-07)
+User's suggestion: mark spread breaches mainly by the cost uplift, with breadth (4+ types and an inside type) as a precondition. Breached firms; broad costly n = 34, broad cheap 19, narrow with inside type 44, narrow without 135.
+- **Consequences line up strongly.** Broad costly: 3.5 outcomes on average, 69% with 3+, restore a day or more 74%, 1.7 of 3 impact items. Broad cheap look like ordinary narrow breaches: 1.4 outcomes, 13% with 3+, restore 31%, 0.65 impact items (narrow with inside type: 1.37, 10%, 47%, 0.59).
+  - Caveat: impact items (recovery costs, revenue loss) are partly cost by construction; the outcome items less so. Outcomes cover all the year's breaches.
+- **Number of inside types:** broad costly 1.5, broad cheap 1.1, narrow 1.1. Cheap broad firms again look ordinary.
+- **Weak or no signal:** impersonation involving access (40% vs 14%, small n); any fraud (35% vs 30%); inside ticks with count <= 1 (69% vs 61%): these don't separate the groups.
+- **Cost below £5k:** broad cheap firms are a bit costlier than narrow inside-type breaches (42% vs 23% in £1k–5k), but no "none"-heavy pattern. Roughly ordinary.
+- **Mixture reading:** if broad+inside breaches are a mix of ordinary breaches (8% costly, like narrow ones) and spread ones, the spread share is 55% if spread breaches are always costly, 61% at 90%, 70% at 80%.
+- **Reading:** the cost-plus-breadth marker agrees with the consequence count, the cleanest independent indicator. Linkage items and count data add nothing either way.
 
-### Leave-one-out check on Impersonation's reference sample (2026-07-14) — confirms the fragility, quantifies it
+### F24. What sets the chance a breach spreads, and how far it spreads (`src/estimation/escalation_drivers.py`, 2026-10-07)
+Spread marker as F23 (breached, 4+ types, inside type, >= £5k). 244 breached firms, 34 spread. 90% bootstrap intervals.
+- **Size matters.** Spread share of breached firms: Micro 6% [2–11], Small 9% [3–15], Medium+Large 18% [12–25].
+  - It is the breadth step that rises with size (4+ types with an inside type: 10% / 18% / 28%); costly given that is flat (62% / 48% / 66%).
+  - Caveat: bigger firms tick more types anyway (separate attacks), so they meet the breadth precondition more easily. Part of the size effect may be the marker, not spreading.
+- **Entry type can't be recovered.** The worst-incident type (disrupta) names an inside type for 61% of spread firms vs 20% of broad cheap firms (ransomware alone: 11 of 34), so it mostly names where the incident ended up. The outside types ticked are nearly the same in spread and broad cheap firms (phishing 99% vs 94%, malware 77% vs 76%, takeover 56% vs 52%), except impersonation (74% vs 99%). No sign of a particular way in. Practical reading: one spread chance for all entry types, varying by size.
+- **How far it spreads.** Inside types among spread firms: 1: 58%, 2: 35%, 3+: 8% (mean 1.5); broad cheap firms: 1: 90%, 2: 7%, 3+: 4% (mean 1.1). Medium+Large spread firms reach more (mean 1.9, n = 23) than Micro/Small (about 1.5, n = 11).
+- **Spread firms do NOT tick more types in total** (mean 5.1 vs 5.0 for broad cheap). They tick more inside types and fewer others.
+- **The extra inside type is mostly bank hacking:** spread 69% vs broad cheap 35%; ransomware 57% vs 61%, outsider 13% vs 10%, staff 12% vs 8%. So "more inside types" and "bank hacking" are tangled again here (see F22 decision): they can't be separated with this data.
 
-Ran the sensitivity check flagged as the natural next step: rebuild the entire Impersonation estimate with `idx=2066` (the single £35k firm in the 39-firm reference sample, weight=0.479, previously found to be only 1.8%-likely under a lognormal fit to the other 38 firms) removed entirely, and see how much moves.
+### F25. Cost of spread breaches, fitted without the £5k cutoff (`src/estimation/spread_cost_fit.py`, 2026-10-07)
+Mixture fit on all 53 broad breached firms with an inside type: a share e are spread breaches (lognormal cost), the rest ordinary (cost like a reference group of narrow breached firms). Small n; wide intervals.
+- **The spread share depends on the reference group:** e = 0.49 [0.34–0.92] with narrow inside-type breaches as reference, 0.67 [0.41–1.00] with all narrow breaches.
+- **The typical spread breach costs about £14k** (median £13.9k–14.2k in both fits).
+- **The lognormal shape fits badly.** Marked spread firms pile up in £10k–20k (14 of 34 firms, 56% of weight), yet 4 firms sit at £100k–500k. A lognormal can't do both: one fit goes narrow (mean £15k, misses the top), the other goes wide (mean £28k).
+- **Raw marked spread firms (n = 34), band midpoints:** weighted mean £57k; one Micro firm at £100k–500k carries 60% of it, and the mean is £25k without it. None above £500k.
+- **Number of inside types:** with 2+ inside types, a much larger share is spread (e 0.82 vs 0.36 for 1 type). The cost given spread is similar (median £15k vs £13k). The £100k+ firms are mostly in the 1-type group. So in this fit, more inside types mainly raise the chance that a broad breach is a spread one, not the cost of a spread breach.
+- **Reading:** the bulk of spread costs is well pinned (about £5k–20k). The mean (£15k–60k) depends on the top band, i.e. on the tail question, which this data can't settle.
+- **DECISION (user, 2026-10-07):** drop the inside-count effect on spread cost. Spread breaches get one cost distribution. The number of inside types stays only as the footprint (how many extra ticks a spread breach adds, F24). Replaces the earlier decision after F22.
 
-**Result: £1,908.61/business -> £950.12/business — a 50.2% drop from removing ONE observation out of 39, whose survey weight (0.479) is 0.02% of the total population weight (2,180).**
+### F26. The top of the cost range: who the costly firms are (`src/estimation/top_band.py`, 2026-10-07)
+Attacked firms with a cost answer (n = 982). Band 10 = £100k–500k; bands above £500k exist and no firm chose them.
+- **Only 8 firms at £100k+** (Micro 2, Small 2, Medium 1, Large 3); 11 at £50k+; 26 at £20k+.
+  - Weighted share at £100k+: Micro 0.5%, Small 0.7%, Medium 0.4%, Large 2.1%. Each rests on 1–3 firms.
+- **They carry most of the mean** (band midpoints, £300k for band 10): 64% of the all-firm weighted mean (Micro 72%, Small 53%, Medium 38%, Large 58%). Without them the all-firm mean drops from £2,361 to £842.
+  - The two Micro firms have ordinary weights (1.4, 1.5), so they're not weighting artefacts.
+- **What they are:** 4 of 8 are spread breaches; 3 are breaches that didn't spread (Micro ransomware, Small bank hacking, Large ransomware); 1 is not breached (Small, DoS, attacked once).
+- **Two of the 8 contradict themselves:** worst incident £100k–500k but yearly total "none" (the non-breached Small DoS firm, and the Medium spread firm). Another (Large) gives a total lower than its worst. These may be misreported.
+- **Above £500k:** nothing observed. With 8 firms above £100k, that is weak evidence about how heavy the tail is (old notes, tail_ceiling_pareto.py: the empty bands can't bound it).
+- **Framing correction (user, 2026-10-07):** the top of the range is not a set of separate decisions about a few firms. In the generative model, each cost component (ordinary breach by type, spread breach, clean-up) has a cost distribution whose parameters are fitted to ALL firms' bands, including the empty bands above £500k. The count at £100k+, the placement within £100k–500k and anything above £500k then all follow from the fitted distribution. The real choices are: (1) the shape family of each cost distribution (how heavy its upper tail can be), (2) whether and how cost scales with firm size, (3) whether to keep the two self-contradicting answers. Where several shapes fit the data about equally well but give different means, that spread is carried as part of the interval.
 
-This confirms exactly what the body-vs-tail check predicted: the Impersonation figure's tail-driven portion (specifically the freq=5/6 contaminated-residual firms, which use `K_IMPLIED`=365/1000) is not resting on a broad base of evidence — it is resting on whether ONE specific survey response happened to land in the sample. With it: £35k band gets ~1.2% probability mass, which compounds enormously when multiplied through 365-1000 simulated draws. Without it: that band disappears from the reference distribution entirely, and the whole extrapolated tail for high-frequency firms collapses along with it.
+### F27. Spread breach cost: candidate shapes compared (`src/estimation/spread_cost_shapes.py`, 2026-10-07)
+Same mixture set-up as F25 (53 broad breached firms with an inside type; ordinary part from narrow breached firms). All bands in the fit, including the empty ones above £500k. Means are given capped at a largest single loss (cap), since the heavy shapes have no finite uncapped mean. Results for the two reference groups were similar; ranges below cover both.
+- **A. Lognormal: fits worse** (log-likelihood 5–6 points below the others, AIC +8–10). It misses the pile-up at £10k–20k. Mean £21k–29k.
+- **B. Log-t and C. lognormal body + power-law top above £20k fit about equally well**, and both choose a very heavy top end (B: df 0.6–0.7; C: alpha 0.7, about 21–24% of spread breaches above £20k). Spread share e about 0.6–0.7.
+  - Mean with cap £500k: £35k–54k; cap £1m: £42k–86k; cap £5m: £64k–306k.
+  - C's body part only describes the pile-up below £20k (it fits as 'rising up to £20k'); its shape there means nothing beyond that.
+- **What top-end heaviness the data allows (C with alpha held fixed):** alpha 0.5–1.0 fit equally well; 1.5 is borderline (1.3–2.6 points worse); 2 or more is ruled out (2.4–4.7 worse; 3: 4.4–7.7 worse).
+  - Mean at £1m cap: about £20k (alpha 1.5), £30k–33k (1.0), £46k–50k (0.7), £66k–73k (0.5). At £5m cap: £21k to £158k.
+- **The empty bands above £500k don't constrain it:** with about 32 spread breaches in the sample, the heavy shapes expect only about 0.3–1.6 above £500k, so seeing none is unsurprising.
+- **Reading:** the data rules out a thin top end, but can't say how heavy it is. The spread mean then depends on alpha and on the largest credible single loss, which needs outside information or a stated range. Possible tightening: fit alpha on all costly firms together (26 firms at £20k+, assuming one shared top-end shape across cost parts).
 
-**Revised assessment: the £1,908.61 Impersonation figure should be read as "plausibly anywhere from ~£950 to ~£1,900 per business, driven almost entirely by whether one data point is treated as representative or as a fluke."** This is meaningfully different from Ransomware, where the equivalent check found the tail-driving observations were well-predicted by the rest of the data (35.7% chance of seeing that many, not surprising) — Ransomware's £605.71 figure does not have this same one-point fragility. The honest summary for Impersonation is now: real, substantial progress over "no bridge at all," but the number should be presented as a wide range (~£950-£1,900/business) rather than a single point estimate, and flagged explicitly as resting on a single influential observation.
+### F28. Which firms the spread-cost fits chase at the top (`src/estimation/top_band.py` section 4, 2026-10-07)
+The 53 broad breached firms with an inside type, by size:
+- **By firm count, the costly ones are mostly Medium and Large:** 9 of the 12 firms at £20k+. Share at £20k+: Micro 12% (1 firm), Small 23%, Medium 18%, Large 32%; share at £5k+: Large 85% vs 48–62% for the others.
+- **By weight, the top is one Micro firm.** Micro firms are 57% of the set's weight. The 8% weighted share at £100k+ is almost all one Micro firm (6.6% of the set's weight); the other three £100k+ firms (Medium, Large, Large) add about 1% together.
+- **Reading:** the heavy top end in F27 is mostly driven by that one Micro firm. Two things are mixed: cost rising with size (seen in firm counts), and one costly Micro firm (seen in weights). Open checks: fit with cost scaling by size; refit without that firm to see how much the heavy shape depends on it.
 
-### Model-free view: what do the raw censored bounds say on their own? (`src/estimation/censored_bounds_only.py`, 2026-07-14)
+### F29. Heavy top end of spread cost: size scaling and the one costly Micro firm (`spread_cost_shapes.py` checks, 2026-10-07)
+Ordinary reference: all narrow breached firms. Means capped at £1m.
+- **Dropping the one Micro firm at £100k–500k changes the picture.**
+  - With it: steepness alpha 0.5–1.0 fit best; 1.5 is 2.6 points worse; 2 or more is ruled out.
+  - Without it: alpha 0.7 to 2.0 all fit about equally (within 0.9 points); only 3 is borderline (2.0–2.6 worse). The lognormal is still about 4 points worse than the heavier shapes.
+  - Means without it: lognormal £17k, power-law top £24k (£15k–37k across alpha 0.7–3), log-t £57k (it keeps a very heavy top).
+  - So the "very heavy top end" finding (F27) rests mainly on that one firm.
+- **Cost growing with size: no clear effect in this fit.** Size step x0.99–1.06 per size band with all firms, x1.10–1.26 without the Micro firm; fit gains are under 1 point.
+  - Caveat: the fit uses survey weights, so Medium and Large firms (weights about 0.05–0.13) count for very little next to Micro (about 1.5). The size effect seen in firm counts (F28) barely enters. A fairer test would use weights normalised within each size band.
+- Runtime about 30 minutes (many restarts per fit).
 
-User asked to look at the interval-censored construction directly — no lognormal fit, no Monte Carlo — to see what the raw bounds alone imply, and why Impersonation keeps being harder than Ransomware regardless of which model gets used.
+### F30. Top end pooled over all costly firms; size effect with fairer weights (`src/estimation/tail_pooled.py`, 2026-10-07)
+**Part 1: one shared steepness above £20k.** If costs above £20k follow a power law (P(X > x | X > £20k) = (x / £20k)^-alpha), the split of £20k+ firms across bands depends on alpha only, whatever the size or cost part. 26 attacked firms at £20k+: 15 in £20k–50k, 3 in £50k–100k, 8 in £100k–500k, 0 above.
+- **alpha about 0.8–1.0:** survey weights 0.77 [0.58–1.28]; weights balanced within size 0.98 [0.77–1.28]; no weights 0.95 [0.74–1.35].
+- **Not driven by one firm:** dropping any single firm moves it within 0.72–0.90 (survey weights) or 0.93–1.03 (others). Dropping the 2 Micro firms at £100k+: 1.06–1.18.
+- **Steeper tails are disfavoured:** alpha 1.5 is 2.5–6.6 log-likelihood points worse; 2 is 7–15 worse.
+- **Similar across groups:** spread firms 0.68–0.82 vs other firms 0.84–1.20; Micro+Small 0.72–0.92 vs Medium+Large 1.02–1.18.
+- **Imperfect fit:** the fit expects 4–9% of £20k+ firms above £500k (about 1–2.4 firms); none observed (a 9–37% chance). It also under-fits £100k–500k and over-fits £50k–100k. So a plain power law with no bend is only roughly right; a bend or ceiling somewhere above £500k is possible but not shown.
+- **What alpha means for cost:** average cost of a £20k+ incident, capped at a largest single loss: alpha 1.0: £84k (cap £500k), £98k (£1m), £130k (£5m); alpha 0.7: £128k / £169k / £303k.
+**Part 2: spread cost and size, weights balanced within size band.**
+- **Plain look** (marked spread firms, share at £20k+): Micro 19% (1 firm), Small 48%, Medium 31%, Large 37%. No trend.
+- **Mixture fit:** size step x1.0–1.16 per band; no gain in fit. Steps of x2 per band or more are somewhat disfavoured (0.6–2.7 points worse; x3: 3.8–5 worse).
+- **Reading:** spread cost doesn't clearly grow with size. Size affects how often a breach spreads (F24) more than what a spread breach costs.
 
-For each type: (1) FLOOR = hard lower bound using each record's own band lower-edge, zero distributional assumption; (2) NAIVE = bridge=1, each firm's own worst-incident band midpoint (the project's existing conservative default); (3) confirms no upper bound exists from censored data alone — lower-censored records only say "at least L," nothing caps how much higher the truth could be.
+### F31. Cost bands: spread vs other breached vs not breached (`src/estimation/cost_by_group.py`, 2026-10-07)
+Counts (weighted share). Spread n = 34 (all >= £5k by definition): £5k–10k 8 (16%), £10k–20k 14 (56%), £20k–50k 5 (8%), £50k–100k 3 (7%), £100k–500k 4 (13%).
+Breached, not spread n = 210: none 34 (19%), <£100 34 (14%), £100–500 53 (22%), £500–1k 20 (13%), £1k–5k 46 (25%), £5k–10k 8 (3%), £10k–20k 3 (1%), £20k–50k 9 (2%), £100k–500k 3 (1%).
+Not breached n = 738: none 446 (64%), <£100 140 (19%), £100–500 81 (11%), £500–1k 21 (2%), £1k–5k 39 (4%), £5k+ 11 firms (about 0.4%), incl. 1 at £100k–500k.
 
-**Ransomware**: floor £91.40/business, naive £238.12/business. Only **8.1%** of its "occurred" weight sits in the unresolved lower-censored (no-ceiling) bucket.
+### Exact definitions of the breach and spread markers (checked against the codebook, 2026-10-07)
+- **Breached** = any of:
+  - any Q56A outcome (`outcome_any`; "which of these happened as a result", all the year's breaches): systems corrupted, personal data lost, files permanently lost, temporary loss of access, assets/IP stolen, money stolen, online services taken down, lost access to third-party services, money paid to attackers, devices damaged, accounts or systems used for illicit purposes;
+  - Q71 restore time (`restore`) a day or more, or "still not back to normal" (codes 3–6);
+  - Q57 impacts: staff stopped from day-to-day work (`impact1`), loss of revenue or share value (`impact2`), other repair or recovery costs (`impact4`). (`impact3`, extra staff time, is NOT used.)
+- **Spread** = breached AND 4 or more of the 11 attack-type ticks AND at least one inside type (ransomware `type1`, bank hacking `type4`, outsider access `type8`, staff access `type7`) AND worst incident £5k or more.
+- Caveats: Q56A and Q57 cover all the year's breaches, not just the priced worst one; restore, revenue loss and recovery costs are partly cost; spread requires £5k+ by construction.
 
-**Impersonation**: floor £119.63/business, naive £305.58/business (closely matches the £305.49 naive figure computed independently in `type_specific_montecarlo_bridge.py` — good cross-script consistency). But **55.8%** of its "occurred" weight sits in the unresolved lower-censored bucket — more than half — and it has **zero exact observations** (no direct cost column exists at all for this type).
+### F32. Spreading as a hidden event, fitted to all attacked firms (`src/estimation/spread_latent.py`, 2026-10-08)
+User design: no hard spread marker. A breach spreads with some chance (unobserved); if it does, it can add inside-type ticks, takes a separate cost curve, and has more consequences. Fitted jointly to all 982 attacked firms (24 settings: background tick rates, add-chances, spread chance by size, three zero-inflated/plain lognormal cost curves with a shared size factor, Poisson outcome counts). One breach per breached firm. Survey weights main, unweighted as a check.
+- **Spread chance per breach:** Micro 7%, Small 10%, Medium 13%, Large 17% (unweighted: 8/10/14/18%). Expected spread firms in the sample: about 28 (the hard marker had 34).
+- **What spreading adds:** ransomware and bank-hacking ticks (each about 53% of spread breaches, weighted); outsider/staff access almost never (3%). Unweighted: ransomware 59%, outsider 33%, bank hacking 24%, staff 13%. So which ticks it adds is not stable.
+- **Consequences:** about 1.1 outcomes for an ordinary breach vs 3.9–4.0 for a spread one (stable).
+- **Cost curves:**
+  - not breached: 60–64% no cost, otherwise median about £80; mean about £185–320;
+  - ordinary breach: 16–19% no cost, otherwise median £420–550; mean £2k–3.7k;
+  - spread breach: weighted median £23k (Micro level), x1.12 per size step, mean £53k; unweighted median £12k, x1.37 per size step (Large median about £31k), mean £27k at Micro level. The split between 'level' and 'growth with size' is not stable; weighted is pulled up by the costly Micro firm.
+- **Who looks spread:** of the 34 hard-marker firms, 20 get a posterior over 0.5 (sum 20); 7 other breached firms do too (sum 8). Posterior-spread firms include 5–7 of the 7 breached firms at £100k–500k (the marker had 4).
+- **Checks against the data:**
+  - breached cost bands fit well overall (none 17.5% vs 17.5%; £500–5k 33% vs 36%), but the top is off in the usual way: £20k–100k predicted 4.8% vs 2.6% observed, £100k–500k 1.1% vs 2.0%; 4.6 firms expected at £100k+ vs 7 observed. Lognormal is a bit too thin at the very top.
+  - not breached: fits; the 1 not-breached firm at £100k+ (the self-contradicting DoS answer) is not expected (0.0).
+  - inside-tick counts: roughly right (breached 0/1/2/3/4: 147/72/19/5/1 vs 135/80/25/3/0.2).
+  - outcome counts: roughly right (1 outcome under-predicted: 101 vs 81).
 
-**This identifies the structural reason Impersonation is harder than Ransomware, independent of modeling choice**: Ransomware has enough directly-observed cost data (`ranscost_bands`) that a model only needs to extrapolate a small residual (8.1% of weight); Impersonation has almost no directly-observed data at all, so essentially all of its estimate is model-dependent extrapolation — which is exactly why it turned out to be so sensitive to a single reference-sample observation in the leave-one-out check above. Not a fixable modeling problem — a genuine data-coverage gap.
+### F33. Hidden-spread model with spread cost as a plain power law (`spread_latent.py pareto`, 2026-10-08)
+Same model as F32, spread cost = power law (lowest cost xm, steepness alpha; both 2 settings, like the lognormal).
+- **Fit about the same as the lognormal:** weighted log-likelihood 1.9 better; unweighted 0.75 worse.
+- **Power law found:** weighted: lowest cost £7.8k, alpha 0.79, x1.05 per size step; unweighted: lowest £2.6k, alpha 0.64, x1.31 per size step. Very heavy top end (no finite uncapped mean).
+- **Mean spread cost** (cap on largest loss £500k / £1m / £5m): weighted £60k / £74k / £115k; unweighted £44k / £58k / £107k. Lognormal (F32) gave £53k (weighted) and £27k (unweighted, Micro level).
+- **Spreading itself barely changes:** spread chance 7–14% (weighted) / 8–20% (unweighted) by size; 26–31 expected spread firms; outcomes 1.0–1.2 vs 3.9–4.0.
+- **The top is still not reproduced:** £100k–500k predicted 0.8–1.1% of breached firms vs 2.0% observed; firms at £100k+ expected 3.7 (weighted) / 5.9 (unweighted) vs 7. The power law also puts 0.3–0.4% above £500k (none observed). Neither shape gets the bump at £100k–500k.
+- **Reading:** the data can't choose between the two shapes; the choice moves the mean spread cost by roughly x1.5–2 (at a £1m cap).
 
-**Minor cross-script consistency note**: this script's Ransomware "naive" (£238.12) doesn't exactly match the Monte-Carlo script's naive (£273.56) — the two classify firms slightly differently (direct-cost-column availability here vs. `ranssoft_bands` availability there), so a handful of firms land in different buckets between them. Not a contradiction, just a reminder the two scripts' "naive" baselines aren't built identically. Impersonation's two naive figures match closely since both scripts classify it the same way (via `damage_bands`/`disrupta`, no type-specific count variable exists for it either way).
+### Status after F33 (2026-10-08)
+- Spread cost shape: user parked the choice ("finalize later"). Options on the table: power law as main shape with a stated cap on the largest loss (£500k–£5m), lognormal as low check; or the reverse. Mean spread cost roughly £25k–£115k across these.
+- Cruft from the shape work (spread-only subset fits F25, F27–F30 shape and steepness scans) answers "which shape", which the data can't settle; not to be built on.
+- Remaining model parts (listed to user 2026-10-08): who gets attacked and breached in the population (prevalence by size); breach counts (Poisson rate; current fit assumes one breach); ordinary breach and clean-up costs as yearly totals (only the worst incident is priced); firms skipping cost questions; scaling to UK business counts (ONS); the >£500k allowance; the self-contradicting £100k+ answers; survey weights vs unweighted instability.
+- **User decisions (2026-10-08) on the open concept gaps:** (5) losses above £500k: handled parametrically by extrapolating the fitted cost curve, not a separate question. (4) whether ordinary breach cost depends on entry type: starts from an empirical check; noted, deferred. (3) how cost scales with firm size: same, deferred. Of the two structural gaps, (2) the yearly cost of attacks that don't breach comes first, starting from the raw data; (1) how attacks lead to breaches comes after.
+
+### F34. Attacks that didn't breach: raw data on yearly cost (`src/estimation/nonbreach_yearly.py`, 2026-10-08)
+738 not-breached attacked firms with a cost answer.
+- **The worst incident's cost barely changes with attack frequency.** No cost: once 62%, <monthly 64%, monthly 69%, weekly 66%, daily 76%, several a day 47%; £1k+ about 2–5% throughout. Only "several a day" is a bit costlier (more £100–1k).
+- **It rises with size:** no cost Micro 66%, Small 60%, Medium 56%, Large 47%; £1k+ Micro 3%, Large 14%.
+- **It is almost all staff time:** of those with a cost, 92% report staff time (53% under £100); external payments during the incident 7%, after 16%; damage/disruption 12%.
+- **Yearly totals are not usable here:** the "total cost of all cyber crimes" items are answered by only 42 (incl. fraud) / 29 (excl. fraud) of 738, and mostly say "none" even when the worst incident had a cost (71% total none vs 33% worst none). The crime totals measure a narrower thing (crime, not handling of attacks). Per-type totals: 2–10 answers each.
+- **Reading:** if each attack carried a handling cost drawn from the same spread, the worst one would rise with frequency (largest of more draws). It doesn't, so most attacks probably cost nothing to handle, and a costly handling happens a roughly fixed, small number of times a year whatever the attack volume. Not yet checked with numbers.
+- Rough scale: mean worst cost of not-breached firms is about £190, vs about £2k for ordinary breaches; with 78% of attacked firms not breached, clean-up at 1x the worst is roughly 6% of the sample mean cost.
+
+### F35. Handling cost of attacks that didn't breach: generative model (`src/estimation/nonbreach_handling.py`, 2026-10-08)
+Model (user-agreed): N attacks/yr from the frequency band; costly handlings ~ Poisson(m), m = c x size factor x N^beta; each costs a lognormal amount; survey sees the worst, the yearly total is the sum. Fitted on 738 not-breached firms.
+- **beta about 0.03–0.04: costly handlings do not grow with attack volume.** beta 0.1 is 1.3–2.5 log-likelihood points worse, 0.25 is 18–25 worse, 1 is 400+ worse. Same with a second band-to-count mapping.
+- **About 0.4 costly handlings a year** (Micro; x1.2 per size step), each median about £55–65, mean £420–620 (x1.2–1.4 per size step).
+- **So the yearly total is barely above the worst:** mean total about £200 vs mean worst about £195 (weighted); unweighted about £510 total.
+- **Fit:** no-cost shares by size match (Micro 66/66%, Large 47/48%). By frequency the data zig-zag (daily 76% no cost, several a day 47%, small n) and the model draws a flat line through them.
+- **Misses the top:** observed mean worst (band midpoints) £455 vs model about £200. A few not-breached firms report £5k+ (11 firms, incl. the self-contradicting £100k+ one) that the lognormal doesn't produce. Either the handling-cost curve has a heavier top, or some of these are breaches the marker misses.
+
+### F36. How attacks lead to breaches: raw cross-tabs (`src/estimation/attack_to_breach.py`, 2026-10-08)
+982 attacked firms with a cost answer.
+- **Breached share FALLS with attack frequency:** once 42%, <monthly 20%, monthly 16%, weekly 10%, daily 30% (n = 46), several a day 13% (n = 71; but Medium+Large 44%, n = 26). Same within Micro and Small.
+- **It rises steeply with the number of types ticked:** 1 type 11%, 2: 29%, 3: 52%, 4: 49%, 5+: 90%. Within each number of types it still falls with frequency (1 type: once 31%, <monthly–monthly 8%, weekly+ 4%).
+- **Within phishing, more phishing doesn't mean more breaches:** firms with only phishing/impersonation, breached share by phishing count: 1: 18%, 2–5: 10%, 6–20: 11%, 21–100: 12%, >100: 4% (n = 8). By targeted-phishing count: 6–10% throughout.
+- **Single-type firms:** phishing 7% (n = 384), impersonation 12% (76); the rarer types 35–90% but n = 2–11.
+- **Reading:** breaches don't scale with attack volume. What matters is which types reach the firm. The fall with frequency likely means "attacked once" firms often noticed the attack because it did harm (the one attack they report is the breach), while frequent-attack firms are mostly getting harmless phishing. So frequency is a poor measure of exposure to breaches.
+
+### F37. Does exposure raise breach chances beyond the type mix? (`attack_to_breach.py` section E, 2026-10-08)
+Fitted per-type breach chances on all 982 firms, types combined independently, no exposure term: phishing 6%, impersonation 10%, malware 26%, ransomware 37%, takeover 37%, DoS 53%, bank hacking 58%, outsider access 80%, staff access 13%, eavesdropping 47%, other 29%. Size: odds x1.02 per size step (none).
+Observed vs predicted breached share:
+- **Phishing volume adds nothing:** phishing count 1 / 2–5 / 6–20 / >20: 30/24/24/40% observed vs 20/28/26/37% predicted. Targeted phishing none / 1–5 / 6+: 12/21/27% vs 15/22/29%.
+- **Frequency goes the wrong way for an exposure effect:** once 42% observed vs 25% predicted; weekly 10% vs 24%; several a day 13% vs 22%; middle bands match. Fits the reading that "attacked once" firms often report the breach as their one attack.
+- **Number of types:** 1–3 types match (11/29/52% vs 10/27/54%); 4+ types 62% vs 76% (independence over-predicts at the broad end, as in F9).
+- **Size adds nothing once the type mix is known.**
+- **Reading:** the type mix explains breach prevalence; no sign of an extra exposure or size effect. Caveat: inside-type ticks are partly the footprint of spreading, so their per-type chances are inflated (to be handled in the joint model).
+
+## Blueprint (2026-10-08, after F37)
+Per firm-year, by size band:
+1. Which attack types reach the firm. Open choice: generate them (per-type chances with a shared exposure level, F3) or take each sample firm's observed type mix as given and let survey weights do the scaling (no exposure model needed, since attack volume affects neither breaches nor handling cost).
+2. Breaches: each type that reaches the firm brings its own breach rate (Poisson count); no exposure or size effect beyond the type mix (F36, F37).
+3. Spreading: each breach spreads with a hidden chance (by size); adds inside ticks, more consequences, own cost curve (F32/F33). Cost shape parked (power law vs lognormal).
+4. Ordinary breach cost: one curve (entry-type dependence: deferred empirical check).
+5. Handling of attacks that didn't breach: Poisson number of costly handlings, not growing with attack volume, lognormal cost (F35).
+6. Size scaling of costs: deferred empirical check. Top end: parametric extrapolation of the fitted curves.
+7. National total: per-firm expected yearly cost by size x ONS business counts; adjust for firms skipping the cost questions; unattacked firms cost nothing.
+- **Decision (user, 2026-10-08):** model the attack-type mix (option A), not take it as given. Proposed form: one hidden "how targeted" score per firm (continuous, normal); each type's tick chance rises with it at its own rate, plus a size effect; fitted on all surveyed firms including those not attacked (no ticks). Spreading adds inside ticks on top of these background ticks, so ideally fitted jointly with the breach/spread part. Attack frequency drops out of the model (it affects neither breaches nor handling costs).
+
+### F38. Attack-type mix: one hidden 'how targeted' score (`src/estimation/attack_mix.py`, 2026-10-08)
+All 2,179 surveyed businesses (1,132 ticked a type). Tick chance of type t = logistic(a_t + b_t x score), score ~ Normal; size either shifts the score (shared, 23 settings) or acts per type (33 settings; AIC 29 better).
+- **Slopes are similar across types (about 1.5–2.5, eavesdropping 2.7–3.1)**: one score works for all types. Chance at an average score (Micro): phishing 23%, impersonation 6–7%, malware 1.2%, the rest under 1%.
+- **Size:** shared version shifts the score 0.37 per size step. Per-type version: impersonation x3.2 odds per step, staff access x3.6, eavesdropping x7.2, phishing x2.1, takeover x1.2.
+- **Number of types by size (observed vs per-type model):** Micro fits exactly (0/1/2/3/4+: 59/25/10/3/2% both). Medium and Large less well: the model gives too many 1-type and too few 2-type firms (Medium 1 type 23% obs vs 28%, 2 types 24% vs 21%; Large 0 types 26% vs 21%, 1 type 15% vs 25%, 4+ 19% vs 14%). Larger firms' type mixes are more spread out than one score with a size shift gives.
+- **Pairs:** observed co-occurrence (ratio to independent types) matched closely for common pairs (phishing+impersonation x2.0 vs 1.9; malware+ransomware x7.2 vs 6.6); over 54 pairs correlation of log ratios 0.92–0.93; the model slightly overstates rare pairs (median x5.9–6.1 vs x4.7).
+- Caveat: inside ticks include the spreading footprint; this part treats all ticks alike.
+
+### F39. Attack-type mix with the score's spread growing with size (`attack_mix.py "per type+spread" "shared+spread"`, 2026-10-08)
+- **Doesn't help.** Per-type version: spread x1.09 per size step, log-likelihood +0.8 (AIC slightly worse). Shared version: spread x1.01, no change.
+- The Medium/Large mismatch stays: Large 1 type 15% obs vs 23–28% model, 3 types 14% vs 11%, 4+ 19% vs 15–17%; Medium 2 types 24% vs 17–20%.
+- So the larger firms' extra spread of type mixes is not a wider single score. Larger firms seem to tick a typical second type (impersonation alongside phishing) more often than one score allows; not yet looked at directly.
+- **User recall (2026-10-08), confirmed in F3 notes:** phishing and impersonation are often ticked together for one incident (a spoofed email counts as both); likewise ransomware is also ticked as malware. The one-score attack-mix model has no such link, which likely explains the Medium/Large mismatch (impersonation rises x3.2 per size step, dragging a phishing tick with it). Proposed fix: an impersonation incident also ticks phishing with some chance, and a ransomware incident also ticks malware (2 extra settings).
+
+### F40. Attack-type mix with the incident link (`attack_mix.py "per type+link" "shared+link"`, 2026-10-08)
+Impersonation incident also ticks phishing with chance q1; ransomware incident also ticks malware with chance q2.
+- **Per-type size version: q1 = 0.22, q2 = 0.24;** fit 5 log-likelihood points better than without the link (AIC 7755 vs 7761). Shared version: q1 = 0.12, q2 = 0.29.
+- **Medium improves:** 1 type 27% model vs 23% obs (was 28%), 2 types 23% vs 24% (was 21%).
+- **Large still off:** 0 types 21% model vs 26% obs, 1 type 23% vs 15%, 2 types 29% vs 26%, 4+ 14% vs 19%. Large firms are either not attacked or ticked several types, with few single-type firms; the model can't reproduce that split. Possibly reporting (larger firms with IT staff report everything they see). n = 188.
+- Pair co-occurrence unchanged (correlation of log ratios 0.92–0.93).
+
+### F41. Where the attack-mix model misses (`attack_mix.py` diagnostic section, per type+link, 2026-10-08)
+- **Small fits well** in both single types and combinations.
+- **The main miss is "impersonation alone":** observed Medium 3.5% vs model 8.6%; Large 2.3% vs 11.3% (Small 5.0% vs 5.3%). In larger firms impersonation almost always comes with a phishing tick (Large: impersonation alone 5 firms vs phishing+impersonation 37). The single link chance (22%) is too weak for larger firms and the model fills the gap with lone impersonation; this also explains the too-few "not attacked" Large firms (21% vs 26%) and too many Ph+Im (25% vs 20%).
+- **Second miss: Large firms' rarer types don't follow the straight size trend:** malware 27% obs vs 17%, DoS 11% vs 5%, takeover 9% vs 4%, ransomware 10% vs 6%; bank hacking 5% vs 9% the other way. Per-type size effects are one log-odds step per size band, and Large jumps more than that (n = 188).
+
+### F42. Attack-type mix v2: own baseline per size band, keyed-in dependence, leftover dependence check (`attack_mix.py v2 / v2size`, 2026-10-08)
+User: no fixed size trend (each size band gets its own baseline per type); key the phishing|impersonation dependence into the model; then ask what dependence is left once the score is factored out.
+- **Phishing|impersonation dependence grows strongly with size:** impersonation ticked raises phishing odds x1.5 Micro, x2.2 Small, x5.2 Medium, x10 Large. Ransomware ticked raises malware odds x1.8. (One shared term gave x1.8 and still over-predicted lone impersonation in Medium/Large.)
+- **Now fits all sizes:** number of types 0/1/2/3/4+, Large obs 26/15/26/14/19% vs model 24/18/26/13/18%; Medium 33/23/24/12/7% vs 34/23/25/10/9%. Impersonation alone: Large 2.3% vs 2.8%, Medium 3.5% vs 4.6%.
+- **Leftover dependence between pairs is small:** none of 55 pairs beyond +-2 (observed minus expected firms with both, over sqrt(expected)). Largest: takeover+outsider access 15 vs 9 (+1.8), DoS+bank hacking 10 vs 16 (-1.5), impersonation+takeover 56 vs 46 (+1.4). So the score plus the two keyed-in links captures the co-occurrence structure.
+- Cost in settings: 60 vs 35 (AIC worse than the trend version, 7795 vs 7755), but no fixed size trend and the by-size fit is right.
+
+### Blueprint status (2026-10-08, after F42)
+Conceptually complete. Settled: attack-type mix (score, own baselines per size band, phishing|impersonation link by size, ransomware->malware link; F42); breaches per type present, no exposure/size effect beyond the type mix (F36–F37); spreading as hidden event (F32/F33); handling cost of non-breach attacks (F35); top end by parametric extrapolation; national total = per-firm expected cost by size x ONS counts.
+Still open: spread cost shape (parked); two deferred empirical checks (ordinary breach cost by entry type; cost scaling with size); small: whether a phishing+impersonation double tick should count as one breach chance. Next step: assemble and fit all parts jointly, then the national total.
+
+### F43. The two deferred checks: ordinary breach cost by entry type; cost by size (`src/estimation/cost_checks.py`, 2026-10-08)
+Ordinary breach = breached and not (4+ types with an inside type); n = 191. Means use band midpoints, excluding £100k+ firms (counted separately).
+**1. Entry type (type of the worst incident):**
+- phishing (n = 64): 33% no cost, mean £1.6k; impersonation (52): 8% no cost, £3.0k; malware (17): £3.1k, 20% at £5k+; takeover (15): £2.2k; bank hacking (14): £1.0k (+1 firm at £100k+); DoS (12): £0.6k; ransomware (9): 64% under £500 but 30% at £5k+ and 2 firms at £100k+.
+- Phishing/impersonation only vs another type present: nearly the same (mean £1.8k vs £2.0k; £5k+ 5% vs 9%), but all 3 ordinary £100k+ breaches have another type present (2 ransomware, 1 bank hacking).
+- Reading: no consistent difference in the bulk; phishing-entry breaches are more often costless. The top of ordinary breach costs comes from the rarer types, mainly ransomware (small n). One curve is roughly fine for the bulk.
+**2. Size:**
+- Not breached (handling): clear rise. Mean £161 / £335 / £636 / £887 (Micro / Small / Medium / Large); no cost 66 / 60 / 56 / 47%.
+- Ordinary breach: Micro lower, then flat. Mean £1.4k / £3.9k / £3.6k / £3.5k; £5k+ 5 / 16 / 9 / 20%. Same pattern within phishing/impersonation-entry breaches (£1.7k / £3.4k / £2.7k / £3.8k).
+- Spread: no trend (median £10k–20k at every size; means £13k–34k, noisy, n = 5–14).
+
+### F44. Re-run of the old factor analysis of the type flags (`src/estimation/factor_rerun.py`, 2026-10-08)
+All 2,179 businesses, survey weights, 11 types. Tetrachoric correlations (each flag as a cut-off continuous scale); eigenvalues; one-factor fit (pair r predicted as product of loadings) with leftover r per pair; clustering.
+- **Reproduces the old result.** Pooled: correlations 0.2–0.74, mostly 0.4–0.65. Eigenvalues 5.91, 1.09, 0.91, ... (first = 53%). First eigenvector near-equal across types (0.24–0.35). Micro: 5.47, 1.47, 1.07 (48%). Small+: 6.66, 0.96, 0.85 (60%).
+- **One-factor loadings similar:** 0.54 (other) to 0.85 (eavesdropping), most 0.66–0.76 pooled.
+- **Leftovers:** mean |leftover r| 0.08 pooled, 0.11 Micro, 0.06 Small+. The largest rest on 0–12 firms (eavesdropping, staff/outsider access; Micro cells with 0–5 firms), so unreliable. Leftovers on decent counts: phishing+impersonation +0.19 in Small+ (372 firms; the double tick); phishing+ransomware +0.14 pooled (75); phishing+bank hacking -0.13 (61).
+- **Second dimension:** eigenvalue about 1 pooled and Small+ (noise level); Micro 1.47, contrasting the access types/eavesdropping (cells of 0–5 firms) with phishing/malware/ransomware. Not trustworthy given the cell sizes.
