@@ -811,3 +811,4 @@ Per firm-year, by size band:
 5. Handling of attacks that didn't breach: Poisson number of costly handlings, not growing with attack volume, lognormal cost (F35).
 6. Size scaling of costs: deferred empirical check. Top end: parametric extrapolation of the fitted curves.
 7. National total: per-firm expected yearly cost by size x ONS business counts; adjust for firms skipping the cost questions; unattacked firms cost nothing.
+- **Decision (user, 2026-10-08):** model the attack-type mix (option A), not take it as given. Proposed form: one hidden "how targeted" score per firm (continuous, normal); each type's tick chance rises with it at its own rate, plus a size effect; fitted on all surveyed firms including those not attacked (no ticks). Spreading adds inside ticks on top of these background ticks, so ideally fitted jointly with the breach/spread part. Attack frequency drops out of the model (it affects neither breaches nor handling costs).
