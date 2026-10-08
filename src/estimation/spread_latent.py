@@ -28,6 +28,7 @@ from scipy.special import expit, gammaln
 from scipy.stats import norm
 
 UNW = 'unweighted' in sys.argv
+PARETO = 'pareto' in sys.argv   # 2026-10-08: spread cost as a plain power law instead of a lognormal
 df = pd.read_csv('data/proc/data.csv', low_memory=False)
 df = df[(df['questtype'] == 1) & df['freq'].isin(range(1, 7)) & df['damage_bands'].isin(range(1, 14))].copy()
 num = lambda c: pd.to_numeric(df[c], errors='coerce')
@@ -57,6 +58,19 @@ def band_probs(p0, mu, sd, shift):
     return np.concatenate([[p0], (1 - p0) * pos])
 
 
+def pareto_probs(lxm, la, shift):
+    """13 band probabilities for a power law: P(X > x) = (x / xm)^-alpha for x >= xm (xm = exp(lxm + shift))."""
+    a = np.exp(la)
+    cdf = 1 - np.exp(-a * np.maximum(LOGE - lxm - shift, 0.0))
+    return np.concatenate([[0.0], np.diff(np.concatenate([[0.0], cdf, [1.0]]))])
+
+
+def spread_probs(th, shift):
+    if PARETO:
+        return pareto_probs(th[IX['mu_s']], th[IX['lsd_s']], shift)
+    return band_probs(0.0, th[IX['mu_s']], np.exp(th[IX['lsd_s']]), shift)
+
+
 def parts(th):
     g = lambda k: th[IX[k]]
     a = np.array([g('a_' + v) for v in INSIDE.values()])
@@ -72,7 +86,7 @@ def parts(th):
         m = Z == z
         cn[m] = band_probs(expit(g('p0n')), g('mu_n'), np.exp(g('lsd_n')), lgz * z)[C[m]]
         co[m] = band_probs(expit(g('p0o')), g('mu_o'), np.exp(g('lsd_o')), lgz * z)[C[m]]
-        cs[m] = band_probs(0.0, g('mu_s'), np.exp(g('lsd_s')), lgz * z)[C[m]]
+        cs[m] = spread_probs(th, lgz * z)[C[m]]
     pois = lambda lam: np.exp(NOUT * np.log(lam) - lam - gammaln(NOUT + 1))
     oo, os_ = pois(np.exp(g('llam_o'))), pois(np.exp(g('llam_s')))
     L_ns = tick_ns * np.where(B == 1, co * oo, cn)
@@ -91,6 +105,8 @@ init = {'a_ransom': -3, 'a_bankhack': -3, 'a_outsider': -4, 'a_staff': -4, 'b_ot
         'd_breach': 1.0, 'r_ransom': -1, 'r_bankhack': -1, 'r_outsider': -2, 'r_staff': -2, 's0': -2, 's1': 0.3,
         'p0n': 0.5, 'mu_n': np.log(150), 'lsd_n': 0.3, 'p0o': -1.5, 'mu_o': np.log(600), 'lsd_o': 0.5,
         'mu_s': np.log(15000), 'lsd_s': 0.0, 'lg_size': 0.2, 'llam_o': 0.0, 'llam_s': 1.2}
+if PARETO:
+    init.update({'mu_s': np.log(7000), 'lsd_s': 0.0})
 for k, v in init.items():
     x0[IX[k]] = v
 best = None
@@ -102,7 +118,7 @@ for jit in range(6):
         best = r
 th = best.x
 g = lambda k: th[IX[k]]
-print(f'{"UNWEIGHTED" if UNW else "survey weights"}: n = {n}, breached {B.sum()}; -loglik {best.fun:.2f}')
+print(('SPREAD COST = POWER LAW; ' if PARETO else '') + f'{"UNWEIGHTED" if UNW else "survey weights"}: n = {n}, breached {B.sum()}; -loglik {best.fun:.2f}')
 
 s, L_ns, L_s = parts(th)
 post = np.where(B == 1, s * L_s / ((1 - s) * L_ns + s * L_s), 0.0)
@@ -122,11 +138,17 @@ print(f'   outcomes per breached firm: ordinary {np.exp(g("llam_o")):.2f}, sprea
 
 print('\n=== Cost curves (Micro level; x{:.2f} per size step) ==='.format(np.exp(g('lg_size'))))
 for lab, p0, mu, lsd in [('not breached', expit(g('p0n')), g('mu_n'), g('lsd_n')),
-                          ('ordinary breach', expit(g('p0o')), g('mu_o'), g('lsd_o')),
-                          ('spread breach', 0.0, g('mu_s'), g('lsd_s'))]:
+                          ('ordinary breach', expit(g('p0o')), g('mu_o'), g('lsd_o'))] + \
+                         ([] if PARETO else [('spread breach', 0.0, g('mu_s'), g('lsd_s'))]):
     sd = np.exp(lsd)
     print(f'   {lab:16s} no cost {p0:.2f}; otherwise median £{np.exp(mu):,.0f}, log-sd {sd:.2f}, '
           f'mean £{(1 - p0) * np.exp(mu + sd ** 2 / 2):,.0f}')
+
+if PARETO:
+    xm, a = np.exp(g('mu_s')), np.exp(g('lsd_s'))
+    capm = lambda C_: xm + (xm * np.log(C_ / xm) if abs(a - 1) < 1e-9 else xm / (1 - a) * ((C_ / xm) ** (1 - a) - 1))
+    print(f'   spread breach    power law: lowest cost £{xm:,.0f}, alpha {a:.2f}; mean capped at £500k £{capm(5e5):,.0f}, '
+          f'£1m £{capm(1e6):,.0f}, £5m £{capm(5e6):,.0f}')
 
 print('\n=== Who looks spread: posterior chance vs the old 34-firm marker ===')
 k_all = I.sum(axis=1) + K
@@ -144,7 +166,7 @@ for z in range(4):
     m = Z == z
     bn = band_probs(expit(g('p0n')), g('mu_n'), np.exp(g('lsd_n')), g('lg_size') * z)
     bo = band_probs(expit(g('p0o')), g('mu_o'), np.exp(g('lsd_o')), g('lg_size') * z)
-    bs = band_probs(0.0, g('mu_s'), np.exp(g('lsd_s')), g('lg_size') * z)
+    bs = spread_probs(th, g('lg_size') * z)
     sz = expit(g('s0') + g('s1') * z)
     pred[m] = np.where(B[m, None] == 1, (1 - sz) * bo + sz * bs, bn)
 GR = [('none', [0]), ('<500', [1, 2]), ('500-5k', [3, 4]), ('5k-20k', [5, 6]), ('20k-100k', [7, 8]), ('100k-500k', [9]),

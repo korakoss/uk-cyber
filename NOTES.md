@@ -752,3 +752,12 @@ User design: no hard spread marker. A breach spreads with some chance (unobserve
   - not breached: fits; the 1 not-breached firm at £100k+ (the self-contradicting DoS answer) is not expected (0.0).
   - inside-tick counts: roughly right (breached 0/1/2/3/4: 147/72/19/5/1 vs 135/80/25/3/0.2).
   - outcome counts: roughly right (1 outcome under-predicted: 101 vs 81).
+
+### F33. Hidden-spread model with spread cost as a plain power law (`spread_latent.py pareto`, 2026-10-08)
+Same model as F32, spread cost = power law (lowest cost xm, steepness alpha; both 2 settings, like the lognormal).
+- **Fit about the same as the lognormal:** weighted log-likelihood 1.9 better; unweighted 0.75 worse.
+- **Power law found:** weighted: lowest cost £7.8k, alpha 0.79, x1.05 per size step; unweighted: lowest £2.6k, alpha 0.64, x1.31 per size step. Very heavy top end (no finite uncapped mean).
+- **Mean spread cost** (cap on largest loss £500k / £1m / £5m): weighted £60k / £74k / £115k; unweighted £44k / £58k / £107k. Lognormal (F32) gave £53k (weighted) and £27k (unweighted, Micro level).
+- **Spreading itself barely changes:** spread chance 7–14% (weighted) / 8–20% (unweighted) by size; 26–31 expected spread firms; outcomes 1.0–1.2 vs 3.9–4.0.
+- **The top is still not reproduced:** £100k–500k predicted 0.8–1.1% of breached firms vs 2.0% observed; firms at £100k+ expected 3.7 (weighted) / 5.9 (unweighted) vs 7. The power law also puts 0.3–0.4% above £500k (none observed). Neither shape gets the bump at £100k–500k.
+- **Reading:** the data can't choose between the two shapes; the choice moves the mean spread cost by roughly x1.5–2 (at a £1m cap).
