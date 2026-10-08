@@ -812,3 +812,11 @@ Per firm-year, by size band:
 6. Size scaling of costs: deferred empirical check. Top end: parametric extrapolation of the fitted curves.
 7. National total: per-firm expected yearly cost by size x ONS business counts; adjust for firms skipping the cost questions; unattacked firms cost nothing.
 - **Decision (user, 2026-10-08):** model the attack-type mix (option A), not take it as given. Proposed form: one hidden "how targeted" score per firm (continuous, normal); each type's tick chance rises with it at its own rate, plus a size effect; fitted on all surveyed firms including those not attacked (no ticks). Spreading adds inside ticks on top of these background ticks, so ideally fitted jointly with the breach/spread part. Attack frequency drops out of the model (it affects neither breaches nor handling costs).
+
+### F38. Attack-type mix: one hidden 'how targeted' score (`src/estimation/attack_mix.py`, 2026-10-08)
+All 2,179 surveyed businesses (1,132 ticked a type). Tick chance of type t = logistic(a_t + b_t x score), score ~ Normal; size either shifts the score (shared, 23 settings) or acts per type (33 settings; AIC 29 better).
+- **Slopes are similar across types (about 1.5–2.5, eavesdropping 2.7–3.1)**: one score works for all types. Chance at an average score (Micro): phishing 23%, impersonation 6–7%, malware 1.2%, the rest under 1%.
+- **Size:** shared version shifts the score 0.37 per size step. Per-type version: impersonation x3.2 odds per step, staff access x3.6, eavesdropping x7.2, phishing x2.1, takeover x1.2.
+- **Number of types by size (observed vs per-type model):** Micro fits exactly (0/1/2/3/4+: 59/25/10/3/2% both). Medium and Large less well: the model gives too many 1-type and too few 2-type firms (Medium 1 type 23% obs vs 28%, 2 types 24% vs 21%; Large 0 types 26% vs 21%, 1 type 15% vs 25%, 4+ 19% vs 14%). Larger firms' type mixes are more spread out than one score with a size shift gives.
+- **Pairs:** observed co-occurrence (ratio to independent types) matched closely for common pairs (phishing+impersonation x2.0 vs 1.9; malware+ransomware x7.2 vs 6.6); over 54 pairs correlation of log ratios 0.92–0.93; the model slightly overstates rare pairs (median x5.9–6.1 vs x4.7).
+- Caveat: inside ticks include the spreading footprint; this part treats all ticks alike.
