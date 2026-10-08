@@ -849,3 +849,14 @@ User: no fixed size trend (each size band gets its own baseline per type); key t
 ### Blueprint status (2026-10-08, after F42)
 Conceptually complete. Settled: attack-type mix (score, own baselines per size band, phishing|impersonation link by size, ransomware->malware link; F42); breaches per type present, no exposure/size effect beyond the type mix (F36–F37); spreading as hidden event (F32/F33); handling cost of non-breach attacks (F35); top end by parametric extrapolation; national total = per-firm expected cost by size x ONS counts.
 Still open: spread cost shape (parked); two deferred empirical checks (ordinary breach cost by entry type; cost scaling with size); small: whether a phishing+impersonation double tick should count as one breach chance. Next step: assemble and fit all parts jointly, then the national total.
+
+### F43. The two deferred checks: ordinary breach cost by entry type; cost by size (`src/estimation/cost_checks.py`, 2026-10-08)
+Ordinary breach = breached and not (4+ types with an inside type); n = 191. Means use band midpoints, excluding £100k+ firms (counted separately).
+**1. Entry type (type of the worst incident):**
+- phishing (n = 64): 33% no cost, mean £1.6k; impersonation (52): 8% no cost, £3.0k; malware (17): £3.1k, 20% at £5k+; takeover (15): £2.2k; bank hacking (14): £1.0k (+1 firm at £100k+); DoS (12): £0.6k; ransomware (9): 64% under £500 but 30% at £5k+ and 2 firms at £100k+.
+- Phishing/impersonation only vs another type present: nearly the same (mean £1.8k vs £2.0k; £5k+ 5% vs 9%), but all 3 ordinary £100k+ breaches have another type present (2 ransomware, 1 bank hacking).
+- Reading: no consistent difference in the bulk; phishing-entry breaches are more often costless. The top of ordinary breach costs comes from the rarer types, mainly ransomware (small n). One curve is roughly fine for the bulk.
+**2. Size:**
+- Not breached (handling): clear rise. Mean £161 / £335 / £636 / £887 (Micro / Small / Medium / Large); no cost 66 / 60 / 56 / 47%.
+- Ordinary breach: Micro lower, then flat. Mean £1.4k / £3.9k / £3.6k / £3.5k; £5k+ 5 / 16 / 9 / 20%. Same pattern within phishing/impersonation-entry breaches (£1.7k / £3.4k / £2.7k / £3.8k).
+- Spread: no trend (median £10k–20k at every size; means £13k–34k, noisy, n = 5–14).
