@@ -5,6 +5,8 @@ Size enters in one of two ways:
   - 'shared': size shifts the score's mean (bigger firms are more targeted overall), mean = g * (size - 1)
   - 'per type': each type has its own size effect, logistic(a_t + b_t * E + c_t * (size - 1))
 2026-10-08 addition: '+spread' versions also let the score's spread grow with size: sd = exp(h * (size - 1)).
+2026-10-08 addition: '+link' versions let one incident tick two related boxes: an impersonation incident also ticks
+phishing with chance q1 (spoofed email), a ransomware incident also ticks malware with chance q2.
 Fitted by maximum likelihood (the hidden score is integrated out over a grid), survey weights.
 Checks (model simulated vs observed, weighted): share attacked by size, number of types ticked by size,
 how often pairs of types occur together (ratio to what independent types would give).
@@ -29,8 +31,17 @@ GH_w = GH_w / GH_w.sum()
 print(f'businesses: {n}; ticked any type: {int((X.sum(axis=1) > 0).sum())}')
 
 
+IPH, IIM, IMW, IRW = 0, 1, 2, 5                              # column positions: phishing, impersonation, malware, ransomware
+
+
+def links(th, mode):
+    return (expit(th[-2]), expit(th[-1])) if mode.endswith('+link') else (0.0, 0.0)
+
+
 def unpack(th, mode):
     """returns a, b, score mean shift g, per-type size effects c, score spread growth h"""
+    if mode.endswith('+link'):
+        th = th[:-2]
     a, b = th[:T], th[T:2 * T]
     h = th[-1] if mode.endswith('+spread') else 0.0
     if mode.startswith('shared'):
@@ -43,13 +54,17 @@ def loglik_each(th, mode):
     E = GH_x[None, :] * np.exp(h * Z[:, None]) + g * Z[:, None]   # n x grid
     eta = a[None, None, :] + b[None, None, :] * E[:, :, None] + c[None, None, :] * Z[:, None, None]
     p = expit(eta)                                           # n x grid x T
+    q1, q2 = links(th, mode)
+    p[:, :, IPH] = 1 - (1 - p[:, :, IPH]) * (1 - q1 * X[:, None, IIM])
+    p[:, :, IMW] = 1 - (1 - p[:, :, IMW]) * (1 - q2 * X[:, None, IRW])
     lp = np.where(X[:, None, :] == 1, np.log(np.clip(p, 1e-12, 1)), np.log(np.clip(1 - p, 1e-12, 1))).sum(axis=2)
     m = lp.max(axis=1, keepdims=True)
     return (m[:, 0] + np.log((np.exp(lp - m) * GH_w[None, :]).sum(axis=1)))
 
 
 def fit(mode):
-    k = 2 * T + (1 if mode.startswith('shared') else T) + (1 if mode.endswith('+spread') else 0)
+    k = 2 * T + (1 if mode.startswith('shared') else T) + (1 if mode.endswith('+spread') else 0) + \
+        (2 if mode.endswith('+link') else 0)
     x0 = np.r_[np.log(np.clip(np.average(X, axis=0, weights=W), 0.01, 0.9)) - 1.0, np.full(T, 1.0),
                np.full(k - 2 * T, 0.2)]
     r = minimize(lambda th: -(W * loglik_each(th, mode)).sum(), x0, method='L-BFGS-B', options={'maxiter': 3000})
@@ -61,7 +76,11 @@ def simulate(th, mode, reps=200, seed=1):
     a, b, g, c, h = unpack(th, mode)
     E = rng.standard_normal((reps, n)) * np.exp(h * Z[None, :]) + g * Z[None, :]
     p = expit(a[None, None, :] + b[None, None, :] * E[:, :, None] + c[None, None, :] * Z[None, :, None])
-    return (rng.random(p.shape) < p).astype(float)            # reps x n x T
+    S = (rng.random(p.shape) < p).astype(float)               # reps x n x T
+    q1, q2 = links(th, mode)
+    S[:, :, IPH] = np.maximum(S[:, :, IPH], S[:, :, IIM] * (rng.random(S.shape[:2]) < q1))
+    S[:, :, IMW] = np.maximum(S[:, :, IMW], S[:, :, IRW] * (rng.random(S.shape[:2]) < q2))
+    return S
 
 
 SIZES = ['Micro', 'Small', 'Medium', 'Large']
@@ -79,6 +98,9 @@ for mode in MODES:
         print(f'   {lab:16s} {expit(a[i]):.3f}  slope {b[i]:5.2f}' + ('' if mode.startswith('shared') else f'  x{np.exp(c[i]):.2f}'))
     if mode.startswith('shared'):
         print(f'   size shifts the score by {g:.2f} per size step')
+    if mode.endswith('+link'):
+        q1, q2 = links(th, mode)
+        print(f'   an impersonation incident also ticks phishing: {q1:.2f}; a ransomware incident also ticks malware: {q2:.2f}')
     if mode.endswith('+spread'):
         print(f'   score spread x{np.exp(h):.2f} per size step (Large vs Micro x{np.exp(3 * h):.2f})')
 

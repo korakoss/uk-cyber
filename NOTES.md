@@ -826,3 +826,10 @@ All 2,179 surveyed businesses (1,132 ticked a type). Tick chance of type t = log
 - The Medium/Large mismatch stays: Large 1 type 15% obs vs 23–28% model, 3 types 14% vs 11%, 4+ 19% vs 15–17%; Medium 2 types 24% vs 17–20%.
 - So the larger firms' extra spread of type mixes is not a wider single score. Larger firms seem to tick a typical second type (impersonation alongside phishing) more often than one score allows; not yet looked at directly.
 - **User recall (2026-10-08), confirmed in F3 notes:** phishing and impersonation are often ticked together for one incident (a spoofed email counts as both); likewise ransomware is also ticked as malware. The one-score attack-mix model has no such link, which likely explains the Medium/Large mismatch (impersonation rises x3.2 per size step, dragging a phishing tick with it). Proposed fix: an impersonation incident also ticks phishing with some chance, and a ransomware incident also ticks malware (2 extra settings).
+
+### F40. Attack-type mix with the incident link (`attack_mix.py "per type+link" "shared+link"`, 2026-10-08)
+Impersonation incident also ticks phishing with chance q1; ransomware incident also ticks malware with chance q2.
+- **Per-type size version: q1 = 0.22, q2 = 0.24;** fit 5 log-likelihood points better than without the link (AIC 7755 vs 7761). Shared version: q1 = 0.12, q2 = 0.29.
+- **Medium improves:** 1 type 27% model vs 23% obs (was 28%), 2 types 23% vs 24% (was 21%).
+- **Large still off:** 0 types 21% model vs 26% obs, 1 type 23% vs 15%, 2 types 29% vs 26%, 4+ 14% vs 19%. Large firms are either not attacked or ticked several types, with few single-type firms; the model can't reproduce that split. Possibly reporting (larger firms with IT staff report everything they see). n = 188.
+- Pair co-occurrence unchanged (correlation of log ratios 0.92–0.93).
