@@ -784,3 +784,11 @@ Model (user-agreed): N attacks/yr from the frequency band; costly handlings ~ Po
 - **So the yearly total is barely above the worst:** mean total about £200 vs mean worst about £195 (weighted); unweighted about £510 total.
 - **Fit:** no-cost shares by size match (Micro 66/66%, Large 47/48%). By frequency the data zig-zag (daily 76% no cost, several a day 47%, small n) and the model draws a flat line through them.
 - **Misses the top:** observed mean worst (band midpoints) £455 vs model about £200. A few not-breached firms report £5k+ (11 firms, incl. the self-contradicting £100k+ one) that the lognormal doesn't produce. Either the handling-cost curve has a heavier top, or some of these are breaches the marker misses.
+
+### F36. How attacks lead to breaches: raw cross-tabs (`src/estimation/attack_to_breach.py`, 2026-10-08)
+982 attacked firms with a cost answer.
+- **Breached share FALLS with attack frequency:** once 42%, <monthly 20%, monthly 16%, weekly 10%, daily 30% (n = 46), several a day 13% (n = 71; but Medium+Large 44%, n = 26). Same within Micro and Small.
+- **It rises steeply with the number of types ticked:** 1 type 11%, 2: 29%, 3: 52%, 4: 49%, 5+: 90%. Within each number of types it still falls with frequency (1 type: once 31%, <monthly–monthly 8%, weekly+ 4%).
+- **Within phishing, more phishing doesn't mean more breaches:** firms with only phishing/impersonation, breached share by phishing count: 1: 18%, 2–5: 10%, 6–20: 11%, 21–100: 12%, >100: 4% (n = 8). By targeted-phishing count: 6–10% throughout.
+- **Single-type firms:** phishing 7% (n = 384), impersonation 12% (76); the rarer types 35–90% but n = 2–11.
+- **Reading:** breaches don't scale with attack volume. What matters is which types reach the firm. The fall with frequency likely means "attacked once" firms often noticed the attack because it did harm (the one attack they report is the breach), while frequent-attack firms are mostly getting harmless phishing. So frequency is a poor measure of exposure to breaches.
