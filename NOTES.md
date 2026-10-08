@@ -820,3 +820,8 @@ All 2,179 surveyed businesses (1,132 ticked a type). Tick chance of type t = log
 - **Number of types by size (observed vs per-type model):** Micro fits exactly (0/1/2/3/4+: 59/25/10/3/2% both). Medium and Large less well: the model gives too many 1-type and too few 2-type firms (Medium 1 type 23% obs vs 28%, 2 types 24% vs 21%; Large 0 types 26% vs 21%, 1 type 15% vs 25%, 4+ 19% vs 14%). Larger firms' type mixes are more spread out than one score with a size shift gives.
 - **Pairs:** observed co-occurrence (ratio to independent types) matched closely for common pairs (phishing+impersonation x2.0 vs 1.9; malware+ransomware x7.2 vs 6.6); over 54 pairs correlation of log ratios 0.92–0.93; the model slightly overstates rare pairs (median x5.9–6.1 vs x4.7).
 - Caveat: inside ticks include the spreading footprint; this part treats all ticks alike.
+
+### F39. Attack-type mix with the score's spread growing with size (`attack_mix.py "per type+spread" "shared+spread"`, 2026-10-08)
+- **Doesn't help.** Per-type version: spread x1.09 per size step, log-likelihood +0.8 (AIC slightly worse). Shared version: spread x1.01, no change.
+- The Medium/Large mismatch stays: Large 1 type 15% obs vs 23–28% model, 3 types 14% vs 11%, 4+ 19% vs 15–17%; Medium 2 types 24% vs 17–20%.
+- So the larger firms' extra spread of type mixes is not a wider single score. Larger firms seem to tick a typical second type (impersonation alongside phishing) more often than one score allows; not yet looked at directly.
