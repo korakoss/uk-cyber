@@ -845,3 +845,7 @@ User: no fixed size trend (each size band gets its own baseline per type); key t
 - **Now fits all sizes:** number of types 0/1/2/3/4+, Large obs 26/15/26/14/19% vs model 24/18/26/13/18%; Medium 33/23/24/12/7% vs 34/23/25/10/9%. Impersonation alone: Large 2.3% vs 2.8%, Medium 3.5% vs 4.6%.
 - **Leftover dependence between pairs is small:** none of 55 pairs beyond +-2 (observed minus expected firms with both, over sqrt(expected)). Largest: takeover+outsider access 15 vs 9 (+1.8), DoS+bank hacking 10 vs 16 (-1.5), impersonation+takeover 56 vs 46 (+1.4). So the score plus the two keyed-in links captures the co-occurrence structure.
 - Cost in settings: 60 vs 35 (AIC worse than the trend version, 7795 vs 7755), but no fixed size trend and the by-size fit is right.
+
+### Blueprint status (2026-10-08, after F42)
+Conceptually complete. Settled: attack-type mix (score, own baselines per size band, phishing|impersonation link by size, ransomware->malware link; F42); breaches per type present, no exposure/size effect beyond the type mix (F36–F37); spreading as hidden event (F32/F33); handling cost of non-breach attacks (F35); top end by parametric extrapolation; national total = per-firm expected cost by size x ONS counts.
+Still open: spread cost shape (parked); two deferred empirical checks (ordinary breach cost by entry type; cost scaling with size); small: whether a phishing+impersonation double tick should count as one breach chance. Next step: assemble and fit all parts jointly, then the national total.
