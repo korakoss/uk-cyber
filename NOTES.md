@@ -833,3 +833,8 @@ Impersonation incident also ticks phishing with chance q1; ransomware incident a
 - **Medium improves:** 1 type 27% model vs 23% obs (was 28%), 2 types 23% vs 24% (was 21%).
 - **Large still off:** 0 types 21% model vs 26% obs, 1 type 23% vs 15%, 2 types 29% vs 26%, 4+ 14% vs 19%. Large firms are either not attacked or ticked several types, with few single-type firms; the model can't reproduce that split. Possibly reporting (larger firms with IT staff report everything they see). n = 188.
 - Pair co-occurrence unchanged (correlation of log ratios 0.92–0.93).
+
+### F41. Where the attack-mix model misses (`attack_mix.py` diagnostic section, per type+link, 2026-10-08)
+- **Small fits well** in both single types and combinations.
+- **The main miss is "impersonation alone":** observed Medium 3.5% vs model 8.6%; Large 2.3% vs 11.3% (Small 5.0% vs 5.3%). In larger firms impersonation almost always comes with a phishing tick (Large: impersonation alone 5 firms vs phishing+impersonation 37). The single link chance (22%) is too weak for larger firms and the model fills the gap with lone impersonation; this also explains the too-few "not attacked" Large firms (21% vs 26%) and too many Ph+Im (25% vs 20%).
+- **Second miss: Large firms' rarer types don't follow the straight size trend:** malware 27% obs vs 17%, DoS 11% vs 5%, takeover 9% vs 4%, ransomware 10% vs 6%; bank hacking 5% vs 9% the other way. Per-type size effects are one log-odds step per size band, and Large jumps more than that (n = 188).

@@ -136,3 +136,33 @@ for mode in MODES:
     lo, lm = np.log([r[3] for r in big]), np.log([r[4] for r in big])
     print(f'   over the {len(big)} pairs with 5+ firms: median obs x{np.exp(np.median(lo)):.1f}, '
           f'model x{np.exp(np.median(lm)):.1f}; correlation of log ratios {np.corrcoef(lo, lm)[0, 1]:.2f}')
+
+# --- 2026-10-08: where exactly the fit misses for Medium and Large firms (per type+link model).
+# Per size band: each type's share observed vs model; the most common type combinations observed vs model.
+if 'diagnose' in MODES or 'per type+link' in MODES:
+    mode = 'per type+link'
+    th = res.get(mode)
+    if th is None:
+        th = fit(mode)[0]
+    S = simulate(th, mode, reps=400)
+    short = ['Ph', 'Im', 'Mw', 'Tk', 'DoS', 'Rw', 'Bk', 'Out', 'Stf', 'Eav', 'Oth']
+    pat_obs = np.array(['+'.join(sh for sh, x in zip(short, row) if x) or 'none' for row in X])
+    for z in [1, 2, 3]:
+        m = Z == z
+        ww = W[m] / W[m].sum()
+        print(f'\n=== {SIZES[z]} (n={m.sum()}): share ticking each type, observed vs model ===')
+        print('   ' + '  '.join(f'{sh} {(ww * X[m, i]).sum():.2f}/{(ww[None, :] * S[:, m, i]).sum(axis=1).mean():.2f}'
+                              for i, sh in enumerate(short)))
+        sm = S[:, m, :]
+        pats = {}
+        for r in range(sm.shape[0]):
+            keys = ['+'.join(sh for sh, x in zip(short, row) if x) or 'none' for row in sm[r]]
+            for kk, wv in zip(keys, ww):
+                pats[kk] = pats.get(kk, 0) + wv / sm.shape[0]
+        obs = {}
+        for kk, wv in zip(pat_obs[m], ww):
+            obs[kk] = obs.get(kk, 0) + wv
+        keys = sorted(set(obs) | set(pats), key=lambda kk: -(obs.get(kk, 0) + pats.get(kk, 0)))[:12]
+        print('   most common combinations: observed share (firms) vs model share')
+        for kk in keys:
+            print(f'      {kk:28s} obs {obs.get(kk, 0):.3f} ({int((pat_obs[m] == kk).sum()):3d})   model {pats.get(kk, 0):.3f}')
