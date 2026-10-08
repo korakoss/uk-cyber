@@ -776,3 +776,11 @@ Same model as F32, spread cost = power law (lowest cost xm, steepness alpha; bot
 - **Yearly totals are not usable here:** the "total cost of all cyber crimes" items are answered by only 42 (incl. fraud) / 29 (excl. fraud) of 738, and mostly say "none" even when the worst incident had a cost (71% total none vs 33% worst none). The crime totals measure a narrower thing (crime, not handling of attacks). Per-type totals: 2–10 answers each.
 - **Reading:** if each attack carried a handling cost drawn from the same spread, the worst one would rise with frequency (largest of more draws). It doesn't, so most attacks probably cost nothing to handle, and a costly handling happens a roughly fixed, small number of times a year whatever the attack volume. Not yet checked with numbers.
 - Rough scale: mean worst cost of not-breached firms is about £190, vs about £2k for ordinary breaches; with 78% of attacked firms not breached, clean-up at 1x the worst is roughly 6% of the sample mean cost.
+
+### F35. Handling cost of attacks that didn't breach: generative model (`src/estimation/nonbreach_handling.py`, 2026-10-08)
+Model (user-agreed): N attacks/yr from the frequency band; costly handlings ~ Poisson(m), m = c x size factor x N^beta; each costs a lognormal amount; survey sees the worst, the yearly total is the sum. Fitted on 738 not-breached firms.
+- **beta about 0.03–0.04: costly handlings do not grow with attack volume.** beta 0.1 is 1.3–2.5 log-likelihood points worse, 0.25 is 18–25 worse, 1 is 400+ worse. Same with a second band-to-count mapping.
+- **About 0.4 costly handlings a year** (Micro; x1.2 per size step), each median about £55–65, mean £420–620 (x1.2–1.4 per size step).
+- **So the yearly total is barely above the worst:** mean total about £200 vs mean worst about £195 (weighted); unweighted about £510 total.
+- **Fit:** no-cost shares by size match (Micro 66/66%, Large 47/48%). By frequency the data zig-zag (daily 76% no cost, several a day 47%, small n) and the model draws a flat line through them.
+- **Misses the top:** observed mean worst (band midpoints) £455 vs model about £200. A few not-breached firms report £5k+ (11 firms, incl. the self-contradicting £100k+ one) that the lognormal doesn't produce. Either the handling-cost curve has a heavier top, or some of these are breaches the marker misses.
