@@ -87,7 +87,7 @@ SIZES = ['Micro', 'Small', 'Medium', 'Large']
 res = {}
 import sys
 MODES = sys.argv[1:] or ['shared', 'per type']
-for mode in MODES:
+for mode in [m_ for m_ in MODES if m_ not in ('v2', 'v2size', 'diagnose')]:
     th, f, k = fit(mode)
     res[mode] = th
     print(f'\n##### size {mode}: -loglik {f:.1f}, settings {k}, AIC {2 * k + 2 * f:.1f}')
@@ -166,3 +166,96 @@ if 'diagnose' in MODES or 'per type+link' in MODES:
         print('   most common combinations: observed share (firms) vs model share')
         for kk in keys:
             print(f'      {kk:28s} obs {obs.get(kk, 0):.3f} ({int((pat_obs[m] == kk).sum()):3d})   model {pats.get(kk, 0):.3f}')
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# 2026-10-08 (v2, user request): (1) no fixed size trend: each size band gets its own baseline per type;
+# (2) the phishing-impersonation and malware-ransomware dependence keyed in directly: the log-odds of a phishing tick
+#     go up by d1 when impersonation is ticked (and malware by d2 when ransomware is ticked), on top of the score;
+# (3) what dependence between types remains once the score is factored out: for every pair, observed number of firms
+#     ticking both vs the number the model expects; pairs far from expectation are leftover dependence.
+# Run with argument 'v2'.
+V2SIZE = 'v2size' in MODES   # phishing|impersonation term separate per size band
+
+
+def v2_unpack(th):
+    A = th[:4 * T].reshape(4, T)                               # baseline log-odds per size band and type
+    b = th[4 * T:5 * T]
+    d1 = th[5 * T + 1:5 * T + 5][Z] if V2SIZE else th[5 * T + 1]
+    return A, b, d1, th[5 * T]
+
+
+def v2_p(th, E):
+    """E: n x grid score values; returns tick chances n x grid x T before dependence terms."""
+    A, b, d1, d2 = v2_unpack(th)
+    return A[Z][:, None, :] + b[None, None, :] * E[:, :, None]
+
+
+def v2_loglik_each(th):
+    A, b, d1, d2 = v2_unpack(th)
+    eta = v2_p(th, np.broadcast_to(GH_x[None, :], (n, len(GH_x))))
+    eta[:, :, IPH] += (d1 * X[:, IIM])[:, None]
+    eta[:, :, IMW] += d2 * X[:, None, IRW]
+    p = expit(eta)
+    lp = np.where(X[:, None, :] == 1, np.log(np.clip(p, 1e-12, 1)), np.log(np.clip(1 - p, 1e-12, 1))).sum(axis=2)
+    m = lp.max(axis=1, keepdims=True)
+    return m[:, 0] + np.log((np.exp(lp - m) * GH_w[None, :]).sum(axis=1))
+
+
+def v2_simulate(th, reps=400, seed=3):
+    """Simulate ticks. The dependence terms make phishing depend on impersonation, so draw impersonation (and the
+    rest) first, then phishing and malware given them."""
+    rng = np.random.default_rng(seed)
+    A, b, d1, d2 = v2_unpack(th)
+    E = rng.standard_normal((reps, n))
+    eta = A[Z][None, :, :] + b[None, None, :] * E[:, :, None]
+    S = (rng.random(eta.shape) < expit(eta)).astype(float)
+    S[:, :, IPH] = (rng.random((reps, n)) < expit(eta[:, :, IPH] + d1 * S[:, :, IIM])).astype(float)  # d1 scalar or (n,)
+    S[:, :, IMW] = (rng.random((reps, n)) < expit(eta[:, :, IMW] + d2 * S[:, :, IRW])).astype(float)
+    return S
+
+
+if 'v2' in MODES or V2SIZE:
+    base = np.log(np.clip(np.array([np.average(X[Z == z], axis=0, weights=W[Z == z]) for z in range(4)]), 0.005, 0.9))
+    x0 = np.r_[base.ravel() - 1.0, np.full(T, 1.5), 1.0, np.full(4 if V2SIZE else 1, 1.0)]
+    r = minimize(lambda th: -(W * v2_loglik_each(th)).sum(), x0, method='L-BFGS-B', options={'maxiter': 5000})
+    th = r.x
+    k = len(th)
+    print(f'\n##### v2: own baseline per size band and type + phishing|impersonation and malware|ransomware terms')
+    print(f'   -loglik {r.fun:.1f}, settings {k}, AIC {2 * k + 2 * r.fun:.1f}')
+    A, b, d1, d2 = v2_unpack(th)
+    if V2SIZE:
+        print('   impersonation ticked raises phishing odds, by size: ' +
+              ', '.join(f'{SIZES[z]} x{np.exp(th[5 * T + 1 + z]):.1f}' for z in range(4)) +
+              f'; ransomware ticked raises malware odds x{np.exp(d2):.1f}')
+    else:
+        print(f'   impersonation ticked raises phishing odds x{np.exp(d1):.1f}; ransomware ticked raises malware odds x{np.exp(d2):.1f}')
+    print('   slopes on the score: ' + ', '.join(f'{lab} {b[i]:.2f}' for i, lab in enumerate(TYPES.values())))
+    S = v2_simulate(th)
+    short = ['Ph', 'Im', 'Mw', 'Tk', 'DoS', 'Rw', 'Bk', 'Out', 'Stf', 'Eav', 'Oth']
+    kobs = X.sum(axis=1)
+    ks = S.sum(axis=2)
+    print('   number of types by size, observed vs model:')
+    for z in range(4):
+        m = Z == z
+        ww = W[m] / W[m].sum()
+        obs = [(ww * (kobs[m] == j)).sum() for j in range(4)] + [(ww * (kobs[m] >= 4)).sum()]
+        mod = [(ww[None, :] * (ks[:, m] == j)).sum(axis=1).mean() for j in range(4)] + \
+              [(ww[None, :] * (ks[:, m] >= 4)).sum(axis=1).mean()]
+        print(f'   {SIZES[z]:7s} 0/1/2/3/4+  obs ' + ' '.join(f'{x:.3f}' for x in obs) + '   model ' +
+              ' '.join(f'{x:.3f}' for x in mod) +
+              f'   impersonation alone obs {(ww * (X[m, IIM] == 1) * (kobs[m] == 1)).sum():.3f} model '
+              f'{(ww[None, :] * (S[:, m, IIM] == 1) * (ks[:, m] == 1)).sum(axis=1).mean():.3f}')
+
+    print('\n   leftover dependence between pairs once the score is factored out (unweighted firm counts):')
+    print('   pair: firms with both, observed vs expected by the model; ratio; (obs - exp) / sqrt(exp)')
+    out = []
+    for i in range(T):
+        for j in range(i + 1, T):
+            o = int((X[:, i] * X[:, j]).sum())
+            e = (S[:, :, i] * S[:, :, j]).sum(axis=1).mean()
+            out.append((short[i] + '+' + short[j], o, e, (o - e) / np.sqrt(max(e, 0.5))))
+    out.sort(key=lambda r: -abs(r[3]))
+    for name, o, e, zz in out[:16]:
+        print(f'      {name:10s} obs {o:4d}  exp {e:6.1f}  ratio {o / max(e, 0.1):5.2f}  {zz:+5.1f}')
+    print(f'   pairs beyond +-2: {sum(abs(r[3]) > 2 for r in out)} of {len(out)}')
