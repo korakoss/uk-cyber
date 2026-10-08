@@ -801,3 +801,13 @@ Observed vs predicted breached share:
 - **Number of types:** 1–3 types match (11/29/52% vs 10/27/54%); 4+ types 62% vs 76% (independence over-predicts at the broad end, as in F9).
 - **Size adds nothing once the type mix is known.**
 - **Reading:** the type mix explains breach prevalence; no sign of an extra exposure or size effect. Caveat: inside-type ticks are partly the footprint of spreading, so their per-type chances are inflated (to be handled in the joint model).
+
+## Blueprint (2026-10-08, after F37)
+Per firm-year, by size band:
+1. Which attack types reach the firm. Open choice: generate them (per-type chances with a shared exposure level, F3) or take each sample firm's observed type mix as given and let survey weights do the scaling (no exposure model needed, since attack volume affects neither breaches nor handling cost).
+2. Breaches: each type that reaches the firm brings its own breach rate (Poisson count); no exposure or size effect beyond the type mix (F36, F37).
+3. Spreading: each breach spreads with a hidden chance (by size); adds inside ticks, more consequences, own cost curve (F32/F33). Cost shape parked (power law vs lognormal).
+4. Ordinary breach cost: one curve (entry-type dependence: deferred empirical check).
+5. Handling of attacks that didn't breach: Poisson number of costly handlings, not growing with attack volume, lognormal cost (F35).
+6. Size scaling of costs: deferred empirical check. Top end: parametric extrapolation of the fitted curves.
+7. National total: per-firm expected yearly cost by size x ONS business counts; adjust for firms skipping the cost questions; unattacked firms cost nothing.
