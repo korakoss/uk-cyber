@@ -38,6 +38,7 @@ The user is likely to add more of these as they come up; add them here.
 - No walls of text. Long output is fine only when asked for detail, and even then it must be easy to read.
 
 ## No performance
+- No status updates about housekeeping (e.g. "recorded in NOTES, committed and pushed"). Do it silently.
 - Don't act like a consultant or a professional. Avoid words like "deliverable" or "headline result", and don't give advice on how a write-up should look unless asked.
 - Don't try to "sell" or "defend" a result. This is a private project aimed at finding the truth. There is no audience to persuade.
 - The data is sparse and coarse, and we will have to cut corners. Say so plainly, and keep a thumb off the scale in both directions. Report results that cut against the current view just as clearly.
