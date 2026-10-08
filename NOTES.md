@@ -792,3 +792,12 @@ Model (user-agreed): N attacks/yr from the frequency band; costly handlings ~ Po
 - **Within phishing, more phishing doesn't mean more breaches:** firms with only phishing/impersonation, breached share by phishing count: 1: 18%, 2–5: 10%, 6–20: 11%, 21–100: 12%, >100: 4% (n = 8). By targeted-phishing count: 6–10% throughout.
 - **Single-type firms:** phishing 7% (n = 384), impersonation 12% (76); the rarer types 35–90% but n = 2–11.
 - **Reading:** breaches don't scale with attack volume. What matters is which types reach the firm. The fall with frequency likely means "attacked once" firms often noticed the attack because it did harm (the one attack they report is the breach), while frequent-attack firms are mostly getting harmless phishing. So frequency is a poor measure of exposure to breaches.
+
+### F37. Does exposure raise breach chances beyond the type mix? (`attack_to_breach.py` section E, 2026-10-08)
+Fitted per-type breach chances on all 982 firms, types combined independently, no exposure term: phishing 6%, impersonation 10%, malware 26%, ransomware 37%, takeover 37%, DoS 53%, bank hacking 58%, outsider access 80%, staff access 13%, eavesdropping 47%, other 29%. Size: odds x1.02 per size step (none).
+Observed vs predicted breached share:
+- **Phishing volume adds nothing:** phishing count 1 / 2–5 / 6–20 / >20: 30/24/24/40% observed vs 20/28/26/37% predicted. Targeted phishing none / 1–5 / 6+: 12/21/27% vs 15/22/29%.
+- **Frequency goes the wrong way for an exposure effect:** once 42% observed vs 25% predicted; weekly 10% vs 24%; several a day 13% vs 22%; middle bands match. Fits the reading that "attacked once" firms often report the breach as their one attack.
+- **Number of types:** 1–3 types match (11/29/52% vs 10/27/54%); 4+ types 62% vs 76% (independence over-predicts at the broad end, as in F9).
+- **Size adds nothing once the type mix is known.**
+- **Reading:** the type mix explains breach prevalence; no sign of an extra exposure or size effect. Caveat: inside-type ticks are partly the footprint of spreading, so their per-type chances are inflated (to be handled in the joint model).

@@ -55,3 +55,50 @@ print('   by targeted-phishing count (phishcon_bands): ' + ', '.join(
 print('\n=== D. Firms that ticked exactly one type: breached share by type ===')
 for c, lab in TYPES.items():
     print(f'   {lab:16s} {share(df[(df.k == 1) & (df[c] == 1)]):>12s}')
+
+# --- 2026-10-08: does exposure raise breach chances beyond which types reach the firm?
+# Fit per-type breach chances p_t on all firms: P(breached) = 1 - prod over ticked types (1 - p_t) (types
+# independent, no exposure term), with a size factor on the odds. Then compare observed vs predicted breached share
+# across exposure measures. If heavily attacked firms breach more than their type mix implies, observed > predicted
+# rises with exposure.
+from scipy.optimize import minimize
+from scipy.special import expit
+X = (df[list(TYPES)] == 1).values.astype(float)
+Zs = df.sizeb.values - 1
+y = df.breach.values
+w = (df.weight / df.weight.mean()).values
+
+
+def pred(th):
+    p = expit(th[:len(TYPES)][None, :] + th[-1] * Zs[:, None])
+    return 1 - np.prod(np.where(X == 1, 1 - p, 1.0), axis=1)
+
+
+def nll(th):
+    q = np.clip(pred(th), 1e-9, 1 - 1e-9)
+    return -(w * (y * np.log(q) + (1 - y) * np.log(1 - q))).sum()
+
+
+r = minimize(nll, np.r_[np.full(len(TYPES), -1.5), 0.1], method='L-BFGS-B')
+df['pred'] = pred(r.x)
+print('\n=== E. Per-type breach chances (Micro; odds x{:.2f} per size step), no exposure term ==='.format(np.exp(r.x[-1])))
+print('   ' + ', '.join(f'{lab} {expit(v):.2f}' for lab, v in zip(TYPES.values(), r.x)))
+
+
+def ovp(lab, s):
+    if len(s) == 0:
+        return
+    print(f'   {lab:22s} n={len(s):3d}  observed {np.average(s.breach, weights=s.weight):.2f}  '
+          f'predicted {np.average(s.pred, weights=s.weight):.2f}')
+
+
+print('observed vs predicted breached share, by exposure measure:')
+for f, lab in FQ.items():
+    ovp(f'freq {lab}', df[df.freq == f])
+for lab, m in [('phishing count 1', ps == 1), ('phishing 2-5', ps.between(2, 5)), ('phishing 6-20', ps.between(6, 20)),
+               ('phishing >20', ps > 20)]:
+    ovp(lab, df[m])
+for lab, m in [('targeted phish none', pcb == 1), ('targeted 1-5', pcb.isin([2, 3, 4])), ('targeted 6+', pcb >= 5)]:
+    ovp(lab, df[m])
+for lab, m in [('1 type', df.k == 1), ('2 types', df.k == 2), ('3 types', df.k == 3), ('4+ types', df.k >= 4)]:
+    ovp(lab, df[m])
