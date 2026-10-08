@@ -761,3 +761,8 @@ Same model as F32, spread cost = power law (lowest cost xm, steepness alpha; bot
 - **Spreading itself barely changes:** spread chance 7–14% (weighted) / 8–20% (unweighted) by size; 26–31 expected spread firms; outcomes 1.0–1.2 vs 3.9–4.0.
 - **The top is still not reproduced:** £100k–500k predicted 0.8–1.1% of breached firms vs 2.0% observed; firms at £100k+ expected 3.7 (weighted) / 5.9 (unweighted) vs 7. The power law also puts 0.3–0.4% above £500k (none observed). Neither shape gets the bump at £100k–500k.
 - **Reading:** the data can't choose between the two shapes; the choice moves the mean spread cost by roughly x1.5–2 (at a £1m cap).
+
+### Status after F33 (2026-10-08)
+- Spread cost shape: user parked the choice ("finalize later"). Options on the table: power law as main shape with a stated cap on the largest loss (£500k–£5m), lognormal as low check; or the reverse. Mean spread cost roughly £25k–£115k across these.
+- Cruft from the shape work (spread-only subset fits F25, F27–F30 shape and steepness scans) answers "which shape", which the data can't settle; not to be built on.
+- Remaining model parts (listed to user 2026-10-08): who gets attacked and breached in the population (prevalence by size); breach counts (Poisson rate; current fit assumes one breach); ordinary breach and clean-up costs as yearly totals (only the worst incident is priced); firms skipping cost questions; scaling to UK business counts (ONS); the >£500k allowance; the self-contradicting £100k+ answers; survey weights vs unweighted instability.
