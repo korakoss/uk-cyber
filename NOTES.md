@@ -736,3 +736,19 @@ Not breached n = 738: none 446 (64%), <£100 140 (19%), £100–500 81 (11%), £
   - Q57 impacts: staff stopped from day-to-day work (`impact1`), loss of revenue or share value (`impact2`), other repair or recovery costs (`impact4`). (`impact3`, extra staff time, is NOT used.)
 - **Spread** = breached AND 4 or more of the 11 attack-type ticks AND at least one inside type (ransomware `type1`, bank hacking `type4`, outsider access `type8`, staff access `type7`) AND worst incident £5k or more.
 - Caveats: Q56A and Q57 cover all the year's breaches, not just the priced worst one; restore, revenue loss and recovery costs are partly cost; spread requires £5k+ by construction.
+
+### F32. Spreading as a hidden event, fitted to all attacked firms (`src/estimation/spread_latent.py`, 2026-10-08)
+User design: no hard spread marker. A breach spreads with some chance (unobserved); if it does, it can add inside-type ticks, takes a separate cost curve, and has more consequences. Fitted jointly to all 982 attacked firms (24 settings: background tick rates, add-chances, spread chance by size, three zero-inflated/plain lognormal cost curves with a shared size factor, Poisson outcome counts). One breach per breached firm. Survey weights main, unweighted as a check.
+- **Spread chance per breach:** Micro 7%, Small 10%, Medium 13%, Large 17% (unweighted: 8/10/14/18%). Expected spread firms in the sample: about 28 (the hard marker had 34).
+- **What spreading adds:** ransomware and bank-hacking ticks (each about 53% of spread breaches, weighted); outsider/staff access almost never (3%). Unweighted: ransomware 59%, outsider 33%, bank hacking 24%, staff 13%. So which ticks it adds is not stable.
+- **Consequences:** about 1.1 outcomes for an ordinary breach vs 3.9–4.0 for a spread one (stable).
+- **Cost curves:**
+  - not breached: 60–64% no cost, otherwise median about £80; mean about £185–320;
+  - ordinary breach: 16–19% no cost, otherwise median £420–550; mean £2k–3.7k;
+  - spread breach: weighted median £23k (Micro level), x1.12 per size step, mean £53k; unweighted median £12k, x1.37 per size step (Large median about £31k), mean £27k at Micro level. The split between 'level' and 'growth with size' is not stable; weighted is pulled up by the costly Micro firm.
+- **Who looks spread:** of the 34 hard-marker firms, 20 get a posterior over 0.5 (sum 20); 7 other breached firms do too (sum 8). Posterior-spread firms include 5–7 of the 7 breached firms at £100k–500k (the marker had 4).
+- **Checks against the data:**
+  - breached cost bands fit well overall (none 17.5% vs 17.5%; £500–5k 33% vs 36%), but the top is off in the usual way: £20k–100k predicted 4.8% vs 2.6% observed, £100k–500k 1.1% vs 2.0%; 4.6 firms expected at £100k+ vs 7 observed. Lognormal is a bit too thin at the very top.
+  - not breached: fits; the 1 not-breached firm at £100k+ (the self-contradicting DoS answer) is not expected (0.0).
+  - inside-tick counts: roughly right (breached 0/1/2/3/4: 147/72/19/5/1 vs 135/80/25/3/0.2).
+  - outcome counts: roughly right (1 outcome under-predicted: 101 vs 81).
